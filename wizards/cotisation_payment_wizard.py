@@ -148,11 +148,11 @@ class CotisationPaymentWizard(models.TransientModel):
         """Calcule le taux de completion après le paiement"""
         for wizard in self:
             if wizard.mark_as_full_payment:
-                wizard.payment_completion = 100.0
+                wizard.payment_completion = 1
                 wizard.will_be_fully_paid = True
             elif wizard.amount_due > 0:
                 future_paid = wizard.amount_paid + wizard.amount
-                wizard.payment_completion = min((future_paid / wizard.amount_due) * 100, 100.0)
+                wizard.payment_completion = min((future_paid / wizard.amount_due) / 100, 1)
                 wizard.will_be_fully_paid = future_paid >= wizard.amount_due
             else:
                 wizard.payment_completion = 0.0

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================ -->
+    <!-- ACTIVITY PARTICIPANT WIZARD VIEWS -->
+    <!-- ============================================ -->
+    
+    <!-- Vue formulaire pour l'assistant d'ajout de participants -->
+    <record id="view_activity_participant_wizard_form" model="ir.ui.view">
+        <field name="name">activity.participant.wizard.form</field>
+        <field name="model">activity.participant.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Ajouter des participants à une activité">
+                <header>
+                    <button name="action_confirm_add_participants" 
+                            string="Ajouter les participants" 
+                            type="object" 
+                            class="btn-primary"
+                            invisible="not can_add_participants"/>
+                    <button name="action_preview_selection" 
+                            string="Aperçu de la sélection" 
+                            type="object" 
+                            class="btn-secondary"/>
+                    <button name="action_apply_criteria" 
+                            string="Appliquer les critères" 
+                            type="object" 
+                            class="btn-secondary"
+                            invisible="selection_mode != 'criteria'"/>
+                    <button name="action_cancel" 
+                            string="Annuler" 
+                            type="object" 
+                            class="btn-secondary"/>
+                </header>
+                
+                <sheet>
+                    <!-- Alerte de validation -->
+                    <div class="alert alert-warning" 
+                         invisible="validation_message == 'Ajout de participants possible'">
+                        <field name="validation_message"/>
+                    </div>
+                    
+                    <group>
+                        <group string="Activité">
+                            <field name="activity_id" options="{'no_create': True}"/>
+                            <field name="activity_name"/>
+                            <field name="group_id"/>
+                            <field name="activity_state"/>
+                        </group>
+                        <group string="Capacité">
+                            <field name="max_participants"/>
+                            <field name="current_participants"/>
+                            <field name="available_spots"/>
+                            <field name="is_full"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Sélection des participants">
+                            <group>
+                                <field name="selection_mode" widget="radio"/>
+                            </group>
+                            
+                            <!-- Sélection manuelle -->
+                            <group string="Sélection manuelle" 
+                                   invisible="selection_mode != 'manual'">
+                                <field name="selected_member_ids" 
+                                       widget="many2many_tags" 
+                                       nolabel="1" 
+                                       colspan="2"/>
+                            </group>
+                            
+                            <!-- Critères de sélection -->
+                            <group string="Critères de sélection" 
+                                   invisible="selection_mode != 'criteria'">
+                                <group>
+                                    <field name="member_group_id"/>
+                                    <field name="include_good_payers_only"/>
+                                    <field name="exclude_overdue_members"/>
+                                </group>
+                                <group>
+                                    <field name="min_payment_rate" widget="percentage"/>
+                                    <field name="eligible_members_count"/>
+                                    <label for="eligible_members_count" string="Membres éligibles"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Statistiques de sélection -->
+                            <group string="Résumé">
+                                <group>
+                                    <field name="selected_count"/>
+                                    <field name="final_participant_count"/>
+                                </group>
+                                <group>
+                                    <field name="capacity_exceeded"/>
+                                    <field name="can_add_participants"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Options de cotisation">
+                            <group>
+                                <group string="Montant">
+                                    <field name="cotisation_amount" readonly="1"/>
+                                    <field name="use_default_amount"/>
+                                    <field name="custom_amount" 
+                                           invisible="use_default_amount"
+                                           required="not use_default_amount"/>
+                                    <field name="due_date_override"/>
+                                </group>
+                                <group string="Options">
+                                    <field name="auto_confirm_payment"/>
+                                    <field name="send_invitation"/>
+                                </group>
+                            </group>
+                            
+                            <group string="Message d'invitation personnalisé" 
+                                   invisible="not send_invitation">
+                                <field name="invitation_message" nolabel="1"/>
+                            </group>
+                        </page>
+                        
+                        <page string="Informations système">
+                            <group>
+                                <field name="currency_id"/>
+                                <field name="company_id"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue formulaire simplifiée pour ajout rapide de participants -->
+    <record id="view_activity_participant_wizard_quick" model="ir.ui.view">
+        <field name="name">activity.participant.wizard.quick</field>
+        <field name="model">activity.participant.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Ajout rapide de participants">
+                <sheet>
+                    <group>
+                        <field name="activity_id" readonly="1"/>
+                        <field name="selection_mode" widget="radio" default_focus="1"/>
+                    </group>
+                    
+                    <group invisible="selection_mode != 'manual'">
+                        <field name="selected_member_ids" 
+                               widget="many2many_tags" 
+                               placeholder="Sélectionnez les membres..."/>
+                    </group>
+                    
+                    <group invisible="selection_mode != 'group_members'">
+                        <field name="group_id" readonly="1"/>
+                    </group>
+                    
+                    <div class="alert alert-info" 
+                         invisible="selected_count == 0">
+                        <strong><field name="selected_count"/> participants sélectionnés</strong>
+                    </div>
+                    
+                    <footer>
+                        <button name="action_confirm_add_participants" 
+                                string="Ajouter" 
+                                type="object" 
+                                class="btn-primary"/>
+                        <button name="action_cancel" 
+                                string="Annuler" 
+                                type="object" 
+                                class="btn-secondary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Action pour l'assistant d'ajout de participants -->
+    <record id="action_activity_participant_wizard" model="ir.actions.act_window">
+        <field name="name">Ajouter des participants</field>
+        <field name="res_model">activity.participant.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_activity_id': active_id}</field>
+    </record>
+    
+    <!-- Action contextuelle pour ajouter des participants depuis une activité -->
+    <record id="action_add_participants_from_activity" model="ir.actions.act_window">
+        <field name="name">Ajouter des participants</field>
+        <field name="res_model">activity.participant.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{
+            'default_activity_id': active_id,
+            'default_selection_mode': 'manual'
+        }</field>
+        <field name="binding_model_id" ref="contribution_management.model_group_activity"/>
+        <field name="binding_type">action</field>
+    </record>
+</odoo>

@@ -107,6 +107,42 @@
         <field name="perm_unlink" eval="1"/>
     </record>
 
+    <!-- Règle pour l'assistant de rappel -->
+    <record id="cotisation_reminder_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant de rappel: accès global</field>
+        <field name="model_id" ref="model_cotisation_reminder_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règle pour l'assistant de paiement en masse -->
+    <record id="mass_payment_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant de paiement en masse: accès global</field>
+        <field name="model_id" ref="model_mass_payment_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règle pour l'assistant d'ajout de participants -->
+    <record id="activity_participant_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant de participants: accès global</field>
+        <field name="model_id" ref="model_activity_participant_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
     <!-- ================= RÈGLES SPÉCIFIQUES POUR LA SÉCURITÉ ================= -->
     
     <!-- Règle pour empêcher la suppression des cotisations payées -->
@@ -145,4 +181,54 @@
         <field name="perm_unlink" eval="1"/>
     </record>
 
+    <record id="cotisations_dashboard_rule_global" model="ir.rule">
+        <field name="name">Tableau de bord des cotisations: accès global</field>
+        <field name="model_id" ref="model_cotisations_dashboard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="cotisations_dashboard_rule_manager" model="ir.rule">
+        <field name="name">Tableau de bord des cotisations: gestionnaire</field>
+        <field name="model_id" ref="model_cotisations_dashboard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="cotisations_dashboard_rule_portal" model="ir.rule">
+        <field name="name">Tableau de bord des cotisations: portail</field>
+        <field name="model_id" ref="model_cotisations_dashboard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+    <record id="cotisations_dashboard_rule_public" model="ir.rule">
+        <field name="name">Tableau de bord des cotisations: public</field>
+        <field name="model_id" ref="model_cotisations_dashboard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_public'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+    <record id="cotisations_dashboard_rule_user" model="ir.rule">
+        <field name="name">Tableau de bord des cotisations: utilisateur</field>
+        <field name="model_id" ref="model_cotisations_dashboard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
 </odoo>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================ -->
+    <!-- MASS PAYMENT WIZARD VIEWS -->
+    <!-- ============================================ -->
+    
+    <!-- Vue formulaire pour l'assistant de paiement en masse -->
+    <record id="view_mass_payment_wizard_form" model="ir.ui.view">
+        <field name="name">mass.payment.wizard.form</field>
+        <field name="model">mass.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Paiement en masse de cotisations">
+                <header>
+                    <button name="action_process_payments" 
+                            string="Traiter les paiements" 
+                            type="object" 
+                            class="btn-primary"
+                            invisible="not can_process"/>
+                    <button name="action_preview_payments" 
+                            string="Aperçu des paiements" 
+                            type="object" 
+                            class="btn-secondary"/>
+                    <button name="action_calculate_proportional" 
+                            string="Répartition proportionnelle" 
+                            type="object" 
+                            class="btn-secondary"
+                            invisible="payment_mode == 'individual'"/>
+                    <button name="action_calculate_equal" 
+                            string="Répartition égale" 
+                            type="object" 
+                            class="btn-secondary"
+                            invisible="payment_mode == 'individual'"/>
+                    <button name="action_cancel" 
+                            string="Annuler" 
+                            type="object" 
+                            class="btn-secondary"/>
+                    <field name="can_process" invisible="1"/>
+                </header>
+                
+                <sheet>
+                    <!-- Alerte de validation -->
+                    <div class="alert alert-danger" 
+                         invisible="can_process">
+                        <field name="validation_message"/>
+                    </div>
+                    
+                    <!-- Statistiques en haut -->
+                    <div class="oe_button_box">
+                        <button class="oe_stat_button" icon="fa-list">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value"><field name="cotisation_count"/></span>
+                                <span class="o_stat_text">Cotisations</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-money">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value"><field name="total_remaining"/></span>
+                                <span class="o_stat_text">Total restant</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-percent">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value"><field name="completion_rate" widget="percentage"/></span>
+                                <span class="o_stat_text">Completion</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <group>
+                        <group string="Contexte">
+                            <field name="member_id"/>
+                            <field name="affected_groups"/>
+                            <field name="currency_id"/>
+                        </group>
+                        <group string="Mode de paiement">
+                            <field name="payment_mode" widget="radio"/>
+                            <field name="payment_amount" 
+                                   widget="monetary"
+                                   invisible="payment_mode in ['full', 'individual']"
+                                   required="payment_mode in ['partial_equal', 'partial_proportional']"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Cotisations">
+                            <field name="cotisation_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="member_id"/>
+                                    <field name="group_id"/>
+                                    <field name="cotisation_type"/>
+                                    <field name="amount_due" widget="monetary"/>
+                                    <field name="amount_paid" widget="monetary"/>
+                                    <field name="remaining_amount" widget="monetary"/>
+                                    <field name="state"/>
+                                    <field name="due_date"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="Paiements individuels" 
+                              invisible="payment_mode != 'individual'">
+                            <field name="payment_line_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="member_id" readonly="1"/>
+                                    <field name="group_id" readonly="1"/>
+                                    <field name="amount_due" widget="monetary" readonly="1"/>
+                                    <field name="amount_paid" widget="monetary" readonly="1"/>
+                                    <field name="remaining_amount" widget="monetary" readonly="1"/>
+                                    <field name="payment_amount" widget="monetary"/>
+                                    <field name="new_amount_paid" widget="monetary" readonly="1"/>
+                                    <field name="will_be_complete" readonly="1"/>
+                                    <field name="payment_percentage" widget="percentage" readonly="1"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="Détails du paiement">
+                            <group>
+                                <group string="Informations de paiement">
+                                    <field name="payment_date"/>
+                                    <field name="payment_method"/>
+                                    <field name="reference"/>
+                                </group>
+                                <group string="Options">
+                                    <field name="send_receipts"/>
+                                    <field name="group_receipt" 
+                                           invisible="not send_receipts"/>
+                                </group>
+                            </group>
+                            
+                            <group string="Notes">
+                                <field name="notes" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue de recherche pour le paiement en masse -->
+    <record id="view_mass_payment_wizard_search" model="ir.ui.view">
+        <field name="name">mass.payment.wizard.search</field>
+        <field name="model">mass.payment.wizard</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="member_id"/>
+                <field name="payment_method"/>
+                <field name="payment_mode"/>
+                <filter string="Paiement complet" name="full_payment" domain="[('payment_mode', '=', 'full')]"/>
+                <filter string="Paiement partiel" name="partial_payment" domain="[('payment_mode', 'in', ['partial_equal', 'partial_proportional'])]"/>
+                <filter string="Peut traiter" name="can_process" domain="[('can_process', '=', True)]"/>
+                <separator/>
+                <filter string="Avec reçus" name="with_receipts" domain="[('send_receipts', '=', True)]"/>
+                <group expand="0" string="Grouper par">
+                    <filter string="Mode de paiement" name="group_by_mode" context="{'group_by': 'payment_mode'}"/>
+                    <filter string="Méthode de paiement" name="group_by_method" context="{'group_by': 'payment_method'}"/>
+                    <filter string="Membre" name="group_by_member" context="{'group_by': 'member_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Vue liste pour les lignes de paiement en masse -->
+    <record id="view_mass_payment_line_tree" model="ir.ui.view">
+        <field name="name">mass.payment.line.tree</field>
+        <field name="model">mass.payment.line</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="member_id" readonly="1"/>
+                <field name="group_id" readonly="1"/>
+                <field name="amount_due" widget="monetary" readonly="1"/>
+                <field name="amount_paid" widget="monetary" readonly="1"/>
+                <field name="remaining_amount" widget="monetary" readonly="1"/>
+                <field name="payment_amount" widget="monetary"/>
+                <field name="new_amount_paid" widget="monetary" readonly="1"/>
+                <field name="will_be_complete" readonly="1"/>
+                <field name="payment_percentage" widget="percentage" readonly="1"/>
+                <field name="currency_id" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action pour l'assistant de paiement en masse -->
+    <record id="action_mass_payment_wizard" model="ir.actions.act_window">
+        <field name="name">Paiement en masse</field>
+        <field name="res_model">mass.payment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Action contextuelle pour paiement en masse depuis une sélection de cotisations -->
+    <record id="action_mass_payment_from_cotisations" model="ir.actions.act_window">
+        <field name="name">Paiement en masse</field>
+        <field name="res_model">mass.payment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{
+            'default_cotisation_ids': [(6, 0, active_ids)],
+            'default_payment_mode': 'full'
+        }</field>
+        <field name="binding_model_id" ref="contribution_management.model_member_cotisation"/>
+        <field name="binding_type">action</field>
+    </record>
+</odoo>

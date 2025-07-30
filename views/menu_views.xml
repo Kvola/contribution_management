@@ -56,4 +56,40 @@
               parent="menu_cotisations_reports"
               action="action_report_group_synthesis" 
               sequence="40"/>
+
+    <!-- ============================================ -->
+    <!-- MENUS ET ACTIONS SUPPLÉMENTAIRES -->
+    <!-- ============================================ -->
+    
+    <!-- Menu principal pour les outils de gestion -->
+    <menuitem id="menu_contribution_tools" 
+              name="Outils de gestion" 
+              parent="menu_cotisations_main" 
+              sequence="90"/>
+    
+    <!-- Sous-menus pour les assistants -->
+    <menuitem id="menu_cotisations_dashboard" 
+              name="Tableau de bord" 
+              parent="menu_contribution_tools" 
+              action="action_cotisations_dashboard" 
+              sequence="10"/>
+    
+    <menuitem id="menu_mass_payment" 
+              name="Paiement en masse" 
+              parent="menu_contribution_tools" 
+              action="action_mass_payment_wizard" 
+              sequence="20"/>
+    
+    <menuitem id="menu_mass_reminders" 
+              name="Rappels en masse" 
+              parent="menu_contribution_tools" 
+              action="action_cotisation_reminder_wizard" 
+              sequence="30"/>
+
+    <!-- Ajout au menu des outils -->
+    <!-- <menuitem id="menu_cotisations_analytics" 
+              name="Analyses" 
+              parent="menu_contribution_tools" 
+              action="action_cotisations_analytics" 
+              sequence="40"/> -->
 </odoo>

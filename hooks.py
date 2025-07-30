@@ -5,7 +5,6 @@ from odoo import api, SUPERUSER_ID
 
 _logger = logging.getLogger(__name__)
 
-
 def _post_install_hook(env):
     """Hook exécuté après l'installation du module
     
@@ -15,20 +14,32 @@ def _post_install_hook(env):
     _logger.info("=== Démarrage de la configuration post-installation du module Cotisations ===")
     
     try:
+        # Configuration des données de base
         _setup_cotisations_data(env)
-        _setup_demo_data(env)
+        
+        # Configuration des données de démonstration si activé
+        if env['ir.config_parameter'].sudo().get_param('contribution_management.install_demo_data'):
+            _setup_demo_data(env)
+        
+        # Configuration des droits d'accès
         _setup_access_rights(env)
+        
+        # Configuration des modèles d'email
         _setup_email_templates(env)
+        
+        # Configuration des actions automatisées
         _setup_automated_actions(env)
+        
+        # Configuration des rapports
+        _setup_reports(env)
+        
         _logger.info("✓ Configuration post-installation terminée avec succès")
     except Exception as e:
         _logger.error(f"✗ Erreur lors de la configuration post-installation: {e}")
         raise
 
-
 def _setup_cotisations_data(env):
     """Configuration des données initiales du module"""
-    
     # Générer des codes uniques pour les partenaires existants sans code
     _generate_partner_codes(env)
     
@@ -40,7 +51,9 @@ def _setup_cotisations_data(env):
     
     # Configurer les devises par défaut
     _setup_currencies(env)
-
+    
+    # Configurer les catégories par défaut
+    _setup_categories(env)
 
 def _generate_partner_codes(env):
     """Génère des codes uniques pour les partenaires existants"""
@@ -74,7 +87,6 @@ def _generate_partner_codes(env):
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la génération des codes uniques: {e}")
 
-
 def _setup_default_parameters(env):
     """Configure les paramètres système par défaut"""
     try:
@@ -91,6 +103,7 @@ def _setup_default_parameters(env):
             ('contribution_management.default_due_day', '31'),
             ('contribution_management.enable_notifications', 'True'),
             ('contribution_management.enable_analytics', 'True'),
+            ('contribution_management.install_demo_data', 'False'),
         ]
         
         for key, value in default_params:
@@ -106,7 +119,6 @@ def _setup_default_parameters(env):
                 
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la configuration des paramètres: {e}")
-
 
 def _setup_sequences(env):
     """Configure les séquences pour les cotisations"""
@@ -134,6 +146,13 @@ def _setup_sequences(env):
                 'prefix': 'ACT-',
                 'padding': 6,
                 'company_id': env.company.id,
+            },
+            {
+                'name': 'Paiements',
+                'code': 'cotisation.payment',
+                'prefix': 'PAY-',
+                'padding': 6,
+                'company_id': env.company.id,
             }
         ]
         
@@ -147,7 +166,6 @@ def _setup_sequences(env):
                 
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la création des séquences: {e}")
-
 
 def _setup_currencies(env):
     """Configure les devises par défaut"""
@@ -172,21 +190,48 @@ def _setup_currencies(env):
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la configuration des devises: {e}")
 
+def _setup_categories(env):
+    """Configure les catégories par défaut"""
+    try:
+        Category = env['contribution.category'].sudo()
+        
+        default_categories = [
+            {'name': 'Cotisation Annuelle', 'code': 'ANNUAL'},
+            {'name': 'Cotisation Mensuelle', 'code': 'MONTHLY'},
+            {'name': 'Activité Spéciale', 'code': 'SPECIAL'},
+            {'name': 'Don', 'code': 'DONATION'},
+        ]
+        
+        for cat_data in default_categories:
+            existing = Category.search([('code', '=', cat_data['code'])], limit=1)
+            if not existing:
+                Category.create(cat_data)
+                _logger.info(f"✓ Catégorie créée: {cat_data['name']}")
+                
+    except Exception as e:
+        _logger.error(f"⚠ Erreur lors de la création des catégories: {e}")
 
 def _setup_demo_data(env):
     """Crée des données de démonstration si demandé"""
     try:
-        if env.context.get('install_demo_data', False):
-            _create_demo_groups(env)
-            _create_demo_members(env)
-            _create_demo_activities(env)
-            _logger.info("✓ Données de démonstration créées")
-        else:
-            _logger.info("✓ Pas de données de démonstration demandées")
+        _logger.info("=== Création des données de démonstration ===")
+        
+        # Créer des groupes de démonstration
+        _create_demo_groups(env)
+        
+        # Créer des membres de démonstration
+        _create_demo_members(env)
+        
+        # Créer des activités de démonstration
+        _create_demo_activities(env)
+        
+        # Créer des cotisations mensuelles de démonstration
+        _create_demo_monthly_cotisations(env)
+        
+        _logger.info("✓ Données de démonstration créées")
             
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la création des données de démonstration: {e}")
-
 
 def _create_demo_groups(env):
     """Crée des groupes de démonstration"""
@@ -218,7 +263,6 @@ def _create_demo_groups(env):
                 
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la création des groupes de démo: {e}")
-
 
 def _create_demo_members(env):
     """Crée des membres de démonstration"""
@@ -257,7 +301,6 @@ def _create_demo_members(env):
                         
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la création des membres de démo: {e}")
-
 
 def _create_demo_activities(env):
     """Crée des activités de démonstration"""
@@ -310,17 +353,63 @@ def _create_demo_activities(env):
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la création des activités de démo: {e}")
 
+def _create_demo_monthly_cotisations(env):
+    """Crée des cotisations mensuelles de démonstration"""
+    try:
+        MonthlyCotisation = env['monthly.cotisation'].sudo()
+        Partner = env['res.partner'].sudo()
+        
+        demo_groups = Partner.search([
+            ('is_company', '=', True),
+            ('name', 'in', ['Association des Jeunes Entrepreneurs', 'Coopérative Agricole du Sud'])
+        ])
+        
+        if demo_groups:
+            from datetime import datetime
+            
+            current_month = datetime.now().month
+            current_year = datetime.now().year
+            
+            for group in demo_groups:
+                # Créer une cotisation pour le mois en cours
+                existing = MonthlyCotisation.search([
+                    ('group_id', '=', group.id),
+                    ('month', '=', str(current_month)),
+                    ('year', '=', current_year)
+                ], limit=1)
+                
+                if not existing:
+                    MonthlyCotisation.create({
+                        'group_id': group.id,
+                        'month': str(current_month),
+                        'year': current_year,
+                        'amount': 10000,
+                        'state': 'active'
+                    })
+                    _logger.info(f"✓ Cotisation mensuelle créée pour {group.name}")
+                    
+    except Exception as e:
+        _logger.error(f"⚠ Erreur lors de la création des cotisations mensuelles de démo: {e}")
 
 def _setup_access_rights(env):
     """Configure les droits d'accès par défaut"""
     try:
         # Les droits d'accès sont définis dans les fichiers XML de sécurité
         # Cette fonction peut être utilisée pour des configurations spéciales
+        
+        # Assigner les groupes par défaut aux utilisateurs admin
+        admin_users = env['res.users'].search([('groups_id', '=', env.ref('base.group_system').id)])
+        
+        # Groupe de gestion des cotisations
+        contribution_group = env.ref('contribution_management.group_contribution_manager')
+        
+        for user in admin_users:
+            user.write({'groups_id': [(4, contribution_group.id)]})
+        
         _logger.info("✓ Droits d'accès configurés via les fichiers de sécurité")
         
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la configuration des droits: {e}")
-
 
 def _setup_email_templates(env):
     """Configure les modèles d'email par défaut"""
@@ -352,20 +441,112 @@ def _setup_email_templates(env):
             MailTemplate.create(reminder_template)
             _logger.info("✓ Modèle d'email de rappel créé")
         
+        # Modèle pour les reçus de paiement
+        receipt_template = {
+            'name': 'Reçu de Paiement - Cotisation',
+            'model_id': env.ref('contribution_management.model_member_cotisation').id,
+            'subject': 'Reçu de paiement - ${object.display_name}',
+            'body_html': '''
+                <p>Bonjour ${object.member_id.name},</p>
+                <p>Nous accusons réception de votre paiement:</p>
+                <ul>
+                    <li><strong>Montant payé:</strong> ${object.amount_paid} ${object.currency_id.name}</li>
+                    <li><strong>Date de paiement:</strong> ${object.payment_date}</li>
+                    <li><strong>Description:</strong> ${object.description or 'N/A'}</li>
+                </ul>
+                <p>Merci pour votre contribution.</p>
+                <p>Cordialement,<br/>L'équipe de gestion</p>
+            ''',
+            'email_to': '${object.member_id.email}',
+            'auto_delete': True,
+        }
+        
+        existing_receipt = MailTemplate.search([('name', '=', receipt_template['name'])], limit=1)
+        if not existing_receipt:
+            MailTemplate.create(receipt_template)
+            _logger.info("✓ Modèle de reçu de paiement créé")
+        
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la création des modèles d'email: {e}")
-
 
 def _setup_automated_actions(env):
     """Configure les actions automatisées"""
     try:
-        # Les actions automatisées (crons) sont définies dans les fichiers XML
-        # Cette fonction peut servir à des configurations dynamiques
-        _logger.info("✓ Actions automatisées configurées via les fichiers XML")
+        # Créer les actions planifiées (crons)
+        cron_vals = [
+            {
+                'name': 'Mettre à jour les cotisations en retard',
+                'model_id': env.ref('contribution_management.model_member_cotisation').id,
+                'state': 'code',
+                'code': 'model._cron_update_overdue_cotisations()',
+                'interval_number': 1,
+                'interval_type': 'days',
+                'active': True,
+                'numbercall': -1,
+            },
+            {
+                'name': 'Fermer les cotisations mensuelles expirées',
+                'model_id': env.ref('contribution_management.model_monthly_cotisation').id,
+                'state': 'code',
+                'code': 'model._cron_auto_close_expired()',
+                'interval_number': 1,
+                'interval_type': 'days',
+                'active': True,
+                'numbercall': -1,
+            },
+            {
+                'name': 'Mettre à jour les statuts de paiement des membres',
+                'model_id': env.ref('base.model_res_partner').id,
+                'state': 'code',
+                'code': 'model._cron_update_payment_status()',
+                'interval_number': 1,
+                'interval_type': 'days',
+                'active': True,
+                'numbercall': -1,
+            }
+        ]
+        
+        for vals in cron_vals:
+            existing = env['ir.cron'].search([
+                ('name', '=', vals['name']),
+                ('model_id', '=', vals['model_id'])
+            ], limit=1)
+            
+            if not existing:
+                env['ir.cron'].create(vals)
+                _logger.info(f"✓ Action planifiée créée: {vals['name']}")
+        
+        _logger.info("✓ Actions automatisées configurées")
         
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la configuration des actions automatisées: {e}")
 
+def _setup_reports(env):
+    """Configure les rapports par défaut"""
+    try:
+        Report = env['ir.actions.report'].sudo()
+        
+        # Rapport de cotisations
+        cotisation_report = {
+            'name': 'Rapport de Cotisations',
+            'model': 'member.cotisation',
+            'report_name': 'contribution_management.cotisation_report',
+            'report_type': 'qweb-pdf',
+            'paperformat_id': env.ref('base.paperformat_euro').id,
+            'binding_model_id': env.ref('contribution_management.model_member_cotisation').id,
+            'binding_type': 'report',
+        }
+        
+        existing_report = Report.search([
+            ('report_name', '=', cotisation_report['report_name'])
+        ], limit=1)
+        
+        if not existing_report:
+            Report.create(cotisation_report)
+            _logger.info("✓ Rapport de cotisations configuré")
+        
+    except Exception as e:
+        _logger.error(f"⚠ Erreur lors de la configuration des rapports: {e}")
 
 def _uninstall_hook(env):
     """Hook exécuté avant la désinstallation du module
@@ -383,7 +564,6 @@ def _uninstall_hook(env):
         _logger.error(f"✗ Erreur lors du nettoyage de désinstallation: {e}")
         raise
 
-
 def _cleanup_cotisations_data(env):
     """Nettoie les données du module lors de la désinstallation"""
     try:
@@ -399,6 +579,7 @@ def _cleanup_cotisations_data(env):
             'contribution_management.default_due_day',
             'contribution_management.enable_notifications',
             'contribution_management.enable_analytics',
+            'contribution_management.install_demo_data',
         ]
         
         cleaned_count = 0
@@ -416,13 +597,13 @@ def _cleanup_cotisations_data(env):
     except Exception as e:
         _logger.error(f"⚠ Erreur lors du nettoyage des paramètres: {e}")
 
-
 def _cleanup_demo_data(env):
     """Nettoie les données de démonstration"""
     try:
-        if env.context.get('cleanup_demo_data', False):
+        if env['ir.config_parameter'].sudo().get_param('contribution_management.cleanup_demo_data'):
             Partner = env['res.partner'].sudo()
             Activity = env['group.activity'].sudo()
+            MonthlyCotisation = env['monthly.cotisation'].sudo()
             
             # Supprimer les données de démo
             demo_groups = Partner.search([
@@ -433,6 +614,10 @@ def _cleanup_demo_data(env):
                 # Supprimer les activités liées
                 demo_activities = Activity.search([('group_id', 'in', demo_groups.ids)])
                 demo_activities.unlink()
+                
+                # Supprimer les cotisations mensuelles
+                demo_monthly = MonthlyCotisation.search([('group_id', 'in', demo_groups.ids)])
+                demo_monthly.unlink()
                 
                 # Supprimer les membres
                 demo_members = Partner.search([('parent_id', 'in', demo_groups.ids)])
@@ -446,19 +631,16 @@ def _cleanup_demo_data(env):
     except Exception as e:
         _logger.error(f"⚠ Erreur lors de la suppression des données de démo: {e}")
 
-
 # Fonctions de compatibilité pour l'ancien format de hooks (si nécessaire)
 def post_init_hook(cr, registry):
     """Hook de compatibilité pour l'ancien format (cr, registry)"""
     env = api.Environment(cr, SUPERUSER_ID, {})
     _post_install_hook(env)
 
-
 def uninstall_hook(cr, registry):
     """Hook de compatibilité pour l'ancien format (cr, registry)"""
     env = api.Environment(cr, SUPERUSER_ID, {})
     _uninstall_hook(env)
-
 
 # Fonctions utilitaires
 def get_module_parameter(env, key, default=None):
@@ -467,7 +649,6 @@ def get_module_parameter(env, key, default=None):
         return env['ir.config_parameter'].sudo().get_param(f'contribution_management.{key}', default)
     except Exception:
         return default
-
 
 def set_module_parameter(env, key, value):
     """Définit un paramètre de configuration du module"""

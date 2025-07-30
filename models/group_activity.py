@@ -584,17 +584,40 @@ class GroupActivity(models.Model):
                 }
             }
         
-        # Ouvrir l'assistant d'envoi de rappels
+        # Créer d'abord le wizard avec les données de base
+        wizard_vals = {
+            'activity_id': self.id,
+            'reminder_type': 'first',
+            'send_method': 'email',
+            'subject': f'Rappel de cotisation - {self.name}',
+            'message_body': f'''
+                <p>Bonjour,</p>
+                <p>Nous vous rappelons que votre cotisation pour l'activité <strong>{self.name}</strong> 
+                n'a pas encore été réglée.</p>
+                <p>Détails de l'activité :</p>
+                <ul>
+                    <li><strong>Date :</strong> {self.date_start.strftime('%d/%m/%Y %H:%M') if self.date_start else 'Non définie'}</li>
+                    <li><strong>Lieu :</strong> {self.location or 'Non défini'}</li>
+                    <li><strong>Montant :</strong> {self.cotisation_amount} {self.currency_id.symbol}</li>
+                </ul>
+                <p>Merci de régulariser votre situation dans les plus brefs délais.</p>
+                <p>Cordialement,<br/>L'équipe organisatrice</p>
+            '''
+        }
+        
+        wizard = self.env['cotisation.reminder.wizard'].create(wizard_vals)
+        
+        # Associer les cotisations au wizard
+        wizard.cotisation_ids = [(6, 0, unpaid_cotisations.ids)]
+        
+        # Retourner l'action pour ouvrir le wizard
         return {
             'name': 'Envoyer des rappels',
             'type': 'ir.actions.act_window',
             'res_model': 'cotisation.reminder.wizard',
+            'res_id': wizard.id,
             'view_mode': 'form',
             'target': 'new',
-            'context': {
-                'default_activity_id': self.id,
-                'default_cotisation_ids': [(6, 0, unpaid_cotisations.ids)]
-            }
         }
     
     @api.model

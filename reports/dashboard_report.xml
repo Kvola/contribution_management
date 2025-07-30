@@ -1,0 +1,87 @@
+<odoo>
+    <!-- Vue QWeb pour impression du tableau de bord -->
+    <template id="cotisations_dashboard_report_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h2>Tableau de bord des cotisations</h2>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <h4>Période d'analyse</h4>
+                            <p>Du <span t-field="o.date_from"/> au <span t-field="o.date_to"/></p>
+                            <p>Type: <span t-field="o.dashboard_type"/></p>
+                        </div>
+                        <div class="col-6">
+                            <h4>Résumé</h4>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Total cotisations:</td>
+                                    <td><strong t-field="o.total_cotisations"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Montant total dû:</td>
+                                    <td><strong t-field="o.total_amount_due" t-options="{'widget': 'monetary'}"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Montant payé:</td>
+                                    <td><strong t-field="o.total_amount_paid" t-options="{'widget': 'monetary'}"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Taux de collecte:</td>
+                                    <td><strong t-field="o.global_collection_rate" t-options="{'widget': 'percentage'}"></strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <h4>Répartition par statut</h4>
+                    <div class="row">
+                        <div class="col-3 text-center">
+                            <div class="border p-2">
+                                <h3 class="text-success" t-field="o.paid_count"/>
+                                <p>Payées</p>
+                            </div>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="border p-2">
+                                <h3 class="text-warning" t-field="o.pending_count"/>
+                                <p>En attente</p>
+                            </div>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="border p-2">
+                                <h3 class="text-info" t-field="o.partial_count"/>
+                                <p>Partielles</p>
+                            </div>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="border p-2">
+                                <h3 class="text-danger" t-field="o.overdue_count"/>
+                                <p>En retard</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <t t-if="o.alerts_count > 0">
+                        <h4 class="mt-4">Alertes</h4>
+                        <div class="alert alert-warning">
+                            <strong t-field="o.alerts_count"/> alerte(s) active(s)
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- Rapport PDF pour le tableau de bord -->
+    <record id="cotisations_dashboard_report" model="ir.actions.report">
+        <field name="name">Rapport tableau de bord</field>
+        <field name="model">cotisations.dashboard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.cotisations_dashboard_report_template</field>
+        <field name="report_file">contribution_management.cotisations_dashboard_report</field>
+        <field name="binding_model_id" ref="model_cotisations_dashboard"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

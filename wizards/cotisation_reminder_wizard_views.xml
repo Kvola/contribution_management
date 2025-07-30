@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================ -->
+    <!-- COTISATION REMINDER WIZARD VIEWS -->
+    <!-- ============================================ -->
+
+    <!-- Vue formulaire pour l'assistant de rappel de cotisations -->
+    <record id="view_cotisation_reminder_wizard_form" model="ir.ui.view">
+        <field name="name">cotisation.reminder.wizard.form</field>
+        <field name="model">cotisation.reminder.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Envoyer des rappels de cotisations">
+                <header>
+                    <button name="action_send_reminders"
+                        string="Envoyer les rappels"
+                        type="object"
+                        class="btn-primary" />
+                    <button name="action_preview_message"
+                        string="Aperçu du message"
+                        type="object"
+                        class="btn-secondary" />
+                    <button name="action_test_filters"
+                        string="Tester les filtres"
+                        type="object"
+                        class="btn-secondary" />
+                    <button name="action_cancel"
+                        string="Annuler"
+                        type="object"
+                        class="btn-secondary" />
+                </header>
+
+                <sheet>
+                    <!-- Statistiques en haut -->
+                    <div class="oe_button_box">
+                        <button class="oe_stat_button" icon="fa-list">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="total_cotisations" />
+                                </span>
+                                <span class="o_stat_text">Cotisations</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-users">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="total_members" />
+                                </span>
+                                <span class="o_stat_text">Membres</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-money">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="total_amount" />
+                                </span>
+                                <span class="o_stat_text">Montant total</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Contexte -->
+                    <group>
+                        <field name="activity_id" invisible="1" />
+                        <field name="monthly_cotisation_id" invisible="1" />
+                        <field name="partner_id" invisible="1" />
+                    </group>
+
+                    <notebook>
+                        <page string="Cotisations et filtres">
+                            <field name="cotisation_ids" nolabel="1" readonly="1" />
+                            <group string="Filtres">
+                                <group>
+                                    <field name="filter_by_state" />
+                                    <field name="selected_states"
+                                        invisible="not filter_by_state"
+                                        required="filter_by_state" />
+                                    <field name="filter_by_days_overdue" />
+                                    <field name="min_days_overdue"
+                                        invisible="not filter_by_days_overdue" />
+                                    <field name="max_days_overdue"
+                                        invisible="not filter_by_days_overdue" />
+                                </group>
+                                <group>
+                                    <field name="filter_by_amount" />
+                                    <field name="min_amount"
+                                        invisible="not filter_by_amount"
+                                        widget="monetary" />
+                                    <field name="currency_id" invisible="1" />
+                                </group>
+                            </group>
+
+                            <field name="preview_member_ids"
+                                widget="many2many_tags"
+                                nolabel="1"
+                                readonly="1" />
+                        </page>
+
+                        <page string="Message">
+                            <group>
+                                <group string="Type de rappel">
+                                    <field name="reminder_type" widget="radio" />
+                                </group>
+                                <group string="Méthode d'envoi">
+                                    <field name="send_method" />
+                                    <field name="schedule_sending" />
+                                    <field name="scheduled_date"
+                                        invisible="not schedule_sending"
+                                        required="schedule_sending" />
+                                </group>
+                            </group>
+
+                            <group string="Contenu du message">
+                                <field name="subject" />
+                                <field name="include_payment_details" />
+                                <field name="include_activity_info" />
+                            </group>
+
+                            <field name="message_body" nolabel="1" widget="html" />
+
+                        </page>
+
+                        <page string="Options avancées">
+                            <group>
+                                <group string="Suivi">
+                                    <field name="create_activity_followup" />
+                                    <field name="followup_days"
+                                        invisible="not create_activity_followup" />
+                                    <field name="mark_as_reminded" />
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour l'assistant de rappel -->
+    <record id="action_cotisation_reminder_wizard" model="ir.actions.act_window">
+        <field name="name">Envoyer des rappels</field>
+        <field name="res_model">cotisation.reminder.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ============================================ -->
+    <!-- VUES DE RECHERCHE -->
+    <!-- ============================================ -->
+
+    <!-- Vue de recherche pour l'assistant de rappel -->
+    <record id="view_cotisation_reminder_wizard_search" model="ir.ui.view">
+        <field name="name">cotisation.reminder.wizard.search</field>
+        <field name="model">cotisation.reminder.wizard</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="reminder_type" />
+                <field name="send_method" />
+                <filter string="Premier rappel" name="first_reminder"
+                    domain="[('reminder_type', '=', 'first')]" />
+                <filter string="Rappel final" name="final_reminder"
+                    domain="[('reminder_type', '=', 'final')]" />
+                <separator />
+                <filter string="Programmés" name="scheduled"
+                    domain="[('schedule_sending', '=', True)]" />
+                <group expand="0" string="Grouper par">
+                    <filter string="Type de rappel" name="group_by_type"
+                        context="{'group_by': 'reminder_type'}" />
+                    <filter string="Méthode d'envoi" name="group_by_method"
+                        context="{'group_by': 'send_method'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================ -->
+    <!-- ACTIONS CONTEXTUELLES ET RACCOURCIS -->
+    <!-- ============================================ -->
+
+    <!-- Action contextuelle pour rappels depuis une sélection de cotisations -->
+    <record id="action_send_reminders_from_cotisations" model="ir.actions.act_window">
+        <field name="name">Envoyer des rappels</field>
+        <field name="res_model">cotisation.reminder.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{
+            'default_cotisation_ids': [(6, 0, active_ids)],
+            'default_reminder_type': 'first'
+            }</field>
+        <field name="binding_model_id" ref="contribution_management.model_member_cotisation" />
+        <field name="binding_type">action</field>
+    </record>
+
+</odoo>

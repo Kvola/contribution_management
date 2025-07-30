@@ -4,6 +4,9 @@ access_monthly_cotisation_user,monthly.cotisation.user,model_monthly_cotisation,
 access_member_cotisation_user,member.cotisation.user,model_member_cotisation,base.group_user,1,1,1,1
 access_res_partner_cotisation_user,res.partner.cotisation.user,base.model_res_partner,base.group_user,1,1,1,0
 access_cotisation_payment_wizard_user,cotisation.payment.wizard.user,model_cotisation_payment_wizard,base.group_user,1,1,1,1
+access_cotisation_reminder_wizard_user,cotisation.reminder.wizard.user,model_cotisation_reminder_wizard,base.group_user,1,1,1,1
+access_mass_payment_wizard_user,mass.payment.wizard.user,model_mass_payment_wizard,base.group_user,1,1,1,1
+access_activity_participant_wizard_user,activity.participant.wizard.user,model_activity_participant_wizard,base.group_user,1,1,1,1
 access_group_activity_public,group.activity.public,model_group_activity,base.group_public,1,0,0,0
 access_monthly_cotisation_public,monthly.cotisation.public,model_monthly_cotisation,base.group_public,1,0,0,0
 access_member_cotisation_public,member.cotisation.public,model_member_cotisation,base.group_public,0,0,0,0
@@ -13,3 +16,7 @@ access_member_cotisation_portal,member.cotisation.portal,model_member_cotisation
 access_group_activity_manager,group.activity.manager,model_group_activity,base.group_system,1,1,1,1
 access_monthly_cotisation_manager,monthly.cotisation.manager,model_monthly_cotisation,base.group_system,1,1,1,1
 access_member_cotisation_manager,member.cotisation.manager,model_member_cotisation,base.group_system,1,1,1,1
+access_cotisations_dashboard_user,cotisations.dashboard.user,model_cotisations_dashboard,base.group_user,1,1,1,1
+access_cotisations_dashboard_public,cotisations.dashboard.public,model_cotisations_dashboard,base.group_public,1,0,0,0
+access_cotisations_dashboard_portal,cotisations.dashboard.portal,model_cotisations_dashboard,base.group_portal,1,0,0,0
+access_cotisations_dashboard_manager,cotisations.dashboard.manager,model_cotisations_dashboard,base.group_system,1,1,1,1

@@ -81,6 +81,7 @@ Sécurité et contrôles :
         'views/group_activity_views.xml',
         'views/member_cotisation_views.xml',
         'views/monthly_cotisation_views.xml',
+        'views/cotisation_dashboard_views.xml',
         'data/data.xml',
 
         # Rapports
@@ -88,9 +89,13 @@ Sécurité et contrôles :
         'reports/group_activity_report.xml',
         'reports/grouped_res_partner_report.xml',
         'reports/monthly_cotisation_report.xml',
+        'reports/dashboard_report.xml',
 
         # Wizards
         'wizards/cotisation_payment_wizard_views.xml',
+        'wizards/activity_participant_wizard_views.xml',
+        'wizards/cotisation_reminder_wizard_views.xml',
+        'wizards/mass_payment_wizard_views.xml',
         'views/menu_views.xml',
     ],
     'demo': [
