@@ -26,7 +26,6 @@
               action="action_member_cotisation" 
               sequence="30"/>
 
-
     <!-- Menu principal des rapports -->
     <menuitem id="menu_cotisations_reports" 
               name="Rapports" 
@@ -37,12 +36,24 @@
     <menuitem id="menu_report_activities" 
               name="Rapports d'activités" 
               parent="menu_cotisations_reports"
-              action="action_group_activity" 
+              action="action_report_group_activity" 
               sequence="10"/>
     
     <menuitem id="menu_report_monthly" 
               name="Rapports mensuels" 
               parent="menu_cotisations_reports"
-              action="action_monthly_cotisation" 
+              action="action_report_monthly_cotisation" 
               sequence="20"/>
+    
+    <menuitem id="menu_report_member" 
+              name="Rapports membres" 
+              parent="menu_cotisations_reports"
+              action="action_report_member_cotisations" 
+              sequence="30"/>
+    
+    <menuitem id="menu_report_group" 
+              name="Rapports groupes" 
+              parent="menu_cotisations_reports"
+              action="action_report_group_synthesis" 
+              sequence="40"/>
 </odoo>

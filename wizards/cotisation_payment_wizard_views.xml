@@ -10,22 +10,30 @@
             <form string="Enregistrer un paiement">
                 <header>
                     <field name="current_state" invisible="1"/>
+                    <field name="payment_method_valid" invisible="1"/>
+                    <field name="will_be_fully_paid" invisible="1"/>
                 </header>
+                
+                <!-- Message de validation -->
+                <div class="alert alert-warning" role="alert" 
+                     invisible="payment_method_valid">
+                    <field name="validation_message" readonly="1"/>
+                </div>
                 
                 <!-- Informations de la cotisation (lecture seule) -->
                 <group string="Informations de la cotisation">
                     <group>
                         <field name="cotisation_id" readonly="1" force_save="1"/>
                         <field name="member_id" readonly="1"/>
-                        <field name="group_id" readonly="1"/>
+                        <field name="group_id" readonly="1" invisible="not group_id"/>
                         <field name="cotisation_type" readonly="1"/>
                     </group>
                     <group>
                         <field name="amount_due" widget="monetary" readonly="1"/>
                         <field name="amount_paid" widget="monetary" readonly="1"/>
                         <field name="remaining_amount" widget="monetary" readonly="1" 
-                               decoration-danger="remaining_amount &gt; 0" 
-                               decoration-success="remaining_amount == 0"/>
+                               class="text-danger fw-bold" 
+                               invisible="remaining_amount == 0"/>
                         <field name="due_date" readonly="1"/>
                         <field name="currency_id" invisible="1"/>
                         <field name="company_id" invisible="1"/>
@@ -36,21 +44,30 @@
                 <group string="Détails du paiement">
                     <group>
                         <field name="amount" widget="monetary" 
-                               decoration-info="amount &gt; 0" 
-                               decoration-warning="amount &gt; remaining_amount"/>
-                        <field name="payment_date"/>
-                        <field name="payment_method"/>
-                        <field name="reference" placeholder="Numéro de transaction, référence bancaire..."/>
+                               class="text-primary fw-bold"
+                               required="1"/>
+                        <field name="payment_date" required="1"/>
+                        <field name="payment_method" required="1"/>
+                        <field name="reference" 
+                               placeholder="Numéro de transaction, référence bancaire..."
+                               invisible="payment_method == 'cash'"/>
                     </group>
                     <group>
-                        <field name="mark_as_full_payment" 
-                               help="Cocher cette case pour marquer la cotisation comme entièrement payée"/>
+                        <field name="mark_as_full_payment"/>
+                        <field name="send_receipt" 
+                               invisible="not member_id or not member_id.email"/>
                         <field name="payment_completion" readonly="1" widget="percentage" 
-                               decoration-success="payment_completion == 100" 
-                               decoration-info="payment_completion &gt; 0 and payment_completion &lt; 100"/>
-                        <field name="will_be_fully_paid" readonly="1" widget="boolean_toggle"/>
+                               class="text-success fw-bold"
+                               invisible="payment_completion == 0"/>
                     </group>
                 </group>
+                
+                <!-- Résumé du paiement -->
+                <div class="alert alert-info" role="alert" 
+                     invisible="not will_be_fully_paid">
+                    <i class="fa fa-check-circle"/> 
+                    <strong>Cette cotisation sera entièrement payée après ce paiement.</strong>
+                </div>
                 
                 <!-- Notes -->
                 <group string="Notes complémentaires">
@@ -58,23 +75,40 @@
                            placeholder="Ajoutez des notes concernant ce paiement..."/>
                 </group>
                 
-                <!-- Actions -->
+                <!-- Actions rapides -->
+                <div class="row mt-3" invisible="remaining_amount == 0">
+                    <div class="col-12">
+                        <span class="o_form_label fw-bold">Actions rapides :</span>
+                        <button string="Montants rapides" 
+                                name="action_quick_amounts" 
+                                type="object" 
+                                class="btn btn-outline-secondary btn-sm ms-2"/>
+                        <button string="Historique" 
+                                name="action_payment_history" 
+                                type="object" 
+                                class="btn btn-outline-info btn-sm ms-2"/>
+                        <button string="Diviser" 
+                                name="action_split_payment" 
+                                type="object" 
+                                class="btn btn-outline-warning btn-sm ms-2"
+                                invisible="remaining_amount &lt;= 0"/>
+                    </div>
+                </div>
+                
+                <!-- Pied de page avec actions principales -->
                 <footer>
                     <button string="Enregistrer le paiement" 
                             name="action_confirm_payment" 
                             type="object" 
                             class="btn-primary"
-                            data-hotkey="v"/>
+                            invisible="not payment_method_valid"/>
                     <button string="Voir la cotisation" 
                             name="action_view_cotisation" 
                             type="object" 
-                            class="btn-secondary"
-                            data-hotkey="s"/>
+                            class="btn-secondary"/>
                     <button string="Annuler" 
-                            name="action_cancel" 
-                            type="object" 
-                            class="btn-secondary" 
-                            data-hotkey="z"/>
+                            special="cancel" 
+                            class="btn-secondary"/>
                 </footer>
             </form>
         </field>
@@ -86,7 +120,100 @@
         <field name="res_model">cotisation.payment.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
-        <field name="binding_model_id" ref="model_member_cotisation"/>
+        <field name="context">{}</field>
+    </record>
+    
+    <!-- Action serveur pour lancer l'assistant depuis une cotisation -->
+    <record id="action_server_launch_payment_wizard" model="ir.actions.server">
+        <field name="name">Enregistrer un paiement</field>
+        <field name="model_id" ref="contribution_management.model_member_cotisation"/>
+        <field name="binding_model_id" ref="contribution_management.model_member_cotisation"/>
         <field name="binding_view_types">form,list</field>
+        <field name="state">code</field>
+        <field name="code">
+for record in records:
+    if record.state not in ['paid', 'cancelled']:
+        action = {
+            'name': 'Enregistrer un paiement',
+            'type': 'ir.actions.act_window',
+            'res_model': 'cotisation.payment.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_cotisation_id': record.id,
+            }
+        }
+        break
+else:
+    action = {
+        'type': 'ir.actions.client',
+        'tag': 'display_notification',
+        'params': {
+            'title': 'Attention',
+            'message': 'Aucune cotisation éligible pour un paiement.',
+            'type': 'warning',
+        }
+    }
+        </field>
+    </record>
+    
+    <!-- Vue simplifiée pour les paiements rapides (optionnelle) -->
+    <record id="view_cotisation_payment_wizard_quick_form" model="ir.ui.view">
+        <field name="name">cotisation.payment.wizard.quick.form</field>
+        <field name="model">cotisation.payment.wizard</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Paiement rapide">
+                <header>
+                    <field name="payment_method_valid" invisible="1"/>
+                </header>
+                
+                <div class="alert alert-warning" role="alert" 
+                     invisible="payment_method_valid">
+                    <field name="validation_message" readonly="1"/>
+                </div>
+                
+                <group>
+                    <group>
+                        <field name="cotisation_id" readonly="1" force_save="1"/>
+                        <field name="member_id" readonly="1"/>
+                        <field name="remaining_amount" widget="monetary" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="amount" widget="monetary" required="1"/>
+                        <field name="payment_method" required="1"/>
+                        <field name="reference" 
+                               invisible="payment_method == 'cash'"
+                               placeholder="Référence..."/>
+                        <field name="mark_as_full_payment"/>
+                    </group>
+                </group>
+                
+                <field name="currency_id" invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <field name="payment_date" invisible="1"/>
+                
+                <footer>
+                    <button string="Valider" 
+                            name="action_confirm_payment" 
+                            type="object" 
+                            class="btn-primary"
+                            invisible="not payment_method_valid"/>
+                    <button string="Annuler" 
+                            special="cancel" 
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Action pour paiement rapide -->
+    <record id="action_cotisation_quick_payment_wizard" model="ir.actions.act_window">
+        <field name="name">Paiement rapide</field>
+        <field name="res_model">cotisation.payment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_cotisation_payment_wizard_quick_form"/>
+        <field name="target">new</field>
+        <field name="context">{'quick_payment': True}</field>
     </record>
 </odoo>

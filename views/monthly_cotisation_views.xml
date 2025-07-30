@@ -23,6 +23,18 @@
                        decoration-info="state=='draft'" 
                        decoration-success="state=='closed'"
                        decoration-warning="state=='active'"/>
+                <button name="action_activate" string="Activer" type="object" 
+                        class="btn-primary" icon="fa-play" 
+                        invisible="state != 'draft'" 
+                        title="Activer la cotisation"/>
+                <button name="action_close" string="Fermer" type="object" 
+                        class="btn-secondary" icon="fa-lock" 
+                        invisible="state != 'active'" 
+                        title="Fermer la cotisation"/>
+                <button name="action_view_cotisations" string="Voir détails" type="object" 
+                        class="btn-link" icon="fa-eye" 
+                        invisible="state == 'draft'" 
+                        title="Voir les cotisations des membres"/>
             </tree>
         </field>
     </record>
@@ -35,43 +47,85 @@
             <form>
                 <header>
                     <button name="action_activate" string="Activer" type="object" 
-                            class="oe_highlight" invisible="state != 'draft'"/>
+                            class="oe_highlight" invisible="state != 'draft'"
+                            confirm="Êtes-vous sûr de vouloir activer cette cotisation ? Des cotisations individuelles seront créées pour tous les membres du groupe."/>
                     <button name="action_close" string="Fermer" type="object" 
-                            class="oe_highlight" invisible="state != 'active'"/>
+                            class="oe_highlight" invisible="state != 'active'"
+                            confirm="Êtes-vous sûr de vouloir fermer cette cotisation ?"/>
                     <button name="action_reopen" string="Réouvrir" type="object" 
-                            invisible="state != 'closed'"/>
+                            invisible="state != 'closed'"
+                            confirm="Êtes-vous sûr de vouloir réouvrir cette cotisation ?"/>
+                    <button name="action_reset_to_draft" string="Remettre en brouillon" type="object" 
+                            invisible="state == 'draft'"
+                            confirm="Attention : Cette action supprimera toutes les cotisations individuelles sans paiement. Continuer ?"/>
+                    <button name="action_duplicate" string="Dupliquer" type="object" 
+                            class="btn-secondary"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
                 </header>
                 
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_cotisations" type="object" 
-                                class="oe_stat_button" icon="fa-money">
-                            <field name="total_members" widget="statinfo" string="Membres"/>
+                                class="oe_stat_button" icon="fa-money"
+                                invisible="state == 'draft'">
+                            <field name="total_members" widget="statinfo" string="Total membres"/>
+                        </button>
+                        <button name="action_view_unpaid_cotisations" type="object" 
+                                class="oe_stat_button" icon="fa-exclamation-triangle"
+                                invisible="state == 'draft'">
+                            <field name="unpaid_members" widget="statinfo" string="Impayées"/>
+                        </button>
+                        <button name="action_send_reminders" type="object" 
+                                class="oe_stat_button" icon="fa-bell"
+                                invisible="state != 'active'">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Envoyer</span>
+                                <span class="o_stat_text">Rappels</span>
+                            </div>
                         </button>
                     </div>
                     
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
                     <group>
-                        <group>
-                            <field name="group_id" options="{'no_create': True, 'no_edit': True}"/>
-                            <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                            <field name="currency_id" options="{'no_create': True, 'no_edit': True}"/>
-                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True, 'no_edit': True}"/>
+                        <group string="Informations générales">
+                            <field name="group_id" options="{'no_create': True, 'no_edit': True}" 
+                                   readonly="state != 'draft'"/>
+                            <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" 
+                                   readonly="state != 'draft'"/>
+                            <field name="currency_id" options="{'no_create': True, 'no_edit': True}" 
+                                   readonly="state != 'draft'"/>
+                            <field name="company_id" groups="base.group_multi_company" 
+                                   options="{'no_create': True, 'no_edit': True}" readonly="1"/>
                         </group>
-                        <group>
-                            <field name="month"/>
-                            <field name="year"/>
-                            <field name="due_date"/>
+                        <group string="Période et échéance">
+                            <field name="month" readonly="state != 'draft'"/>
+                            <field name="year" readonly="state != 'draft'"/>
+                            <field name="due_day" readonly="state != 'draft'" 
+                                   help="Jour du mois pour la date limite (31 = dernier jour du mois)"/>
+                            <field name="due_date" readonly="1"/>
                         </group>
+                    </group>
+
+                    <group string="Dates de suivi" invisible="state == 'draft'">
+                        <field name="activation_date" readonly="1"/>
+                        <field name="closure_date" readonly="1"/>
                     </group>
                     
                     <notebook>
                         <page string="Statistiques" invisible="state == 'draft'">
                             <group>
                                 <group string="Membres">
+                                    <field name="members_count" string="Membres concernés"/>
                                     <field name="total_members"/>
                                     <field name="paid_members"/>
+                                    <field name="partial_members"/>
                                     <field name="unpaid_members"/>
+                                    <field name="overdue_members"/>
                                 </group>
                                 <group string="Montants">
                                     <field name="total_expected" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -79,24 +133,45 @@
                                     <field name="completion_rate" widget="percentage"/>
                                 </group>
                             </group>
+                            
+                            <!-- Graphique de progression simplifié -->
+                            <div class="row mt-3" invisible="total_expected == 0">
+                                <div class="col-12">
+                                    <h4>Progression des paiements</h4>
+                                    <field name="completion_rate" widget="progressbar"/>
+                                </div>
+                            </div>
                         </page>
                         
-                        <page string="Cotisations" invisible="state == 'draft'">
-                            <field name="cotisation_ids">
+                        <page string="Cotisations des membres" invisible="state == 'draft'">
+                            <field name="cotisation_ids" readonly="state == 'closed'">
                                 <tree editable="bottom" decoration-success="state=='paid'" 
-                                      decoration-warning="state=='partial'" decoration-danger="state=='overdue'">
+                                      decoration-warning="state=='partial'" decoration-danger="state=='overdue'"
+                                      decoration-muted="state=='cancelled'">
                                     <field name="member_id" readonly="1"/>
                                     <field name="amount_due" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
-                                    <field name="amount_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="amount_paid" widget="monetary" options="{'currency_field': 'currency_id'}" 
+                                           readonly="state in ('paid', 'cancelled')"/>
                                     <field name="remaining_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                     <field name="due_date" readonly="1"/>
-                                    <field name="payment_date"/>
+                                    <field name="payment_date" readonly="state in ('paid', 'cancelled')"/>
                                     <field name="state" widget="badge" readonly="1"/>
                                     <field name="currency_id" column_invisible="1"/>
-                                    <button name="action_record_payment" string="Paiement" type="object" 
-                                            icon="fa-money" invisible="state in ['paid', 'cancelled']"/>
+                                    <field name="description" readonly="1"/>
+                                    <button name="action_record_payment" string="Enregistrer paiement" type="object" 
+                                            icon="fa-money" invisible="state in ('paid', 'cancelled')"
+                                            class="btn-primary"/>
+                                    <button name="action_cancel" string="Annuler" type="object" 
+                                            icon="fa-times" invisible="state in ('paid', 'cancelled')"
+                                            class="btn-secondary"/>
                                 </tree>
                             </field>
+                        </page>
+
+                        <page string="Configuration avancée" groups="base.group_system">
+                            <group>
+                                <field name="active"/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
@@ -115,7 +190,7 @@
         <field name="name">monthly.cotisation.kanban</field>
         <field name="model">monthly.cotisation</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="state" class="o_kanban_small_column">
+            <kanban default_group_by="state" class="o_kanban_small_column" quick_create="false">
                 <field name="display_name"/>
                 <field name="group_id"/>
                 <field name="amount"/>
@@ -124,30 +199,52 @@
                 <field name="state"/>
                 <field name="total_members"/>
                 <field name="paid_members"/>
+                <field name="due_date"/>
+                <field name="total_collected"/>
+                <field name="total_expected"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_card oe_kanban_global_click">
                             <div class="o_kanban_content">
                                 <div class="o_kanban_record_title">
-                                    <field name="display_name"/>
+                                    <strong><field name="display_name"/></strong>
                                 </div>
                                 <div class="o_kanban_record_subtitle">
-                                    <field name="group_id"/>
+                                    <i class="fa fa-users"/> <field name="group_id"/>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Montant:</strong> <field name="amount" widget="monetary"/>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Échéance:</strong> <field name="due_date"/>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-12">
+                                            <field name="completion_rate" widget="progressbar"/>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="o_kanban_record_bottom">
                                     <div class="oe_kanban_bottom_left">
-                                        <span>Montant: <field name="amount" widget="monetary"/></span>
+                                        <span class="badge badge-pill badge-info">
+                                            <t t-esc="record.paid_members.value"/>/<t t-esc="record.total_members.value"/> membres
+                                        </span>
                                     </div>
                                     <div class="oe_kanban_bottom_right">
-                                        <field name="completion_rate" widget="percentage"/>
+                                        <field name="state" widget="label_selection" 
+                                               options="{'classes': {'draft': 'secondary', 'active': 'warning', 'closed': 'success'}}"/>
                                     </div>
                                 </div>
-                                <div class="o_kanban_record_bottom">
-                                    <div class="oe_kanban_bottom_left">
-                                        <span><t t-esc="record.paid_members.value"/>/<t t-esc="record.total_members.value"/> membres</span>
+                                <div class="oe_kanban_footer">
+                                    <div class="o_kanban_footer_left">
+                                        <field name="total_collected" widget="monetary"/> / <field name="total_expected" widget="monetary"/>
                                     </div>
                                 </div>
                             </div>
+                            <div class="oe_clear"/>
                         </div>
                     </t>
                 </templates>
@@ -174,14 +271,24 @@
                         domain="[('year', '=', context_today().year)]"/>
                 <filter name="current_month" string="Mois courant" 
                         domain="[('month', '=', str(context_today().month)), ('year', '=', context_today().year)]"/>
+                <filter name="last_month" string="Mois dernier" 
+                        domain="[('month', '=', str((context_today() - relativedelta(months=1)).month)), ('year', '=', (context_today() - relativedelta(months=1)).year)]"/>
                 <separator/>
                 <filter name="overdue" string="En retard" 
                         domain="[('due_date', '&lt;', context_today()), ('state', '=', 'active')]"/>
+                <filter name="high_completion" string="Taux élevé (>80%)" 
+                        domain="[('completion_rate', '&gt;', 80)]"/>
+                <filter name="low_completion" string="Taux faible (&lt;50%)" 
+                        domain="[('completion_rate', '&lt;', 50), ('state', '=', 'active')]"/>
+                <separator/>
+                <filter name="my_groups" string="Mes groupes" 
+                        domain="[('group_id.user_id', '=', uid)]"/>
                 <group expand="0" string="Grouper par">
                     <filter name="group_by_group" string="Groupe" context="{'group_by': 'group_id'}"/>
                     <filter name="group_by_year" string="Année" context="{'group_by': 'year'}"/>
                     <filter name="group_by_state" string="Statut" context="{'group_by': 'state'}"/>
                     <filter name="group_by_month" string="Mois" context="{'group_by': 'month'}"/>
+                    <filter name="group_by_due_date" string="Date d'échéance" context="{'group_by': 'due_date'}"/>
                 </group>
             </search>
         </field>
@@ -192,13 +299,14 @@
         <field name="name">monthly.cotisation.calendar</field>
         <field name="model">monthly.cotisation</field>
         <field name="arch" type="xml">
-            <calendar string="Cotisations mensuelles" date_start="due_date" 
-                      color="group_id" mode="month">
+            <calendar string="Cotisations mensuelles" date_start="due_date" color="group_id" mode="month">
                 <field name="display_name"/>
                 <field name="group_id"/>
                 <field name="amount"/>
                 <field name="completion_rate"/>
                 <field name="state"/>
+                <field name="total_members"/>
+                <field name="paid_members"/>
             </calendar>
         </field>
     </record>
@@ -208,13 +316,15 @@
         <field name="name">monthly.cotisation.pivot</field>
         <field name="model">monthly.cotisation</field>
         <field name="arch" type="xml">
-            <pivot string="Analyse des cotisations mensuelles">
+            <pivot string="Analyse des cotisations mensuelles" disable_linking="True">
                 <field name="group_id" type="row"/>
                 <field name="year" type="col"/>
+                <field name="month" type="col"/>
                 <field name="total_collected" type="measure"/>
                 <field name="total_expected" type="measure"/>
                 <field name="completion_rate" type="measure"/>
                 <field name="total_members" type="measure"/>
+                <field name="paid_members" type="measure"/>
             </pivot>
         </field>
     </record>
@@ -224,19 +334,44 @@
         <field name="name">monthly.cotisation.graph</field>
         <field name="model">monthly.cotisation</field>
         <field name="arch" type="xml">
-            <graph string="Statistiques des cotisations mensuelles" type="bar">
+            <graph string="Statistiques des cotisations mensuelles" type="bar" sample="1">
                 <field name="display_name"/>
                 <field name="total_collected" type="measure"/>
                 <field name="total_expected" type="measure"/>
+                <field name="completion_rate" type="measure"/>
             </graph>
         </field>
     </record>
 
-    <!-- Action des cotisations mensuelles -->
+    <!-- Vue Activity des cotisations mensuelles -->
+    <record id="view_monthly_cotisation_activity" model="ir.ui.view">
+        <field name="name">monthly.cotisation.activity</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="arch" type="xml">
+            <activity string="Cotisations mensuelles">
+                <field name="display_name"/>
+                <field name="group_id"/>
+                <field name="state"/>
+                <templates>
+                    <div t-name="activity-box">
+                        <img t-att-src="activity_image('monthly.cotisation', 'image_128', record.id.raw_value)" 
+                             role="img" t-att-title="record.id.value" t-att-alt="record.id.value"/>
+                        <div>
+                            <strong><field name="display_name"/></strong>
+                            <div><field name="group_id"/></div>
+                            <div><field name="state" widget="badge"/></div>
+                        </div>
+                    </div>
+                </templates>
+            </activity>
+        </field>
+    </record>
+
+    <!-- Action principale des cotisations mensuelles -->
     <record id="action_monthly_cotisation" model="ir.actions.act_window">
         <field name="name">Cotisations mensuelles</field>
         <field name="res_model">monthly.cotisation</field>
-        <field name="view_mode">tree,kanban,form,calendar,pivot,graph</field>
+        <field name="view_mode">tree,kanban,form,calendar,pivot,graph,activity</field>
         <field name="search_view_id" ref="view_monthly_cotisation_search"/>
         <field name="context">{
             'search_default_current_year': 1,
@@ -251,15 +386,44 @@
                 des fonds auprès des membres des groupes.
             </p>
             <p>
-                Cliquez sur "Créer" pour ajouter une nouvelle cotisation mensuelle.
+                Pour commencer :
             </p>
+            <ol>
+                <li>Cliquez sur "Nouveau" pour créer une cotisation</li>
+                <li>Sélectionnez le groupe et définissez le montant</li>
+                <li>Activez la cotisation pour générer les cotisations individuelles</li>
+                <li>Suivez les paiements et envoyez des rappels si nécessaire</li>
+            </ol>
         </field>
     </record>
 
-    <!-- Menu Item -->
-    <!-- <menuitem id="menu_monthly_cotisation"
-              name="Cotisations mensuelles"
-              parent="account.menu_finance"
-              action="action_monthly_cotisation"
-              sequence="50"/> -->
+    <!-- Action pour les cotisations actives -->
+    <record id="action_monthly_cotisation_active" model="ir.actions.act_window">
+        <field name="name">Cotisations actives</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('state', '=', 'active')]</field>
+        <field name="context">{
+            'search_default_current_year': 1
+        }</field>
+    </record>
+
+    <!-- Action pour les cotisations en retard -->
+    <record id="action_monthly_cotisation_overdue" model="ir.actions.act_window">
+        <field name="name">Cotisations en retard</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('due_date', '&lt;', context_today()), ('state', '=', 'active')]</field>
+    </record>
+
+    <!-- Action pour le tableau de bord -->
+    <record id="action_monthly_cotisation_dashboard" model="ir.actions.act_window">
+        <field name="name">Tableau de bord des cotisations</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">kanban,pivot,graph</field>
+        <field name="context">{
+            'search_default_current_year': 1,
+            'group_by': 'state'
+        }</field>
+    </record>
 </odoo>

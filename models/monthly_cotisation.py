@@ -28,8 +28,9 @@ class MonthlyCotisation(models.Model):
         "res.partner",
         string="Groupe",
         required=True,
-        domain="[('is_company', '=', True), ('organization_type', 'in', ['group', 'communication', 'artistic_group', 'ngo', 'sports_group', 'educational_group', 'other_group'])]",
-        index=True
+        domain="[('is_company', '=', True), ('active', '=', True)]",
+        index=True,
+        tracking=True
     )
     
     # Période
@@ -37,20 +38,22 @@ class MonthlyCotisation(models.Model):
         ('1', 'Janvier'), ('2', 'Février'), ('3', 'Mars'), ('4', 'Avril'),
         ('5', 'Mai'), ('6', 'Juin'), ('7', 'Juillet'), ('8', 'Août'),
         ('9', 'Septembre'), ('10', 'Octobre'), ('11', 'Novembre'), ('12', 'Décembre')
-    ], string="Mois", required=True, index=True)
+    ], string="Mois", required=True, index=True, tracking=True)
     
     year = fields.Integer(
         string="Année",
         required=True,
         default=lambda self: fields.Date.today().year,
-        index=True
+        index=True,
+        tracking=True
     )
     
     # Montant
     amount = fields.Monetary(
         string="Montant mensuel",
         required=True,
-        currency_field='currency_id'
+        currency_field='currency_id',
+        tracking=True
     )
     currency_id = fields.Many2one(
         'res.currency',
@@ -74,18 +77,32 @@ class MonthlyCotisation(models.Model):
         index=True
     )
     
+    # Configuration flexible des dates limites
+    due_day = fields.Integer(
+        string="Jour limite",
+        default=31,
+        help="Jour du mois pour la date limite (31 = dernier jour du mois)"
+    )
+    
     # Statut
     state = fields.Selection([
         ('draft', 'Brouillon'),
         ('active', 'Active'),
         ('closed', 'Fermée')
-    ], string="Statut", default='draft', index=True)
+    ], string="Statut", default='draft', index=True, tracking=True)
     
     # Cotisations individuelles
     cotisation_ids = fields.One2many(
         "member.cotisation",
         "monthly_cotisation_id",
         string="Cotisations des membres"
+    )
+    
+    # Membres concernés (pour suivi)
+    members_count = fields.Integer(
+        string="Nombre de membres concernés",
+        compute="_compute_members_info",
+        store=True
     )
     
     # Statistiques
@@ -101,6 +118,16 @@ class MonthlyCotisation(models.Model):
     )
     unpaid_members = fields.Integer(
         string="Membres n'ayant pas payé",
+        compute="_compute_stats",
+        store=True
+    )
+    partial_members = fields.Integer(
+        string="Membres en paiement partiel",
+        compute="_compute_stats",
+        store=True
+    )
+    overdue_members = fields.Integer(
+        string="Membres en retard",
         compute="_compute_stats",
         store=True
     )
@@ -124,6 +151,8 @@ class MonthlyCotisation(models.Model):
     
     # Champs de suivi
     active = fields.Boolean(default=True)
+    activation_date = fields.Datetime(string="Date d'activation", readonly=True)
+    closure_date = fields.Datetime(string="Date de fermeture", readonly=True)
     
     @api.depends('group_id', 'month', 'year')
     def _compute_display_name(self):
@@ -140,28 +169,49 @@ class MonthlyCotisation(models.Model):
             else:
                 record.display_name = "Cotisation mensuelle"
     
-    @api.depends('month', 'year')
+    @api.depends('month', 'year', 'due_day')
     def _compute_due_date(self):
-        """Calcule la date limite de paiement (dernier jour du mois)"""
+        """Calcule la date limite de paiement"""
         for record in self:
             if record.month and record.year:
                 try:
-                    last_day = calendar.monthrange(record.year, int(record.month))[1]
-                    record.due_date = fields.Date.from_string(f"{record.year}-{record.month:0>2}-{last_day}")
+                    month_int = int(record.month)
+                    due_day = record.due_day or 31
+                    
+                    # Obtenir le dernier jour du mois
+                    last_day = calendar.monthrange(record.year, month_int)[1]
+                    
+                    # Utiliser le jour spécifié ou le dernier jour du mois si le jour est > au nb de jours
+                    actual_day = min(due_day, last_day)
+                    
+                    record.due_date = fields.Date(record.year, month_int, actual_day)
+                    
                 except (ValueError, TypeError) as e:
                     _logger.warning(f"Erreur calcul due_date pour {record.display_name}: {e}")
                     record.due_date = fields.Date.today()
             else:
                 record.due_date = fields.Date.today()
     
+    @api.depends('group_id')
+    def _compute_members_info(self):
+        """Calcule les informations sur les membres"""
+        for monthly in self:
+            if monthly.group_id:
+                members = monthly._get_group_members()
+                monthly.members_count = len(members)
+            else:
+                monthly.members_count = 0
+    
     @api.depends('cotisation_ids', 'cotisation_ids.amount_paid', 'cotisation_ids.state', 'amount')
     def _compute_stats(self):
         """Calcule les statistiques de cotisation"""
         for monthly in self:
-            cotisations = monthly.cotisation_ids.filtered(lambda c: c.active)
+            cotisations = monthly.cotisation_ids.filtered('active')
             monthly.total_members = len(cotisations)
             monthly.paid_members = len(cotisations.filtered(lambda c: c.state == 'paid'))
-            monthly.unpaid_members = monthly.total_members - monthly.paid_members
+            monthly.partial_members = len(cotisations.filtered(lambda c: c.state == 'partial'))
+            monthly.overdue_members = len(cotisations.filtered(lambda c: c.state == 'overdue'))
+            monthly.unpaid_members = monthly.total_members - monthly.paid_members - monthly.partial_members
             monthly.total_collected = sum(cotisations.mapped('amount_paid'))
             monthly.total_expected = monthly.total_members * monthly.amount
             
@@ -204,11 +254,30 @@ class MonthlyCotisation(models.Model):
             if record.year < (current_year - 10) or record.year > (current_year + 5):
                 raise ValidationError("L'année doit être comprise entre les 10 dernières années et les 5 prochaines.")
     
+    @api.constrains('due_day')
+    def _check_due_day_valid(self):
+        """Vérifie que le jour limite est valide"""
+        for record in self:
+            if record.due_day and (record.due_day < 1 or record.due_day > 31):
+                raise ValidationError("Le jour limite doit être entre 1 et 31.")
+    
+    @api.constrains('state')
+    def _check_state_transitions(self):
+        """Vérifie les transitions d'état valides"""
+        for record in self:
+            if record.state == 'active' and not record.cotisation_ids:
+                # Permettre l'activation même sans cotisations (elles seront créées)
+                pass
+    
     def action_activate(self):
         """Active la cotisation mensuelle et génère les cotisations individuelles"""
         self.ensure_one()
         if self.state != 'draft':
             raise UserError("Seules les cotisations en brouillon peuvent être activées.")
+        
+        # Vérifier que le groupe existe et est actif
+        if not self.group_id or not self.group_id.active:
+            raise UserError("Le groupe doit être actif pour activer la cotisation.")
         
         # Supprimer les anciennes cotisations si elles existent
         self.cotisation_ids.unlink()
@@ -221,6 +290,8 @@ class MonthlyCotisation(models.Model):
         
         # Créer une cotisation pour chaque membre
         cotisations_data = []
+        month_name = dict(self._fields['month'].selection)[self.month]
+        
         for member in members:
             cotisations_data.append({
                 'member_id': member.id,
@@ -230,24 +301,37 @@ class MonthlyCotisation(models.Model):
                 'due_date': self.due_date,
                 'currency_id': self.currency_id.id,
                 'company_id': self.company_id.id,
-                'description': f"Cotisation mensuelle - {dict(self._fields['month'].selection)[self.month]} {self.year}"
+                'description': f"Cotisation mensuelle - {month_name} {self.year}"
             })
         
         # Création en lot pour optimiser les performances
-        self.env['member.cotisation'].create(cotisations_data)
-        
-        self.state = 'active'
-        _logger.info(f"Cotisation mensuelle {self.display_name} activée avec {len(cotisations_data)} cotisations créées")
-        return True
-    
-    def action_close(self):
-        """Ferme la cotisation mensuelle"""
-        self.ensure_one()
-        if self.state != 'active':
-            raise UserError("Seules les cotisations actives peuvent être fermées.")
-        
-        self.state = 'closed'
-        _logger.info(f"Cotisation mensuelle {self.display_name} fermée")
+        try:
+            cotisations = self.env['member.cotisation'].create(cotisations_data)
+            
+            self.write({
+                'state': 'active',
+                'activation_date': fields.Datetime.now()
+            })
+            
+            self.message_post(
+                body=f"Cotisation mensuelle activée avec {len(cotisations)} cotisations créées",
+                message_type='comment'
+            )
+            
+            _logger.info(f"Cotisation mensuelle {self.display_name} fermée")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Information',
+                    'message': 'Cotisation mensuelle fermée',
+                    'type': 'info',
+                }
+            }
+        except Exception as e:
+            _logger.error(f"Erreur lors de l'activation de {self.display_name}: {e}")
+            raise UserError(f"Erreur lors de l'activation: {str(e)}")
+
     
     def action_reopen(self):
         """Réouvre une cotisation fermée"""
@@ -255,28 +339,109 @@ class MonthlyCotisation(models.Model):
         if self.state != 'closed':
             raise UserError("Seules les cotisations fermées peuvent être réouvertes.")
         
-        self.state = 'active'
+        self.write({
+            'state': 'active',
+            'closure_date': False
+        })
+        
+        self.message_post(
+            body=f"Cotisation mensuelle réouverte le {fields.Datetime.now()}",
+            message_type='comment'
+        )
+        
         _logger.info(f"Cotisation mensuelle {self.display_name} réouverte")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Succès',
+                'message': 'Cotisation mensuelle réouverte',
+                'type': 'success',
+            }
+        }
+    
+    def action_reset_to_draft(self):
+        """Remet la cotisation en brouillon"""
+        self.ensure_one()
+        if self.state not in ['active', 'closed']:
+            raise UserError("Seules les cotisations actives ou fermées peuvent être remises en brouillon.")
+        
+        # Vérifier qu'aucun paiement n'a été effectué
+        paid_cotisations = self.cotisation_ids.filtered(lambda c: c.amount_paid > 0)
+        if paid_cotisations:
+            raise UserError(
+                f"Impossible de remettre en brouillon: {len(paid_cotisations)} paiements ont déjà été effectués."
+            )
+        
+        # Supprimer toutes les cotisations
+        self.cotisation_ids.unlink()
+        
+        self.write({
+            'state': 'draft',
+            'activation_date': False,
+            'closure_date': False
+        })
+        
+        self.message_post(
+            body=f"Cotisation mensuelle remise en brouillon le {fields.Datetime.now()}",
+            message_type='comment'
+        )
+        
+        _logger.info(f"Cotisation mensuelle {self.display_name} remise en brouillon")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Information',
+                'message': 'Cotisation remise en brouillon',
+                'type': 'info',
+            }
+        }
     
     def _get_group_members(self):
         """Retourne tous les membres du groupe selon son type"""
         group = self.group_id
         members = self.env['res.partner']
         
+        if not group:
+            return members
+        
         try:
-            if group.organization_type == 'group':
+            # Méthode générique pour tous les types de groupes
+            if hasattr(group, 'organization_type'):
+                if group.organization_type == 'group':
+                    members = self.env['res.partner'].search([
+                        ('is_company', '=', False),
+                        ('group_id', '=', group.id),
+                        ('active', '=', True)
+                    ])
+                elif hasattr(group, f'{group.organization_type}_members'):
+                    members = getattr(group, f'{group.organization_type}_members')
+                else:
+                    # Fallback: chercher tous les contacts liés au groupe
+                    members = self.env['res.partner'].search([
+                        ('is_company', '=', False),
+                        ('parent_id', '=', group.id),
+                        ('active', '=', True)
+                    ])
+            else:
+                # Méthode par défaut
                 members = self.env['res.partner'].search([
                     ('is_company', '=', False),
-                    ('group_id', '=', group.id),
+                    ('parent_id', '=', group.id),
                     ('active', '=', True)
                 ])
-            elif hasattr(group, f'{group.organization_type}_members'):
-                members = getattr(group, f'{group.organization_type}_members')
-            else:
-                _logger.warning(f"Type d'organisation non supporté: {group.organization_type}")
                 
         except Exception as e:
             _logger.error(f"Erreur lors de la récupération des membres pour {group.name}: {e}")
+            # En cas d'erreur, essayer la méthode la plus simple
+            members = self.env['res.partner'].search([
+                ('is_company', '=', False),
+                ('parent_id', '=', group.id),
+                ('active', '=', True)
+            ])
         
         return members.filtered(lambda m: not m.is_company and m.active)
     
@@ -292,13 +457,240 @@ class MonthlyCotisation(models.Model):
             'context': {
                 'default_monthly_cotisation_id': self.id,
                 'default_cotisation_type': 'monthly',
+                'default_currency_id': self.currency_id.id,
+                'search_default_group_by_state': 1
+            }
+        }
+    
+    def action_view_unpaid_cotisations(self):
+        """Action pour voir les cotisations non payées"""
+        self.ensure_one()
+        return {
+            'name': f'Cotisations impayées - {self.display_name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'member.cotisation',
+            'view_mode': 'tree,form',
+            'domain': [
+                ('monthly_cotisation_id', '=', self.id),
+                ('state', 'in', ['pending', 'partial', 'overdue'])
+            ],
+            'context': {
+                'default_monthly_cotisation_id': self.id,
+                'default_cotisation_type': 'monthly',
                 'default_currency_id': self.currency_id.id
             }
         }
+    
+    def action_duplicate(self):
+        """Duplique la cotisation pour un autre mois"""
+        self.ensure_one()
+        
+        # Calculer le mois suivant
+        next_month = int(self.month) + 1
+        next_year = self.year
+        
+        if next_month > 12:
+            next_month = 1
+            next_year += 1
+        
+        # Vérifier qu'il n'existe pas déjà une cotisation pour ce mois
+        existing = self.search([
+            ('group_id', '=', self.group_id.id),
+            ('month', '=', str(next_month)),
+            ('year', '=', next_year),
+            ('active', '=', True)
+        ])
+        
+        if existing:
+            month_name = dict(self._fields['month'].selection)[str(next_month)]
+            raise UserError(f"Une cotisation existe déjà pour {month_name} {next_year}")
+        
+        # Créer la copie
+        new_cotisation = self.copy({
+            'month': str(next_month),
+            'year': next_year,
+            'state': 'draft',
+            'activation_date': False,
+            'closure_date': False
+        })
+        
+        return {
+            'name': 'Cotisation mensuelle dupliquée',
+            'type': 'ir.actions.act_window',
+            'res_model': 'monthly.cotisation',
+            'res_id': new_cotisation.id,
+            'view_mode': 'form',
+            'target': 'current'
+        }
+    
+    def action_send_reminders(self):
+        """Envoie des rappels aux membres n'ayant pas payé"""
+        self.ensure_one()
+        
+        if self.state != 'active':
+            raise UserError("Seules les cotisations actives peuvent envoyer des rappels.")
+        
+        unpaid_cotisations = self.cotisation_ids.filtered(
+            lambda c: c.state in ['pending', 'partial', 'overdue'] and c.active
+        )
+        
+        if not unpaid_cotisations:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Information',
+                    'message': 'Aucune cotisation impayée trouvée',
+                    'type': 'info',
+                }
+            }
+        
+        # Ouvrir l'assistant d'envoi de rappels
+        return {
+            'name': 'Envoyer des rappels',
+            'type': 'ir.actions.act_window',
+            'res_model': 'cotisation.reminder.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_monthly_cotisation_id': self.id,
+                'default_cotisation_ids': [(6, 0, unpaid_cotisations.ids)]
+            }
+        }
+    
+    @api.model
+    def _cron_auto_close_expired(self):
+        """Cron pour fermer automatiquement les cotisations expirées"""
+        # Fermer les cotisations actives dont la date limite est dépassée de plus de 2 mois
+        limit_date = fields.Date.today().replace(day=1) - fields.Date.to_date('60 00:00:00')
+        
+        expired_cotisations = self.search([
+            ('state', '=', 'active'),
+            ('due_date', '<', limit_date)
+        ])
+        
+        for cotisation in expired_cotisations:
+            try:
+                cotisation.write({
+                    'state': 'closed',
+                    'closure_date': fields.Datetime.now()
+                })
+                cotisation.message_post(
+                    body="Cotisation fermée automatiquement (expirée depuis plus de 2 mois)",
+                    message_type='comment'
+                )
+            except Exception as e:
+                _logger.error(f"Erreur lors de la fermeture automatique de {cotisation.display_name}: {e}")
+        
+        if expired_cotisations:
+            _logger.info(f"{len(expired_cotisations)} cotisations mensuelles fermées automatiquement")
+        
+        return True
+    
+    @api.model
+    def get_monthly_statistics(self, year=None, group_ids=None):
+        """Retourne des statistiques mensuelles"""
+        if not year:
+            year = fields.Date.today().year
+        
+        domain = [('year', '=', year), ('active', '=', True)]
+        if group_ids:
+            domain.append(('group_id', 'in', group_ids))
+        
+        cotisations = self.search(domain)
+        
+        stats = {
+            'year': year,
+            'total_cotisations': len(cotisations),
+            'by_month': {},
+            'by_state': {
+                'draft': len(cotisations.filtered(lambda c: c.state == 'draft')),
+                'active': len(cotisations.filtered(lambda c: c.state == 'active')),
+                'closed': len(cotisations.filtered(lambda c: c.state == 'closed'))
+            },
+            'financial_summary': {
+                'total_expected': sum(cotisations.mapped('total_expected')),
+                'total_collected': sum(cotisations.mapped('total_collected')),
+                'average_completion_rate': 0.0
+            }
+        }
+        
+        # Statistiques par mois
+        month_names = dict(self._fields['month'].selection)
+        for month_num in range(1, 13):
+            month_str = str(month_num)
+            month_cotisations = cotisations.filtered(lambda c: c.month == month_str)
+            
+            stats['by_month'][month_names[month_str]] = {
+                'count': len(month_cotisations),
+                'total_expected': sum(month_cotisations.mapped('total_expected')),
+                'total_collected': sum(month_cotisations.mapped('total_collected')),
+                'avg_completion_rate': sum(month_cotisations.mapped('completion_rate')) / len(month_cotisations) if month_cotisations else 0
+            }
+        
+        # Taux de completion moyen
+        if cotisations:
+            stats['financial_summary']['average_completion_rate'] = sum(cotisations.mapped('completion_rate')) / len(cotisations)
+        
+        return stats
     
     def name_get(self):
         """Personnalise l'affichage du nom dans les listes déroulantes"""
         result = []
         for record in self:
-            result.append((record.id, record.display_name))
+            name = record.display_name
+            if record.state == 'draft':
+                name += " (Brouillon)"
+            elif record.state == 'closed':
+                name += " (Fermée)"
+            elif record.completion_rate > 0:
+                name += f" ({record.completion_rate:.0f}%)"
+            result.append((record.id, name))
         return result
+
+    # def action_activate(self):
+    #     """Active la cotisation mensuelle"""
+    #     self.ensure_one()
+    #     if self.state != 'draft':
+    #         raise UserError("Seules les cotisations brouillon peuvent être activées.")
+
+    #     # Créer les cotisations pour chaque membre du groupe
+    #     cotisations_data = []
+    #     for member in self.group_id.member_ids:
+    #         cotisation = self.env['member.cotisation'].create({
+    #             'member_id': member.id,
+    #             'activity_id': self.id,
+    #             'amount': self.cotisation_amount,
+    #             'currency_id': self.currency_id.id,
+    #         })
+    #         cotisations_data.append(cotisation)
+
+    #     _logger.info(f"Cotisation mensuelle {self.display_name} activée avec {len(cotisations_data)} cotisations créées")
+
+    #     return {
+    #         'type': 'ir.actions.client',
+    #         'tag': 'display_notification',
+    #         'params': {
+    #             'title': 'Succès',
+    #             'message': f'Cotisation activée avec {len(cotisations_data)} cotisations créées',
+    #             'type': 'success',
+    #         }
+    #     }
+    
+    def action_close(self):
+        """Ferme la cotisation mensuelle"""
+        self.ensure_one()
+        if self.state != 'active':
+            raise UserError("Seules les cotisations actives peuvent être fermées.")
+        
+        self.write({
+            'state': 'closed',
+            'closure_date': fields.Datetime.now()
+        })
+        
+        self.message_post(
+            body=f"Cotisation mensuelle fermée le {fields.Datetime.now()}",
+            message_type='comment'
+        )
+        
+        _logger.info(f"Cotisation mensuelle {self.display_name} fermée")

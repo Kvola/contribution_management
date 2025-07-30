@@ -27,15 +27,16 @@ class MemberCotisation(models.Model):
         "res.partner",
         string="Membre",
         required=True,
-        domain="[('is_company', '=', False)]",
-        index=True
+        domain="[('is_company', '=', False), ('active', '=', True)]",
+        index=True,
+        tracking=True
     )
     
     # Type de cotisation
     cotisation_type = fields.Selection([
         ('activity', 'Activité'),
         ('monthly', 'Mensuelle')
-    ], string="Type de cotisation", required=True, index=True)
+    ], string="Type de cotisation", required=True, index=True, tracking=True)
     
     # Relations
     activity_id = fields.Many2one(
@@ -55,12 +56,14 @@ class MemberCotisation(models.Model):
     amount_due = fields.Monetary(
         string="Montant dû",
         required=True,
-        currency_field='currency_id'
+        currency_field='currency_id',
+        tracking=True
     )
     amount_paid = fields.Monetary(
         string="Montant payé",
         default=0.0,
-        currency_field='currency_id'
+        currency_field='currency_id',
+        tracking=True
     )
     remaining_amount = fields.Monetary(
         string="Montant restant",
@@ -94,7 +97,7 @@ class MemberCotisation(models.Model):
         ('paid', 'Payé'),
         ('overdue', 'En retard'),
         ('cancelled', 'Annulé')
-    ], string="Statut", default='pending', compute="_compute_state", store=True, index=True)
+    ], string="Statut", default='pending', compute="_compute_state", store=True, index=True, tracking=True)
     
     # Notes
     description = fields.Text(string="Description")
@@ -111,6 +114,14 @@ class MemberCotisation(models.Model):
     
     # Champs de suivi
     active = fields.Boolean(default=True)
+    
+    # Indicateur de retard
+    days_overdue = fields.Integer(
+        string="Jours de retard",
+        compute="_compute_days_overdue",
+        help="Nombre de jours de retard par rapport à la date d'échéance",
+        store=True
+    )
     
     @api.depends('member_id', 'cotisation_type', 'activity_id', 'monthly_cotisation_id')
     def _compute_display_name(self):
@@ -141,11 +152,13 @@ class MemberCotisation(models.Model):
         for record in self:
             record.remaining_amount = record.amount_due - record.amount_paid
     
-    @api.depends('amount_due', 'amount_paid', 'due_date')
+    @api.depends('amount_due', 'amount_paid', 'due_date', 'active')
     def _compute_state(self):
         today = fields.Date.today()
         for record in self:
-            if record.amount_paid <= 0:
+            if not record.active:
+                record.state = 'cancelled'
+            elif record.amount_paid <= 0:
                 if record.due_date < today:
                     record.state = 'overdue'
                 else:
@@ -157,6 +170,15 @@ class MemberCotisation(models.Model):
             else:
                 record.state = 'partial'
     
+    @api.depends('due_date', 'state')
+    def _compute_days_overdue(self):
+        today = fields.Date.today()
+        for record in self:
+            if record.state == 'overdue' and record.due_date:
+                record.days_overdue = (today - record.due_date).days
+            else:
+                record.days_overdue = 0
+    
     @api.constrains('amount_paid', 'amount_due')
     def _check_payment_amount(self):
         for record in self:
@@ -165,26 +187,59 @@ class MemberCotisation(models.Model):
             if record.amount_paid > record.amount_due:
                 raise ValidationError("Le montant payé ne peut pas dépasser le montant dû.")
     
+    @api.constrains('amount_due')
+    def _check_amount_due_positive(self):
+        for record in self:
+            if record.amount_due <= 0:
+                raise ValidationError("Le montant dû doit être positif.")
+    
+    @api.constrains('cotisation_type', 'activity_id', 'monthly_cotisation_id')
+    def _check_cotisation_consistency(self):
+        """Vérifie la cohérence entre le type et les relations"""
+        for record in self:
+            if record.cotisation_type == 'activity' and not record.activity_id:
+                raise ValidationError("Une activité doit être sélectionnée pour les cotisations d'activité.")
+            if record.cotisation_type == 'monthly' and not record.monthly_cotisation_id:
+                raise ValidationError("Une cotisation mensuelle doit être sélectionnée pour les cotisations mensuelles.")
+            if record.cotisation_type == 'activity' and record.monthly_cotisation_id:
+                raise ValidationError("Une cotisation d'activité ne peut pas avoir de cotisation mensuelle associée.")
+            if record.cotisation_type == 'monthly' and record.activity_id:
+                raise ValidationError("Une cotisation mensuelle ne peut pas avoir d'activité associée.")
+    
     @api.constrains('member_id', 'activity_id', 'monthly_cotisation_id')
     def _check_member_cotisation_unique(self):
         """Évite les doublons de cotisations pour un même membre"""
         for record in self:
             domain = [
                 ('member_id', '=', record.member_id.id),
-                ('id', '!=', record.id)
+                ('id', '!=', record.id),
+                ('active', '=', True)
             ]
             
             if record.activity_id:
                 domain.append(('activity_id', '=', record.activity_id.id))
+                existing = self.search(domain, limit=1)
+                if existing:
+                    raise ValidationError(
+                        f"Une cotisation existe déjà pour {record.member_id.name} "
+                        f"pour l'activité {record.activity_id.name}."
+                    )
             elif record.monthly_cotisation_id:
                 domain.append(('monthly_cotisation_id', '=', record.monthly_cotisation_id.id))
-            
-            existing = self.search(domain, limit=1)
-            if existing:
-                raise ValidationError(
-                    f"Une cotisation existe déjà pour {record.member_id.name} "
-                    f"pour cette période/activité."
-                )
+                existing = self.search(domain, limit=1)
+                if existing:
+                    raise ValidationError(
+                        f"Une cotisation existe déjà pour {record.member_id.name} "
+                        f"pour la période {record.monthly_cotisation_id.display_name}."
+                    )
+    
+    @api.constrains('due_date')
+    def _check_due_date(self):
+        """Vérifie que la date d'échéance n'est pas trop ancienne"""
+        min_date = fields.Date.today().replace(year=fields.Date.today().year - 2)
+        for record in self:
+            if record.due_date < min_date:
+                raise ValidationError("La date d'échéance ne peut pas être antérieure à 2 ans.")
     
     def action_record_payment(self):
         """Action pour enregistrer un paiement"""
@@ -217,7 +272,22 @@ class MemberCotisation(models.Model):
             'payment_notes': 'Marqué comme payé manuellement'
         })
         
+        self.message_post(
+            body=f"Cotisation marquée comme payée manuellement le {fields.Date.today()}",
+            message_type='comment'
+        )
+        
         _logger.info(f"Cotisation {self.display_name} marquée comme payée")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Succès',
+                'message': 'Cotisation marquée comme payée',
+                'type': 'success',
+            }
+        }
     
     def action_cancel(self):
         """Annule la cotisation"""
@@ -226,15 +296,103 @@ class MemberCotisation(models.Model):
             raise UserError("Une cotisation payée ne peut pas être annulée.")
         
         self.write({
-            'state': 'cancelled',
             'active': False
         })
         
+        self.message_post(
+            body=f"Cotisation annulée le {fields.Date.today()}",
+            message_type='comment'
+        )
+        
         _logger.info(f"Cotisation {self.display_name} annulée")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Information',
+                'message': 'Cotisation annulée',
+                'type': 'info',
+            }
+        }
+    
+    def action_reactivate(self):
+        """Réactive une cotisation annulée"""
+        self.ensure_one()
+        if self.active:
+            raise UserError("Cette cotisation est déjà active.")
+        
+        self.write({'active': True})
+        
+        self.message_post(
+            body=f"Cotisation réactivée le {fields.Date.today()}",
+            message_type='comment'
+        )
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Succès',
+                'message': 'Cotisation réactivée',
+                'type': 'success',
+            }
+        }
+    
+    @api.model
+    def _cron_update_overdue_cotisations(self):
+        """Cron pour marquer les cotisations en retard"""
+        today = fields.Date.today()
+        overdue_cotisations = self.search([
+            ('state', '=', 'pending'),
+            ('due_date', '<', today),
+            ('active', '=', True)
+        ])
+        
+        if overdue_cotisations:
+            # Forcer le recalcul du statut
+            overdue_cotisations._compute_state()
+            _logger.info(f"{len(overdue_cotisations)} cotisations marquées en retard")
+        
+        return True
+    
+    @api.model
+    def get_overdue_summary(self, group_ids=None):
+        """Retourne un résumé des cotisations en retard"""
+        domain = [('state', '=', 'overdue'), ('active', '=', True)]
+        if group_ids:
+            domain.append(('group_id', 'in', group_ids))
+        
+        overdue_cotisations = self.search(domain)
+        
+        summary = {
+            'total_overdue': len(overdue_cotisations),
+            'total_amount_overdue': sum(overdue_cotisations.mapped('remaining_amount')),
+            'by_group': {},
+            'critical_overdue': len(overdue_cotisations.filtered(lambda c: c.days_overdue > 30))
+        }
+        
+        # Regroupement par groupe
+        for cotisation in overdue_cotisations:
+            group_name = cotisation.group_id.name if cotisation.group_id else 'Sans groupe'
+            if group_name not in summary['by_group']:
+                summary['by_group'][group_name] = {
+                    'count': 0,
+                    'amount': 0.0
+                }
+            summary['by_group'][group_name]['count'] += 1
+            summary['by_group'][group_name]['amount'] += cotisation.remaining_amount
+        
+        return summary
     
     def name_get(self):
         """Personnalise l'affichage du nom dans les listes déroulantes"""
         result = []
         for record in self:
-            result.append((record.id, record.display_name))
+            name = record.display_name
+            if record.state == 'overdue':
+                name += f" (En retard: {record.days_overdue}j)"
+            elif record.remaining_amount > 0:
+                name += f" (Reste: {record.remaining_amount})"
+            result.append((record.id, name))
         return result
