@@ -173,7 +173,7 @@ class MassPaymentWizard(models.TransientModel):
         """Calcule le taux de completion après paiement"""
         for wizard in self:
             if wizard.total_remaining > 0 and wizard.payment_amount > 0:
-                wizard.completion_rate = min((wizard.payment_amount / wizard.total_remaining) * 100, 100.0)
+                wizard.completion_rate = min((wizard.payment_amount / wizard.total_remaining) / 100, 100.0)
             else:
                 wizard.completion_rate = 0.0
     

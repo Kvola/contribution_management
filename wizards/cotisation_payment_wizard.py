@@ -613,8 +613,8 @@ class CotisationPaymentWizard(models.TransientModel):
             # Calculer le taux de completion
             all_due = sum(cotisations.mapped('amount_due'))
             if all_due > 0:
-                stats['completion_rate'] = (stats['total_amount'] / all_due) * 100
-        
+                stats['completion_rate'] = (stats['total_amount'] / all_due) / 100
+
         return stats
     
     def name_get(self):

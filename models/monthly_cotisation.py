@@ -216,7 +216,7 @@ class MonthlyCotisation(models.Model):
             monthly.total_expected = monthly.total_members * monthly.amount
             
             if monthly.total_expected > 0:
-                monthly.completion_rate = (monthly.total_collected / monthly.total_expected) * 100
+                monthly.completion_rate = (monthly.total_collected / monthly.total_expected) / 100
             else:
                 monthly.completion_rate = 0.0
     

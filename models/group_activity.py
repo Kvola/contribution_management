@@ -221,7 +221,7 @@ class GroupActivity(models.Model):
             activity.total_expected = activity.total_members * activity.cotisation_amount
             
             if activity.total_expected > 0:
-                activity.completion_rate = (activity.total_collected / activity.total_expected) * 100
+                activity.completion_rate = (activity.total_collected / activity.total_expected) / 100
             else:
                 activity.completion_rate = 0.0
     

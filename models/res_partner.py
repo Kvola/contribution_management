@@ -185,7 +185,7 @@ class ResPartnerCotisation(models.Model):
                 
                 # Calcul du taux de paiement
                 if partner.total_amount_due > 0:
-                    partner.payment_rate = (partner.total_amount_paid / partner.total_amount_due) * 100
+                    partner.payment_rate = (partner.total_amount_paid / partner.total_amount_due) / 100
                 else:
                     partner.payment_rate = 0.0
     
@@ -392,7 +392,7 @@ class ResPartnerCotisation(models.Model):
             'context': {
                 'default_group_id': self.id,
                 'search_default_current_year': 1,
-                'group_by': 'year,month'
+                'group_by': 'year'  # Grouper seulement par année
             }
         }
     
