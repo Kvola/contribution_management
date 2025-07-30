@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= MENUS ================= -->
+    
+    <!-- Menu principal des cotisations -->
+    <menuitem id="menu_cotisations_main" 
+              name="Cotisations" 
+              sequence="20"/>
+    
+    <!-- Sous-menus -->
+    <menuitem id="menu_group_activities" 
+              name="Activités de groupe" 
+              parent="menu_cotisations_main"
+              action="action_group_activity" 
+              sequence="10"/>
+    
+    <menuitem id="menu_monthly_cotisations" 
+              name="Cotisations mensuelles" 
+              parent="menu_cotisations_main"
+              action="action_monthly_cotisation" 
+              sequence="20"/>
+    
+    <menuitem id="menu_member_cotisations" 
+              name="Toutes les cotisations" 
+              parent="menu_cotisations_main"
+              action="action_member_cotisation" 
+              sequence="30"/>
+
+
+    <!-- Menu principal des rapports -->
+    <menuitem id="menu_cotisations_reports" 
+              name="Rapports" 
+              parent="menu_cotisations_main"
+              sequence="40"/>
+    
+    <!-- Sous-menus des rapports -->
+    <menuitem id="menu_report_activities" 
+              name="Rapports d'activités" 
+              parent="menu_cotisations_reports"
+              action="action_group_activity" 
+              sequence="10"/>
+    
+    <menuitem id="menu_report_monthly" 
+              name="Rapports mensuels" 
+              parent="menu_cotisations_reports"
+              action="action_monthly_cotisation" 
+              sequence="20"/>
+</odoo>

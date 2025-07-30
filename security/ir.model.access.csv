@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_group_activity_user,group.activity.user,model_group_activity,base.group_user,1,1,1,1
+access_monthly_cotisation_user,monthly.cotisation.user,model_monthly_cotisation,base.group_user,1,1,1,1
+access_member_cotisation_user,member.cotisation.user,model_member_cotisation,base.group_user,1,1,1,1
+access_cotisation_payment_wizard_user,cotisation.payment.wizard.user,model_cotisation_payment_wizard,base.group_user,1,1,1,1
+access_group_activity_leader,group.activity.leader,model_group_activity,base.group_user,1,1,1,0
+access_monthly_cotisation_leader,monthly.cotisation.leader,model_monthly_cotisation,base.group_user,1,1,1,0
+access_member_cotisation_leader,member.cotisation.leader,model_member_cotisation,base.group_user,1,1,1,0
+access_member_cotisation_member,member.cotisation.member,model_member_cotisation,base.group_user,1,0,0,0

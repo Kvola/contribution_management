@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= VUES POUR LES COTISATIONS INDIVIDUELLES ================= -->
+
+    <!-- Vue Tree des cotisations -->
+    <record id="view_member_cotisation_tree" model="ir.ui.view">
+        <field name="name">member.cotisation.tree</field>
+        <field name="model">member.cotisation</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="state=='paid'" decoration-warning="state=='partial'" 
+                  decoration-danger="state=='overdue'" decoration-muted="state=='cancelled'">
+                <field name="member_id"/>
+                <field name="group_id"/>
+                <field name="cotisation_type"/>
+                <field name="activity_id" column_invisible="cotisation_type != 'activity'"/>
+                <field name="monthly_cotisation_id" column_invisible="cotisation_type != 'monthly'"/>
+                <field name="amount_due" widget="monetary"/>
+                <field name="amount_paid" widget="monetary"/>
+                <field name="remaining_amount" widget="monetary"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="due_date"/>
+                <field name="payment_date"/>
+                <field name="state" widget="badge" 
+                       decoration-success="state=='paid'"
+                       decoration-warning="state=='partial'"
+                       decoration-danger="state=='overdue'"
+                       decoration-info="state=='pending'"
+                       decoration-muted="state=='cancelled'"/>
+                <button name="action_record_payment" string="Enregistrer paiement" type="object" 
+                        icon="fa-money" invisible="state in ['paid', 'cancelled']"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Form des cotisations -->
+    <record id="view_member_cotisation_form" model="ir.ui.view">
+        <field name="name">member.cotisation.form</field>
+        <field name="model">member.cotisation</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_record_payment" string="Enregistrer paiement" type="object" 
+                            class="oe_highlight" invisible="state in ['paid', 'cancelled']"/>
+                    <button name="action_mark_paid" string="Marquer comme payé" type="object" 
+                            invisible="state in ['paid', 'cancelled']"/>
+                    <button name="action_cancel" string="Annuler" type="object" 
+                            invisible="state == 'paid'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="member_id" options="{'no_create': True}"/>
+                            <field name="cotisation_type"/>
+                            <field name="activity_id" invisible="cotisation_type != 'activity'" 
+                                   options="{'no_create': True}"/>
+                            <field name="monthly_cotisation_id" invisible="cotisation_type != 'monthly'" 
+                                   options="{'no_create': True}"/>
+                            <field name="group_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="amount_due" widget="monetary"/>
+                            <field name="amount_paid" widget="monetary"/>
+                            <field name="remaining_amount" widget="monetary"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group>
+                            <field name="due_date"/>
+                            <field name="payment_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description" placeholder="Description de la cotisation..."/>
+                        </page>
+                        <page string="Notes de paiement" name="payment_notes">
+                            <field name="payment_notes" placeholder="Notes concernant le paiement..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Filtres pour les cotisations individuelles -->
+    <record id="view_member_cotisation_search" model="ir.ui.view">
+        <field name="name">member.cotisation.search</field>
+        <field name="model">member.cotisation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="member_id"/>
+                <field name="group_id"/>
+                <field name="activity_id"/>
+                <field name="monthly_cotisation_id"/>
+                <field name="display_name"/>
+                
+                <separator/>
+                <filter name="pending" string="En attente" domain="[('state', '=', 'pending')]"/>
+                <filter name="partial" string="Paiement partiel" domain="[('state', '=', 'partial')]"/>
+                <filter name="paid" string="Payées" domain="[('state', '=', 'paid')]"/>
+                <filter name="overdue" string="En retard" domain="[('state', '=', 'overdue')]"/>
+                
+                <separator/>
+                <filter name="activity_type" string="Activités" domain="[('cotisation_type', '=', 'activity')]"/>
+                <filter name="monthly_type" string="Mensuelles" domain="[('cotisation_type', '=', 'monthly')]"/>
+                
+                <separator/>
+                <filter name="due_this_month" string="Échéance ce mois" 
+                        domain="[('due_date', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d')), 
+                                 ('due_date', '&lt;', ((context_today().replace(day=1) + relativedelta(months=1)).strftime('%Y-%m-%d')))]"/>
+                <filter name="due_next_month" string="Échéance mois prochain" 
+                        domain="[('due_date', '&gt;=', ((context_today().replace(day=1) + relativedelta(months=1)).strftime('%Y-%m-%d'))), 
+                                 ('due_date', '&lt;', ((context_today().replace(day=1) + relativedelta(months=2)).strftime('%Y-%m-%d')))]"/>
+                
+                <separator/>
+                <filter name="active_filter" string="Actif" domain="[('active', '=', True)]"/>
+                <filter name="archived" string="Archivées" domain="[('active', '=', False)]"/>
+                
+                <group expand="0" string="Grouper par">
+                    <filter name="group_by_member" string="Membre" context="{'group_by': 'member_id'}"/>
+                    <filter name="group_by_group" string="Groupe" context="{'group_by': 'group_id'}"/>
+                    <filter name="group_by_type" string="Type" context="{'group_by': 'cotisation_type'}"/>
+                    <filter name="group_by_state" string="Statut" context="{'group_by': 'state'}"/>
+                    <filter name="group_by_due_month" string="Mois d'échéance" context="{'group_by': 'due_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vue Kanban des cotisations -->
+    <record id="view_member_cotisation_kanban" model="ir.ui.view">
+        <field name="name">member.cotisation.kanban</field>
+        <field name="model">member.cotisation</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="member_id"/>
+                <field name="group_id"/>
+                <field name="amount_due"/>
+                <field name="amount_paid"/>
+                <field name="remaining_amount"/>
+                <field name="due_date"/>
+                <field name="state"/>
+                <field name="currency_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_content">
+                                <div class="o_kanban_record_title">
+                                    <strong><field name="member_id"/></strong>
+                                </div>
+                                <div class="o_kanban_record_subtitle">
+                                    <field name="group_id"/>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <div>Dû: <field name="amount_due" widget="monetary"/></div>
+                                    <div>Payé: <field name="amount_paid" widget="monetary"/></div>
+                                    <div>Restant: <field name="remaining_amount" widget="monetary"/></div>
+                                    <div>Échéance: <field name="due_date"/></div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vue Pivot des cotisations -->
+    <record id="view_member_cotisation_pivot" model="ir.ui.view">
+        <field name="name">member.cotisation.pivot</field>
+        <field name="model">member.cotisation</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des cotisations">
+                <field name="group_id" type="row"/>
+                <field name="cotisation_type" type="row"/>
+                <field name="state" type="col"/>
+                <field name="amount_due" type="measure"/>
+                <field name="amount_paid" type="measure"/>
+                <field name="remaining_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vue Graph des cotisations -->
+    <record id="view_member_cotisation_graph" model="ir.ui.view">
+        <field name="name">member.cotisation.graph</field>
+        <field name="model">member.cotisation</field>
+        <field name="arch" type="xml">
+            <graph string="Statistiques des cotisations" type="bar">
+                <field name="group_id"/>
+                <field name="amount_paid" type="measure"/>
+                <field name="amount_due" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Action principale des cotisations -->
+    <record id="action_member_cotisation" model="ir.actions.act_window">
+        <field name="name">Cotisations des membres</field>
+        <field name="res_model">member.cotisation</field>
+        <field name="view_mode">tree,kanban,form,pivot,graph</field>
+        <field name="context">{'search_default_active_filter': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune cotisation trouvée !
+            </p>
+            <p>
+                Les cotisations sont générées automatiquement lors de la création 
+                d'activités ou de cotisations mensuelles.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action pour les cotisations en retard -->
+    <record id="action_overdue_cotisations" model="ir.actions.act_window">
+        <field name="name">Cotisations en retard</field>
+        <field name="res_model">member.cotisation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'overdue')]</field>
+        <field name="context">{'search_default_overdue': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune cotisation en retard !
+            </p>
+            <p>
+                Les cotisations apparaissent ici quand leur date d'échéance est dépassée 
+                et qu'elles ne sont pas encore payées.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action pour les cotisations en attente -->
+    <record id="action_pending_cotisations" model="ir.actions.act_window">
+        <field name="name">Cotisations en attente</field>
+        <field name="res_model">member.cotisation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'pending')]</field>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune cotisation en attente !
+            </p>
+            <p>
+                Les cotisations en attente de paiement apparaissent ici.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action pour le tableau de bord des cotisations -->
+    <record id="action_cotisation_dashboard" model="ir.actions.act_window">
+        <field name="name">Tableau de bord des cotisations</field>
+        <field name="res_model">member.cotisation</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="context">{'search_default_active_filter': 1}</field>
+    </record>
+</odoo>

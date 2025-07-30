@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= VUES ÉTENDUES POUR RES.PARTNER ================= -->
+    
+    <!-- Extension de la vue form des partenaires pour les membres -->
+    <record id="view_partner_form_cotisations" model="ir.ui.view">
+        <field name="name">res.partner.form.cotisations</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="random_team_generator.view_partner_form_extended"/>
+        <field name="arch" type="xml">
+            <!-- Ajouter les boutons intelligents pour les membres individuels -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_my_cotisations" type="object" 
+                        class="oe_stat_button" icon="fa-money"
+                        invisible="is_company == True">
+                    <field name="total_cotisations" widget="statinfo" string="Cotisations"/>
+                </button>
+                
+                <!-- Boutons pour les groupes -->
+                <button name="action_view_group_activities" type="object" 
+                        class="oe_stat_button" icon="fa-calendar"
+                        invisible="is_company == False">
+                    <field name="activities_count" widget="statinfo" string="Activités"/>
+                </button>
+                
+                <button name="action_view_monthly_cotisations" type="object" 
+                        class="oe_stat_button" icon="fa-calendar-o"
+                        invisible="is_company == False">
+                    <field name="monthly_cotisations_count" widget="statinfo" string="Cotisations mensuelles"/>
+                </button>
+                
+                <!-- Bouton tableau de bord -->
+                <button name="action_view_cotisation_dashboard" type="object" 
+                        class="oe_stat_button" icon="fa-dashboard">
+                    <div class="o_stat_info">
+                        <field name="payment_rate" widget="percentage" invisible="is_company == True"/>
+                        <field name="group_collection_rate" widget="percentage" invisible="is_company == False"/>
+                        <span class="o_stat_text">Taux de réussite</span>
+                    </div>
+                </button>
+            </xpath>
+            
+            <!-- Ajouter un onglet pour les cotisations des membres -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Mes Cotisations" invisible="is_company == True">
+                    <group>
+                        <group string="Statistiques">
+                            <field name="total_cotisations" readonly="1"/>
+                            <field name="paid_cotisations" readonly="1"/>
+                            <field name="pending_cotisations" readonly="1"/>
+                            <field name="overdue_cotisations" readonly="1"/>
+                            <field name="payment_rate" widget="percentage" readonly="1"/>
+                        </group>
+                        <group string="Montants">
+                            <field name="total_amount_due" widget="monetary" readonly="1"/>
+                            <field name="total_amount_paid" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <field name="cotisation_ids" readonly="1">
+                        <tree decoration-success="state=='paid'" decoration-warning="state=='pending'" 
+                              decoration-danger="state=='overdue'" create="false" edit="false" delete="false">
+                            <field name="cotisation_type"/>
+                            <field name="activity_id" optional="hide"/>
+                            <field name="monthly_cotisation_id" optional="hide"/>
+                            <field name="amount_due" widget="monetary"/>
+                            <field name="amount_paid" widget="monetary"/>
+                            <field name="due_date"/>
+                            <field name="state" widget="badge" 
+                                   decoration-success="state=='paid'" 
+                                   decoration-warning="state=='pending'"
+                                   decoration-danger="state=='overdue'"/>
+                        </tree>
+                    </field>
+                    
+                    <div class="oe_clear"/>
+                    <div class="text-center" style="margin-top: 10px;">
+                        <button name="action_view_my_cotisations" type="object" 
+                                string="Voir toutes mes cotisations" class="btn-primary"/>
+                    </div>
+                </page>
+                
+                <!-- Onglet pour les activités des groupes -->
+                <page string="Activités" invisible="is_company == False">
+                    <group>
+                        <group string="Statistiques du groupe">
+                            <field name="activities_count" readonly="1"/>
+                            <field name="group_total_collected" widget="monetary" readonly="1"/>
+                            <field name="group_total_expected" widget="monetary" readonly="1"/>
+                            <field name="group_collection_rate" widget="percentage" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <field name="group_activities" readonly="1">
+                        <tree create="false" edit="false" delete="false">
+                            <field name="name"/>
+                            <field name="date_start"/>
+                            <field name="cotisation_amount" widget="monetary"/>
+                            <field name="total_members"/>
+                            <field name="completion_rate" widget="percentage"/>
+                            <field name="state" widget="badge"/>
+                        </tree>
+                    </field>
+                    
+                    <div class="oe_clear"/>
+                    <div class="text-center" style="margin-top: 10px;">
+                        <button name="action_create_group_activity" type="object" 
+                                string="Créer une activité" class="btn-primary"/>
+                        <button name="action_view_group_activities" type="object" 
+                                string="Voir toutes les activités" class="btn-secondary"/>
+                    </div>
+                </page>
+                
+                <!-- Onglet pour les cotisations mensuelles des groupes -->
+                <page string="Cotisations mensuelles" invisible="is_company == False">
+                    <group>
+                        <group string="Résumé mensuel">
+                            <field name="monthly_cotisations_count" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <field name="monthly_cotisations" readonly="1">
+                        <tree create="false" edit="false" delete="false">
+                            <field name="display_name"/>
+                            <field name="month"/>
+                            <field name="year"/>
+                            <field name="amount" widget="monetary"/>
+                            <field name="completion_rate" widget="percentage"/>
+                            <field name="state" widget="badge"/>
+                        </tree>
+                    </field>
+                    
+                    <div class="oe_clear"/>
+                    <div class="text-center" style="margin-top: 10px;">
+                        <button name="action_create_monthly_cotisation" type="object" 
+                                string="Créer cotisation mensuelle" class="btn-primary"/>
+                        <button name="action_view_monthly_cotisations" type="object" 
+                                string="Voir toutes les cotisations" class="btn-secondary"/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue tree héritée pour afficher les statistiques de cotisations -->
+    <record id="view_partner_tree_cotisations" model="ir.ui.view">
+        <field name="name">res.partner.tree.cotisations</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='display_name']" position="after">
+                <field name="total_cotisations" optional="hide" invisible="is_company == True"/>
+                <field name="payment_rate" widget="percentage" optional="hide" invisible="is_company == True"/>
+                <field name="activities_count" optional="hide" invisible="is_company == False"/>
+                <field name="group_collection_rate" widget="percentage" optional="hide" invisible="is_company == False"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue kanban héritée pour les partenaires avec cotisations -->
+    <record id="view_partner_kanban_cotisations" model="ir.ui.view">
+        <field name="name">res.partner.kanban.cotisations</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.res_partner_kanban_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@class='oe_kanban_details d-flex flex-column justify-content-between']" position="after">
+                <div class="oe_kanban_footer" invisible="is_company == True">
+                    <div class="o_kanban_record_bottom">
+                        <div class="oe_kanban_bottom_left">
+                            <span class="badge badge-pill">
+                                <field name="total_cotisations"/> Cotisations
+                            </span>
+                        </div>
+                        <div class="oe_kanban_bottom_right">
+                            <span class="badge badge-pill" invisible="payment_rate == 0">
+                                <field name="payment_rate" widget="percentage"/>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="oe_kanban_footer" invisible="is_company == False">
+                    <div class="o_kanban_record_bottom">
+                        <div class="oe_kanban_bottom_left">
+                            <span class="badge badge-pill">
+                                <field name="activities_count"/> Activités
+                            </span>
+                        </div>
+                        <div class="oe_kanban_bottom_right">
+                            <span class="badge badge-pill" invisible="group_collection_rate == 0">
+                                <field name="group_collection_rate" widget="percentage"/>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue de recherche étendue -->
+    <record id="view_partner_search_cotisations" model="ir.ui.view">
+        <field name="name">res.partner.search.cotisations</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="total_cotisations"/>
+                <field name="payment_rate"/>
+                <field name="activities_count"/>
+                <field name="group_collection_rate"/>
+            </xpath>
+            
+            <xpath expr="//filter[@name='inactive']" position="after">
+                <separator/>
+                <filter string="Membres avec cotisations en retard" name="members_overdue"
+                        domain="[('is_company', '=', False), ('overdue_cotisations', '>', 0)]"/>
+                <filter string="Membres sans cotisations" name="members_no_cotisations"
+                        domain="[('is_company', '=', False), ('total_cotisations', '=', 0)]"/>
+                <filter string="Groupes actifs" name="active_groups"
+                        domain="[('is_company', '=', True), ('activities_count', '>', 0)]"/>
+            </xpath>
+            
+            <xpath expr="//group" position="inside">
+                <filter string="Type" name="group_by_type" context="{'group_by': 'is_company'}"/>
+                <filter string="Statut de paiement" name="group_by_payment_status" 
+                        context="{'group_by': 'payment_rate'}" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

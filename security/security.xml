@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+        <!-- ================= RÈGLES POUR LES ACTIVITÉS DE GROUPE ================= -->
+        
+        <!-- Règle globale pour les activités - tous les utilisateurs peuvent voir toutes les activités -->
+        <record id="group_activity_rule_global" model="ir.rule">
+            <field name="name">Activités de groupe: accès global</field>
+            <field name="model_id" ref="model_group_activity"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Règle pour les responsables de groupe - peuvent modifier leurs propres activités -->
+        <!-- <record id="group_activity_rule_leader" model="ir.rule">
+            <field name="name">Activités de groupe: responsables</field>
+            <field name="model_id" ref="model_group_activity"/>
+            <field name="domain_force">[
+                '|',
+                ('group_id.group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.communication_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.artistic_group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.ngo_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.sports_group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.educational_group_leader_id.user_ids', 'in', [user.id]),
+                ('group_id.other_group_leader_id.user_ids', 'in', [user.id])
+            ]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- ================= RÈGLES POUR LES COTISATIONS MENSUELLES ================= -->
+        
+        <!-- Règle globale pour les cotisations mensuelles -->
+        <record id="monthly_cotisation_rule_global" model="ir.rule">
+            <field name="name">Cotisations mensuelles: accès global</field>
+            <field name="model_id" ref="model_monthly_cotisation"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Règle pour les responsables de groupe - cotisations mensuelles -->
+        <!-- <record id="monthly_cotisation_rule_leader" model="ir.rule">
+            <field name="name">Cotisations mensuelles: responsables</field>
+            <field name="model_id" ref="model_monthly_cotisation"/>
+            <field name="domain_force">[
+                '|',
+                ('group_id.group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.communication_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.artistic_group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.ngo_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.sports_group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.educational_group_leader_id.user_ids', 'in', [user.id]),
+                ('group_id.other_group_leader_id.user_ids', 'in', [user.id])
+            ]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- ================= RÈGLES POUR LES COTISATIONS INDIVIDUELLES ================= -->
+        
+        <!-- Règle pour les membres - peuvent voir uniquement leurs propres cotisations -->
+        <record id="member_cotisation_rule_own" model="ir.rule">
+            <field name="name">Cotisations: membres (leurs propres cotisations)</field>
+            <field name="model_id" ref="model_member_cotisation"/>
+            <field name="domain_force">[('member_id.user_ids', 'in', [user.id])]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Règle pour les responsables de groupe - peuvent voir les cotisations de leurs membres -->
+        <!-- <record id="member_cotisation_rule_leader" model="ir.rule">
+            <field name="name">Cotisations: responsables de groupe</field>
+            <field name="model_id" ref="model_member_cotisation"/>
+            <field name="domain_force">[
+                '|',
+                ('group_id.group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.communication_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.artistic_group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.ngo_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.sports_group_leader_id.user_ids', 'in', [user.id]),
+                '|',
+                ('group_id.educational_group_leader_id.user_ids', 'in', [user.id]),
+                ('group_id.other_group_leader_id.user_ids', 'in', [user.id])
+            ]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record> -->
+
+        <!-- Règle pour les pasteurs - peuvent voir toutes les cotisations de leur église -->
+        <!-- <record id="member_cotisation_rule_pastor" model="ir.rule">
+            <field name="name">Cotisations: pasteurs</field>
+            <field name="model_id" ref="model_member_cotisation"/>
+            <field name="domain_force">[
+                '|',
+                ('member_id.church_id.main_pastor_id.user_ids', 'in', [user.id]),
+                ('member_id.church_id.assistant_pastor_ids.user_ids', 'in', [user.id])
+            ]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- ================= RÈGLES POUR L'ASSISTANT DE PAIEMENT ================= -->
+        
+        <!-- Règle pour l'assistant de paiement - accès complet pour tous les utilisateurs -->
+        <record id="cotisation_payment_wizard_rule_global" model="ir.rule">
+            <field name="name">Assistant de paiement: accès global</field>
+            <field name="model_id" ref="model_cotisation_payment_wizard"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+</odoo>

@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= VUES POUR LES ACTIVITÉS DE GROUPE ================= -->
+    
+    <!-- Vue Tree des activités -->
+    <record id="view_group_activity_tree" model="ir.ui.view">
+        <field name="name">group.activity.tree</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <tree decoration-info="state=='draft'" decoration-success="state=='completed'" 
+                  decoration-warning="state=='ongoing'" decoration-muted="state=='cancelled'">
+                <field name="name"/>
+                <field name="group_id"/>
+                <field name="date_start"/>
+                <field name="cotisation_amount" widget="monetary"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="total_members"/>
+                <field name="paid_members"/>
+                <field name="completion_rate" widget="percentage"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state=='draft'" 
+                       decoration-success="state=='completed'"
+                       decoration-warning="state in ['confirmed','ongoing']"
+                       decoration-danger="state=='cancelled'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Form des activités -->
+    <record id="view_group_activity_form" model="ir.ui.view">
+        <field name="name">group.activity.form</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_confirm" string="Confirmer" type="object" 
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_start" string="Démarrer" type="object" 
+                            class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_complete" string="Terminer" type="object" 
+                            class="oe_highlight" invisible="state not in ['confirmed', 'ongoing']"/>
+                    <button name="action_cancel" string="Annuler" type="object" 
+                            invisible="state == 'completed'"/>
+                    <button name="action_reset_to_draft" string="Remettre en brouillon" type="object" 
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_duplicate_activity" string="Dupliquer" type="object"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,ongoing,completed"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_cotisations" type="object" 
+                                class="oe_stat_button" icon="fa-money">
+                            <field name="total_members" widget="statinfo" string="Membres"/>
+                        </button>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="group_id"/>
+                            <field name="cotisation_amount" widget="monetary"/>
+                            <field name="currency_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    
+                    <field name="description" placeholder="Description de l'activité..."/>
+                    
+                    <notebook>
+                        <page string="Statistiques" invisible="state == 'draft'">
+                            <group>
+                                <group string="Membres">
+                                    <field name="total_members"/>
+                                    <field name="paid_members"/>
+                                    <field name="unpaid_members"/>
+                                </group>
+                                <group string="Montants">
+                                    <field name="total_expected" widget="monetary"/>
+                                    <field name="total_collected" widget="monetary"/>
+                                    <field name="completion_rate" widget="percentage"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Cotisations" invisible="state == 'draft'">
+                            <field name="cotisation_ids">
+                                <tree editable="bottom" decoration-success="state=='paid'" 
+                                      decoration-warning="state=='partial'" decoration-danger="state=='overdue'">
+                                    <field name="member_id"/>
+                                    <field name="amount_due" widget="monetary"/>
+                                    <field name="amount_paid" widget="monetary"/>
+                                    <field name="remaining_amount" widget="monetary"/>
+                                    <field name="cotisation_type" />
+                                    <field name="due_date"/>
+                                    <field name="payment_date"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <button name="action_record_payment" string="Paiement" type="object" 
+                                            icon="fa-money" invisible="state in ['paid', 'cancelled']"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue Kanban des activités -->
+    <record id="view_group_activity_kanban" model="ir.ui.view">
+        <field name="name">group.activity.kanban</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="group_id"/>
+                <field name="date_start"/>
+                <field name="cotisation_amount"/>
+                <field name="currency_id"/>
+                <field name="completion_rate"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong><br/>
+                                        <small class="o_kanban_record_subtitle text-muted">
+                                            <field name="group_id"/> • <field name="date_start" widget="date"/>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <field name="cotisation_amount" widget="monetary"/>
+                                    <br/>
+                                    <t t-if="record.completion_rate.raw_value and record.state.raw_value != 'draft'">
+                                        <div class="progress" style="height: 10px; margin-top: 5px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 t-attf-style="width: #{record.completion_rate.raw_value}%"
+                                                 t-attf-aria-valuenow="#{record.completion_rate.raw_value}"
+                                                 aria-valuemin="0" aria-valuemax="100"/>
+                                        </div>
+                                        <small><field name="completion_rate" widget="percentage"/></small>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vue Calendar des activités -->
+    <record id="view_group_activity_calendar" model="ir.ui.view">
+        <field name="name">group.activity.calendar</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <calendar date_start="date_start" date_stop="date_end" string="Activités" 
+                      mode="month" color="group_id">
+                <field name="name"/>
+                <field name="group_id"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Filtres pour les activités -->
+    <record id="view_group_activity_search" model="ir.ui.view">
+        <field name="name">group.activity.search</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="group_id"/>
+                <field name="description"/>
+                <separator/>
+                <filter name="draft" string="Brouillon" domain="[('state', '=', 'draft')]"/>
+                <filter name="confirmed" string="Confirmées" domain="[('state', '=', 'confirmed')]"/>
+                <filter name="ongoing" string="En cours" domain="[('state', '=', 'ongoing')]"/>
+                <filter name="completed" string="Terminées" domain="[('state', '=', 'completed')]"/>
+                <filter name="cancelled" string="Annulées" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter name="active" string="Actives" domain="[('active', '=', True)]"/>
+                <filter name="archived" string="Archivées" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="this_month" string="Ce mois" 
+                        domain="[('date_start', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%%Y-%%m-%%d')), 
+                                 ('date_start', '&lt;', (context_today() + relativedelta(months=1, day=1)).strftime('%%Y-%%m-%%d'))]"/>
+                <filter name="next_month" string="Mois prochain" 
+                        domain="[('date_start', '&gt;=', (context_today() + relativedelta(months=1, day=1)).strftime('%%Y-%%m-%%d')), 
+                                 ('date_start', '&lt;', (context_today() + relativedelta(months=2, day=1)).strftime('%%Y-%%m-%%d'))]"/>
+                <separator/>
+                <filter name="unpaid_cotisations" string="Cotisations impayées" 
+                        domain="[('unpaid_members', '&gt;', 0)]"/>
+                <group expand="0" string="Grouper par">
+                    <filter name="group_by_group" string="Groupe" context="{'group_by': 'group_id'}"/>
+                    <filter name="group_by_state" string="Statut" context="{'group_by': 'state'}"/>
+                    <filter name="group_by_month" string="Mois" context="{'group_by': 'date_start:month'}"/>
+                    <filter name="group_by_company" string="Société" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action des activités -->
+    <record id="action_group_activity" model="ir.actions.act_window">
+        <field name="name">Activités de groupe</field>
+        <field name="res_model">group.activity</field>
+        <field name="view_mode">kanban,tree,form,calendar</field>
+        <field name="search_view_id" ref="view_group_activity_search"/>
+        <field name="context">{
+            'search_default_draft': 1,
+            'search_default_confirmed': 1,
+            'search_default_ongoing': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre première activité de groupe !
+            </p>
+            <p>
+                Les activités permettent d'organiser des événements avec cotisations 
+                et de suivre les paiements des membres.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action pour voir les cotisations d'une activité (utilisée dans le modèle) -->
+    <record id="action_activity_cotisations" model="ir.actions.act_window">
+        <field name="name">Cotisations de l'activité</field>
+        <field name="res_model">member.cotisation</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('activity_id', '=', active_id)]</field>
+        <field name="context">{
+            'default_activity_id': active_id,
+            'default_cotisation_type': 'activity'
+        }</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template du rapport des cotisations mensuelles -->
+    <template id="report_monthly_cotisation_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="monthly">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="oe_structure" />
+
+                        <!-- En-tête du rapport -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h2 class="text-center">
+                                    <strong>RAPPORT COTISATION MENSUELLE</strong>
+                                </h2>
+                                <h3 class="text-center text-muted">
+                                    <span t-field="monthly.display_name" />
+                                </h3>
+                            </div>
+                        </div>
+
+                        <!-- Informations générales -->
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <strong>Groupe:</strong>
+                                <span t-field="monthly.group_id.name" />
+                            </div>
+                            <div class="col-6">
+                                <strong>Période:</strong>
+                                <t t-set="month_names"
+                                    t-value="{
+                                        '1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril',
+                                        '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août',
+                                        '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'
+                                    }" />
+                                <span t-esc="month_names.get(monthly.month, monthly.month)" />
+                                <span t-field="monthly.year" />
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <strong>Montant mensuel:</strong>
+                                <span t-field="monthly.amount"
+                                    t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
+                            </div>
+                            <div class="col-6">
+                                <strong>Date limite:</strong>
+                                <span t-field="monthly.due_date" t-options="{'widget': 'date'}" />
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <strong>Statut:</strong>
+                                <t t-set="state_names"
+                                    t-value="{
+                                        'draft': 'Brouillon',
+                                        'active': 'Active', 
+                                        'closed': 'Fermée'
+                                    }" />
+                                <span class="badge badge-pill"
+                                    t-attf-class="badge-{{ 'secondary' if monthly.state == 'draft' else 'success' if monthly.state == 'active' else 'info' }}">
+                                    <t t-esc="state_names.get(monthly.state, monthly.state)" />
+                                </span>
+                            </div>
+                            <div class="col-6">
+                                <strong>Société:</strong>
+                                <span t-field="monthly.company_id.name" />
+                            </div>
+                        </div>
+
+                        <!-- Statistiques -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4>Statistiques des paiements</h4>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title" t-field="monthly.total_members" />
+                                        <p class="card-text">Membres total</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card text-center bg-success text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title" t-field="monthly.paid_members" />
+                                        <p class="card-text">Ont payé</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card text-center bg-warning">
+                                    <div class="card-body">
+                                        <h5 class="card-title" t-field="monthly.unpaid_members" />
+                                        <p class="card-text">N'ont pas payé</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card text-center bg-info text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title"
+                                            t-esc="'%.1f%%' % monthly.completion_rate" />
+                                        <p class="card-text">Taux completion</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Montants -->
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <strong>Total attendu:</strong>
+                                <span t-field="monthly.total_expected"
+                                    t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
+                            </div>
+                            <div class="col-6">
+                                <strong>Total collecté:</strong>
+                                <span t-field="monthly.total_collected"
+                                    t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
+                            </div>
+                        </div>
+
+                        <!-- Liste des cotisations -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4>Détail des paiements</h4>
+                                <t t-if="monthly.cotisation_ids">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Membre</th>
+                                                <th class="text-end">Montant dû</th>
+                                                <th class="text-end">Montant payé</th>
+                                                <th class="text-end">Restant</th>
+                                                <th>Date paiement</th>
+                                                <th class="text-center">Statut</th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="monthly.cotisation_ids"
+                                                t-as="cotisation">
+                                                <tr>
+                                                    <td>
+                                                        <strong
+                                                            t-field="cotisation.member_id.name" />
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-field="cotisation.amount_due"
+                                                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-field="cotisation.amount_paid"
+                                                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span
+                                                            t-esc="cotisation.amount_due - cotisation.amount_paid"
+                                                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                    </td>
+                                                    <td>
+                                                        <span t-field="cotisation.payment_date"
+                                                            t-options="{'widget': 'date'}" />
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span t-if="cotisation.state == 'paid'"
+                                                            class="badge bg-success">Payé</span>
+                                                        <span
+                                                            t-elif="cotisation.state == 'partial'"
+                                                            class="badge bg-warning">Partiel</span>
+                                                        <span
+                                                            t-elif="cotisation.state == 'overdue'"
+                                                            class="badge bg-danger">En retard</span>
+                                                        <span
+                                                            t-elif="cotisation.state == 'pending'"
+                                                            class="badge bg-info">En attente</span>
+                                                        <span t-else=""
+                                                            class="badge bg-secondary"
+                                                            t-field="cotisation.state" />
+                                                    </td>
+                                                    <td>
+                                                        <span t-field="cotisation.payment_notes" />
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info" role="alert">
+                                        <i class="fa fa-info-circle" /> Aucune cotisation
+                                        individuelle trouvée pour cette période. </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Résumé financier -->
+                        <t t-if="monthly.cotisation_ids">
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5>Résumé financier</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <p>
+                                                        <strong>Montant total attendu:</strong>
+                                                    </p>
+                                                    <h4 class="text-primary"
+                                                        t-field="monthly.total_expected"
+                                                        t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
+                                                </div>
+                                                <div class="col-4">
+                                                    <p>
+                                                        <strong>Montant total collecté:</strong>
+                                                    </p>
+                                                    <h4 class="text-success"
+                                                        t-field="monthly.total_collected"
+                                                        t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
+                                                </div>
+                                                <div class="col-4">
+                                                    <p>
+                                                        <strong>Montant restant à collecter:</strong>
+                                                    </p>
+                                                    <h4 class="text-warning"
+                                                        t-esc="monthly.total_expected - monthly.total_collected"
+                                                        t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <div class="oe_structure" />
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Action pour le rapport des cotisations mensuelles -->
+    <record id="action_report_monthly_cotisation" model="ir.actions.report">
+        <field name="name">Rapport cotisation mensuelle</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_monthly_cotisation_template</field>
+        <field name="report_file">contribution_management.report_monthly_cotisation_template</field>
+        <field name="binding_model_id" ref="contribution_management.model_monthly_cotisation" />
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro" />
+    </record>
+</odoo>

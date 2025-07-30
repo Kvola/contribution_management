@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+        <!-- ================= ACTIVITÉS DE GROUPE DÉMO ================= -->
+        
+        <!-- Activité 1: Sortie éducative -->
+        <record id="demo_activity_sortie_educative" model="group.activity">
+            <field name="name">Sortie éducative au musée</field>
+            <field name="description">Visite guidée du musée national avec déjeuner inclus</field>
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d 09:00:00')"/>
+            <field name="date_end" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d 17:00:00')"/>
+            <field name="cotisation_amount">25000</field>
+            <field name="state">draft</field>
+        </record>
+
+        <!-- Activité 2: Concert de Noël -->
+        <record id="demo_activity_concert_noel" model="group.activity">
+            <field name="name">Concert de Noël</field>
+            <field name="description">Préparation et organisation du concert de Noël annuel</field>
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d 19:00:00')"/>
+            <field name="date_end" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d 22:00:00')"/>
+            <field name="cotisation_amount">15000</field>
+            <field name="state">confirmed</field>
+        </record>
+
+        <!-- Activité 3: Formation leadership -->
+        <record id="demo_activity_formation_leadership" model="group.activity">
+            <field name="name">Formation en leadership</field>
+            <field name="description">Séminaire de formation pour les futurs responsables</field>
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d 08:00:00')"/>
+            <field name="date_end" eval="(DateTime.now() + timedelta(days=17)).strftime('%Y-%m-%d 18:00:00')"/>
+            <field name="cotisation_amount">50000</field>
+            <field name="state">ongoing</field>
+        </record>
+
+        <!-- Activité 4: Retraite spirituelle -->
+        <record id="demo_activity_retraite" model="group.activity">
+            <field name="name">Retraite spirituelle</field>
+            <field name="description">Week-end de retraite et de méditation</field>
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="date_start" eval="(DateTime.now() - timedelta(days=30)).strftime('%Y-%m-%d 18:00:00')"/>
+            <field name="date_end" eval="(DateTime.now() - timedelta(days=28)).strftime('%Y-%m-%d 16:00:00')"/>
+            <field name="cotisation_amount">35000</field>
+            <field name="state">completed</field>
+        </record>
+
+        <!-- ================= COTISATIONS MENSUELLES DÉMO ================= -->
+        
+        <!-- Cotisation mensuelle Janvier 2024 -->
+        <record id="demo_monthly_janvier_2024" model="monthly.cotisation">
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="month">1</field>
+            <field name="year">2024</field>
+            <field name="amount">10000</field>
+            <field name="state">closed</field>
+        </record>
+
+        <!-- Cotisation mensuelle Février 2024 -->
+        <record id="demo_monthly_fevrier_2024" model="monthly.cotisation">
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="month">2</field>
+            <field name="year">2024</field>
+            <field name="amount">10000</field>
+            <field name="state">closed</field>
+        </record>
+
+        <!-- Cotisation mensuelle Mars 2024 -->
+        <record id="demo_monthly_mars_2024" model="monthly.cotisation">
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="month">3</field>
+            <field name="year">2024</field>
+            <field name="amount">12000</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- Cotisation mensuelle Avril 2024 -->
+        <record id="demo_monthly_avril_2024" model="monthly.cotisation">
+            <field name="group_id" ref="base.main_partner"/>
+            <field name="month">4</field>
+            <field name="year">2024</field>
+            <field name="amount">12000</field>
+            <field name="state">draft</field>
+        </record>
+
+        <!-- ================= COTISATIONS INDIVIDUELLES DÉMO ================= -->
+        
+        <!-- Note: Ces cotisations seront créées automatiquement quand les activités 
+             et cotisations mensuelles seront confirmées/activées. 
+             Nous n'en créons que quelques-unes manuellement pour la démo -->
+
+        <!-- Cotisation pour l'activité retraite (terminée) -->
+        <record id="demo_cotisation_retraite_1" model="member.cotisation">
+            <field name="member_id" ref="base.partner_demo"/>
+            <field name="activity_id" ref="demo_activity_retraite"/>
+            <field name="cotisation_type">activity</field>
+            <field name="amount_due">35000</field>
+            <field name="amount_paid">35000</field>
+            <field name="due_date" eval="(DateTime.now() - timedelta(days=35)).strftime('%Y-%m-%d')"/>
+            <field name="payment_date" eval="(DateTime.now() - timedelta(days=32)).strftime('%Y-%m-%d')"/>
+            <field name="description">Cotisation pour l'activité: Retraite spirituelle</field>
+            <field name="payment_notes">Paiement effectué en espèces</field>
+        </record>
+
+        <!-- Cotisation pour formation leadership (en cours) -->
+        <record id="demo_cotisation_formation_1" model="member.cotisation">
+            <field name="member_id" ref="base.partner_demo"/>
+            <field name="activity_id" ref="demo_activity_formation_leadership"/>
+            <field name="cotisation_type">activity</field>
+            <field name="amount_due">50000</field>
+            <field name="amount_paid">25000</field>
+            <field name="due_date" eval="(DateTime.now() + timedelta(days=10)).strftime('%Y-%m-%d')"/>
+            <field name="description">Cotisation pour l'activité: Formation en leadership</field>
+            <field name="payment_notes">Paiement partiel effectué</field>
+        </record>
+
+        <!-- Cotisation mensuelle Janvier (payée) -->
+        <record id="demo_cotisation_mensuelle_jan_1" model="member.cotisation">
+            <field name="member_id" ref="base.partner_demo"/>
+            <field name="monthly_cotisation_id" ref="demo_monthly_janvier_2024"/>
+            <field name="cotisation_type">monthly</field>
+            <field name="amount_due">10000</field>
+            <field name="amount_paid">10000</field>
+            <field name="due_date">2024-01-31</field>
+            <field name="payment_date">2024-01-25</field>
+            <field name="description">Cotisation mensuelle - Janvier 2024</field>
+            <field name="payment_notes">Paiement par virement</field>
+        </record>
+
+        <!-- Cotisation mensuelle Février (payée en retard) -->
+        <record id="demo_cotisation_mensuelle_fev_1" model="member.cotisation">
+            <field name="member_id" ref="base.partner_demo"/>
+            <field name="monthly_cotisation_id" ref="demo_monthly_fevrier_2024"/>
+            <field name="cotisation_type">monthly</field>
+            <field name="amount_due">10000</field>
+            <field name="amount_paid">10000</field>
+            <field name="due_date">2024-02-29</field>
+            <field name="payment_date">2024-03-05</field>
+            <field name="description">Cotisation mensuelle - Février 2024</field>
+            <field name="payment_notes">Paiement effectué avec retard</field>
+        </record>
+
+        <!-- Cotisation mensuelle Mars (non payée - en retard) -->
+        <record id="demo_cotisation_mensuelle_mar_1" model="member.cotisation">
+            <field name="member_id" ref="base.partner_demo"/>
+            <field name="monthly_cotisation_id" ref="demo_monthly_mars_2024"/>
+            <field name="cotisation_type">monthly</field>
+            <field name="amount_due">12000</field>
+            <field name="amount_paid">0</field>
+            <field name="due_date">2024-03-31</field>
+            <field name="description">Cotisation mensuelle - Mars 2024</field>
+        </record>
+
+        <!-- ================= DONNÉES COMPLÉMENTAIRES ================= -->
+        
+        <!-- Groupe artistique pour les démos -->
+        <record id="demo_groupe_artistique" model="res.partner">
+            <field name="name">Chorale des Anges</field>
+            <field name="is_company">True</field>
+            <field name="organization_type">artistic_group</field>
+            <field name="artistic_group_church_id" ref="base.main_company"/>
+        </record>
+
+        <!-- Activité pour le groupe artistique -->
+        <record id="demo_activity_concert_chorale" model="group.activity">
+            <field name="name">Concert de la chorale</field>
+            <field name="description">Concert mensuel de la chorale des anges</field>
+            <field name="group_id" ref="demo_groupe_artistique"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d 15:00:00')"/>
+            <field name="date_end" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d 18:00:00')"/>
+            <field name="cotisation_amount">8000</field>
+            <field name="state">confirmed</field>
+        </record>
+
+        <!-- Cotisation mensuelle pour le groupe artistique -->
+        <record id="demo_monthly_chorale_mars" model="monthly.cotisation">
+            <field name="group_id" ref="demo_groupe_artistique"/>
+            <field name="month">3</field>
+            <field name="year">2024</field>
+            <field name="amount">5000</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- Groupe sportif pour les démos -->
+        <record id="demo_groupe_sportif" model="res.partner">
+            <field name="name">Équipe de Football</field>
+            <field name="is_company">True</field>
+            <field name="organization_type">sports_group</field>
+            <field name="sports_group_church_id" ref="base.main_company"/>
+        </record>
+
+        <!-- Activité pour le groupe sportif -->
+        <record id="demo_activity_tournoi_football" model="group.activity">
+            <field name="name">Tournoi inter-églises</field>
+            <field name="description">Participation au tournoi de football inter-églises</field>
+            <field name="group_id" ref="demo_groupe_sportif"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=90)).strftime('%Y-%m-%d 08:00:00')"/>
+            <field name="date_end" eval="(DateTime.now() + timedelta(days=92)).strftime('%Y-%m-%d 18:00:00')"/>
+            <field name="cotisation_amount">20000</field>
+            <field name="state">draft</field>
+        </record>
+
+        <!-- ================= NOTIFICATIONS ET ACTIONS AUTOMATIQUES ================= -->
+        
+        <!-- Créer une action serveur pour marquer automatiquement les cotisations en retard -->
+        <record id="action_server_mark_overdue_cotisations" model="ir.actions.server">
+            <field name="name">Marquer les cotisations en retard</field>
+            <field name="model_id" ref="model_member_cotisation"/>
+            <field name="state">code</field>
+            <field name="code">
+# Marquer automatiquement les cotisations en retard
+today = fields.Date.today()
+overdue_cotisations = records.search([
+    ('due_date', '&lt;', today),
+    ('state', 'in', ['pending', 'partial'])
+])
+# La mise à jour du statut se fait automatiquement via le champ calculé _compute_state
+            </field>
+        </record>
+
+        <!-- Planifier l'exécution quotidienne -->
+        <record id="cron_mark_overdue_cotisations" model="ir.cron">
+            <field name="name">Marquer les cotisations en retard</field>
+            <field name="model_id" ref="model_member_cotisation"/>
+            <field name="state">code</field>
+            <field name="code">model._mark_overdue_cotisations()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+        </record>
+
+</odoo>

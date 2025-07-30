@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= VUE ASSISTANT DE PAIEMENT ================= -->
+    
+    <!-- Vue Form de l'assistant de paiement -->
+    <record id="view_cotisation_payment_wizard_form" model="ir.ui.view">
+        <field name="name">cotisation.payment.wizard.form</field>
+        <field name="model">cotisation.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Enregistrer un paiement">
+                <header>
+                    <field name="current_state" invisible="1"/>
+                </header>
+                
+                <!-- Informations de la cotisation (lecture seule) -->
+                <group string="Informations de la cotisation">
+                    <group>
+                        <field name="cotisation_id" readonly="1" force_save="1"/>
+                        <field name="member_id" readonly="1"/>
+                        <field name="group_id" readonly="1"/>
+                        <field name="cotisation_type" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="amount_due" widget="monetary" readonly="1"/>
+                        <field name="amount_paid" widget="monetary" readonly="1"/>
+                        <field name="remaining_amount" widget="monetary" readonly="1" 
+                               decoration-danger="remaining_amount &gt; 0" 
+                               decoration-success="remaining_amount == 0"/>
+                        <field name="due_date" readonly="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="company_id" invisible="1"/>
+                    </group>
+                </group>
+                
+                <!-- Détails du paiement -->
+                <group string="Détails du paiement">
+                    <group>
+                        <field name="amount" widget="monetary" 
+                               decoration-info="amount &gt; 0" 
+                               decoration-warning="amount &gt; remaining_amount"/>
+                        <field name="payment_date"/>
+                        <field name="payment_method"/>
+                        <field name="reference" placeholder="Numéro de transaction, référence bancaire..."/>
+                    </group>
+                    <group>
+                        <field name="mark_as_full_payment" 
+                               help="Cocher cette case pour marquer la cotisation comme entièrement payée"/>
+                        <field name="payment_completion" readonly="1" widget="percentage" 
+                               decoration-success="payment_completion == 100" 
+                               decoration-info="payment_completion &gt; 0 and payment_completion &lt; 100"/>
+                        <field name="will_be_fully_paid" readonly="1" widget="boolean_toggle"/>
+                    </group>
+                </group>
+                
+                <!-- Notes -->
+                <group string="Notes complémentaires">
+                    <field name="notes" nolabel="1" 
+                           placeholder="Ajoutez des notes concernant ce paiement..."/>
+                </group>
+                
+                <!-- Actions -->
+                <footer>
+                    <button string="Enregistrer le paiement" 
+                            name="action_confirm_payment" 
+                            type="object" 
+                            class="btn-primary"
+                            data-hotkey="v"/>
+                    <button string="Voir la cotisation" 
+                            name="action_view_cotisation" 
+                            type="object" 
+                            class="btn-secondary"
+                            data-hotkey="s"/>
+                    <button string="Annuler" 
+                            name="action_cancel" 
+                            type="object" 
+                            class="btn-secondary" 
+                            data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Action pour ouvrir l'assistant de paiement -->
+    <record id="action_cotisation_payment_wizard" model="ir.actions.act_window">
+        <field name="name">Enregistrer un paiement</field>
+        <field name="res_model">cotisation.payment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_member_cotisation"/>
+        <field name="binding_view_types">form,list</field>
+    </record>
+</odoo>

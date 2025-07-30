@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- ================= RAPPORT DES ACTIVITÉS ================= -->
+
+        <!-- Action pour le rapport des activités -->
+        <record id="action_report_group_activity" model="ir.actions.report">
+            <field name="name">Rapport d'activité</field>
+            <field name="model">group.activity</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">contribution_management.report_group_activity_template</field>
+            <field name="report_file">contribution_management.report_group_activity_template</field>
+            <field name="binding_model_id" ref="model_group_activity" />
+            <field name="binding_type">report</field>
+            <field name="paperformat_id" ref="base.paperformat_euro" />
+        </record>
+
+        <!-- Template du rapport des activités -->
+        <template id="report_group_activity_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="activity">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <div class="oe_structure" />
+
+                            <!-- En-tête du rapport -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h2 class="text-center fw-bold">
+                                        RAPPORT D'ACTIVITÉ
+                                    </h2>
+                                    <h3 class="text-center text-muted">
+                                        <span t-field="activity.name" />
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <!-- Informations générales -->
+                            <div class="row mt-4">
+                                <div class="col-6">
+                                    <strong>Groupe organisateur:</strong>
+                                    <span t-field="activity.group_id.name" />
+                                </div>
+                                <div class="col-6">
+                                    <strong>Date de début:</strong>
+                                    <span t-field="activity.date_start"
+                                        t-options="{'widget': 'datetime'}" />
+                                </div>
+                            </div>
+
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <strong>Montant de la cotisation:</strong>
+                                    <span t-esc="activity.cotisation_amount"
+                                        t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
+                                </div>
+                                <div class="col-6">
+                                    <strong>Statut:</strong>
+                                    <span class="badge"
+                                        t-att-class="'badge-success' if activity.state == 'completed' else 'badge-primary' if activity.state == 'ongoing' else 'badge-warning' if activity.state == 'confirmed' else 'badge-secondary'">
+                                        <t t-if="activity.state == 'draft'">Brouillon</t>
+                                        <t t-elif="activity.state == 'confirmed'">Confirmée</t>
+                                        <t t-elif="activity.state == 'ongoing'">En cours</t>
+                                        <t t-elif="activity.state == 'completed'">Terminée</t>
+                                        <t t-elif="activity.state == 'cancelled'">Annulée</t>
+                                        <t t-else="">
+                                            <t t-esc="activity.state" />
+                                        </t>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="row mt-2" t-if="activity.date_end">
+                                <div class="col-6">
+                                    <strong>Date de fin:</strong>
+                                    <span t-field="activity.date_end"
+                                        t-options="{'widget': 'datetime'}" />
+                                </div>
+                            </div>
+
+                            <div class="row mt-2" t-if="activity.description">
+                                <div class="col-12">
+                                    <strong>Description:</strong>
+                                    <div t-field="activity.description" class="mt-1" />
+                                </div>
+                            </div>
+
+                            <!-- Statistiques -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h4 class="fw-bold">Statistiques des cotisations</h4>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-3">
+                                    <div class="card text-center border-primary">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-primary fw-bold"
+                                                t-esc="activity.total_members" />
+                                            <p class="card-text small">Membres total</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="card text-center bg-success text-white">
+                                        <div class="card-body">
+                                            <h5 class="card-title fw-bold"
+                                                t-esc="activity.paid_members" />
+                                            <p class="card-text small">Ont payé</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="card text-center bg-warning text-dark">
+                                        <div class="card-body">
+                                            <h5 class="card-title fw-bold"
+                                                t-esc="activity.unpaid_members" />
+                                            <p class="card-text small">N'ont pas payé</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="card text-center bg-info text-white">
+                                        <div class="card-body">
+                                            <h5 class="card-title fw-bold"
+                                                t-esc="'%.1f%%' % activity.completion_rate" />
+                                            <p class="card-text small">Taux completion</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Montants -->
+                            <div class="row mt-3">
+                                <div class="col-6">
+                                    <div
+                                        class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                        <strong>Total attendu:</strong>
+                                        <span class="fw-bold text-primary"
+                                            t-esc="activity.total_expected"
+                                            t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div
+                                        class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                        <strong>Total collecté:</strong>
+                                        <span class="fw-bold text-success"
+                                            t-esc="activity.total_collected"
+                                            t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Liste des cotisations -->
+                            <div class="row mt-4" t-if="activity.cotisation_ids">
+                                <div class="col-12">
+                                    <h4 class="fw-bold">Détail des cotisations</h4>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="fw-bold">Membre</th>
+                                                    <th class="fw-bold text-end">Montant dû</th>
+                                                    <th class="fw-bold text-end">Montant payé</th>
+                                                    <th class="fw-bold text-end">Restant</th>
+                                                    <th class="fw-bold text-center">Date échéance</th>
+                                                    <th class="fw-bold text-center">Date paiement</th>
+                                                    <th class="fw-bold text-center">Statut</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t
+                                                    t-foreach="activity.cotisation_ids.sorted(key=lambda c: c.member_id.name)"
+                                                    t-as="cotisation">
+                                                    <tr>
+                                                        <td class="fw-semibold"
+                                                            t-esc="cotisation.member_id.name" />
+                                                        <td class="text-end"
+                                                            t-esc="cotisation.amount_due"
+                                                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                        <td class="text-end"
+                                                            t-esc="cotisation.amount_paid"
+                                                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                        <td class="text-end"
+                                                            t-esc="cotisation.remaining_amount"
+                                                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                        <td class="text-center"
+                                                            t-esc="cotisation.due_date"
+                                                            t-options="{'widget': 'date'}" />
+                                                        <td class="text-center">
+                                                            <span t-if="cotisation.payment_date"
+                                                                t-esc="cotisation.payment_date"
+                                                                t-options="{'widget': 'date'}" />
+                                                            <span t-else="" class="text-muted">-</span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span t-if="cotisation.state == 'paid'"
+                                                                class="badge bg-success">Payé</span>
+                                                            <span
+                                                                t-elif="cotisation.state == 'partial'"
+                                                                class="badge bg-warning text-dark">
+                                                                Partiel</span>
+                                                            <span
+                                                                t-elif="cotisation.state == 'overdue'"
+                                                                class="badge bg-danger">En retard</span>
+                                                            <span
+                                                                t-elif="cotisation.state == 'pending'"
+                                                                class="badge bg-info">En attente</span>
+                                                            <span
+                                                                t-elif="cotisation.state == 'cancelled'"
+                                                                class="badge bg-secondary">Annulée</span>
+                                                            <span t-else=""
+                                                                class="badge bg-secondary"
+                                                                t-esc="cotisation.state" />
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                            <tfoot class="table-light">
+                                                <tr class="fw-bold">
+                                                    <td>TOTAL</td>
+                                                    <td class="text-end"
+                                                        t-esc="activity.total_expected"
+                                                        t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
+                                                    <td class="text-end"
+                                                        t-esc="activity.total_collected"
+                                                        t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
+                                                    <td class="text-end"
+                                                        t-esc="activity.total_expected - activity.total_collected"
+                                                        t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
+                                                    <td colspan="3" class="text-center text-muted">-</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Message si aucune cotisation -->
+                            <div class="row mt-4" t-if="not activity.cotisation_ids">
+                                <div class="col-12">
+                                    <div class="alert alert-info text-center" role="alert">
+                                        <i class="fa fa-info-circle me-2"></i> Aucune cotisation
+                                        générée pour cette activité. <br />
+                                    <small class="text-muted">
+                                        Confirmez l'activité pour générer automatiquement les
+                                        cotisations des membres.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pied de page avec informations de génération -->
+                            <div class="row mt-5 pt-3 border-top">
+                                <div class="col-12 text-center text-muted small">
+                                    <p class="mb-1"> Rapport généré le <span
+                                            t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y à %H:%M')" />
+                                    </p>
+                                    <p class="mb-0">
+                                        <span t-esc="env.company.name" /> - Système de gestion des
+                                        contributions </p>
+                                </div>
+                            </div>
+
+                            <div class="oe_structure" />
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+   
+</odoo>
