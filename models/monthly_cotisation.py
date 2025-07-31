@@ -461,6 +461,7 @@ class MonthlyCotisation(models.Model):
             ('group_id', '=', self.group_id.id),
             ('month', '=', str(next_month)),
             ('year', '=', next_year),
+            ('amount', '=', self.amount),
             ('active', '=', True)
         ])
         
