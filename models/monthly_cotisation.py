@@ -475,7 +475,7 @@ class MonthlyCotisation(models.Model):
             'year': next_year,
             'state': 'draft',
             'activation_date': False,
-            'closure_date': False
+            'closure_date': False,
         })
         
         return {
