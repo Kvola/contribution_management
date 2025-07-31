@@ -1,0 +1,277 @@
+<odoo>
+    <!-- ================= VUES POUR LES LOGS DE GÉNÉRATION ================= -->
+
+    <!-- Vue liste des logs -->
+    <record id="view_report_generation_log_tree" model="ir.ui.view">
+        <field name="name">report.generation.log.tree</field>
+        <field name="model">report.generation.log</field>
+        <field name="arch" type="xml">
+            <tree string="Historique des générations de rapports" create="false" edit="false">
+                <field name="name"/>
+                <field name="report_type"/>
+                <field name="partner_count"/>
+                <field name="format_type"/>
+                <field name="generation_date"/>
+                <field name="user_id"/>
+                <field name="status" widget="badge" 
+                       decoration-success="status == 'success'"
+                       decoration-warning="status == 'partial'"
+                       decoration-danger="status == 'error'"/>
+                <field name="email_sent" widget="boolean_toggle"/>
+                <field name="email_count"/>
+                <field name="attachment_ids" column_invisible="1"/>
+                <button name="action_download_attachments" 
+                        string="Télécharger" 
+                        type="object" 
+                        icon="fa-download"
+                        column_invisible="not attachment_ids"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue formulaire des logs -->
+    <record id="view_report_generation_log_form" model="ir.ui.view">
+        <field name="name">report.generation.log.form</field>
+        <field name="model">report.generation.log</field>
+        <field name="arch" type="xml">
+            <form string="Détails de génération" create="false" edit="false">
+                <header>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group name="info">
+                            <field name="report_type"/>
+                            <field name="format_type"/>
+                            <field name="partner_count"/>
+                            <field name="generation_date"/>
+                            <field name="user_id"/>
+                        </group>
+                        
+                        <group name="email">
+                            <field name="email_sent"/>
+                            <field name="email_count" invisible="not email_sent"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Partenaires" name="partners">
+                            <field name="partner_ids" mode="tree" readonly="1">
+                                <tree string="Partenaires traités">
+                                    <field name="name"/>
+                                    <field name="email"/>
+                                    <field name="is_company"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="Fichiers générés" name="attachments">
+                            <field name="attachment_ids" mode="tree" readonly="1">
+                                <tree string="Fichiers">
+                                    <field name="name"/>
+                                    <field name="mimetype"/>
+                                    <field name="file_size" widget="float"/>
+                                    <field name="create_date"/>
+                                    <!-- <button name="action_download_attachments" 
+                                            string="Télécharger" 
+                                            type="object" 
+                                            icon="fa-download"
+                                            context="{'attachment_id': active_id}"/> -->
+                                </tree>
+                            </field>
+                            
+                            <div class="oe_chatter">
+                                <button name="action_download_attachments" 
+                                        string="Télécharger tous les fichiers" 
+                                        type="object" 
+                                        class="btn-primary"
+                                        invisible="not attachment_ids"/>
+                            </div>
+                        </page>
+                        
+                        <page string="Erreurs" name="errors" invisible="status != 'error'">
+                            <field name="error_message" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue recherche pour les logs -->
+    <record id="view_report_generation_log_search" model="ir.ui.view">
+        <field name="name">report.generation.log.search</field>
+        <field name="model">report.generation.log</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher dans l'historique">
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="partner_ids"/>
+                
+                <filter name="filter_success" string="Succès" domain="[('status', '=', 'success')]"/>
+                <filter name="filter_error" string="Erreurs" domain="[('status', '=', 'error')]"/>
+                <filter name="filter_email_sent" string="Email envoyé" domain="[('email_sent', '=', True)]"/>
+                
+                <separator/>
+                <filter name="filter_today" string="Aujourd'hui" 
+                        domain="[('generation_date', '>=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_week" string="Cette semaine" 
+                        domain="[('generation_date', '>=', (context_today()-datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_month" string="Ce mois" 
+                        domain="[('generation_date', '>=', (context_today()-datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                
+                <group expand="0" string="Grouper par">
+                    <filter name="group_type" string="Type" context="{'group_by': 'report_type'}"/>
+                    <filter name="group_status" string="Statut" context="{'group_by': 'status'}"/>
+                    <filter name="group_user" string="Utilisateur" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_date" string="Date" context="{'group_by': 'generation_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vue kanban pour le dashboard rapports -->
+    <record id="view_reports_dashboard_kanban" model="ir.ui.view">
+        <field name="name">reports.dashboard.kanban</field>
+        <field name="model">report.generation.log</field>
+        <field name="arch" type="xml">
+            <kanban string="Dashboard Rapports" create="false">
+                <field name="name"/>
+                <field name="report_type"/>
+                <field name="status"/>
+                <field name="partner_count"/>
+                <field name="generation_date"/>
+                <field name="user_id"/>
+                <field name="attachment_ids"/>
+                
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card o_kanban_record_has_image_fill">
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name"/>
+                                    </strong>
+                                    <span class="o_kanban_record_subtitle">
+                                        <t t-if="record.report_type.raw_value == 'member'">Rapports membres</t>
+                                        <t t-elif="record.report_type.raw_value == 'group'">Synthèses groupes</t>
+                                        <t t-elif="record.report_type.raw_value == 'bulk_member'">Lot membres</t>
+                                        <t t-else="">Lot groupes</t>
+                                    </span>
+                                </div>
+                                <div class="o_kanban_record_top_right">
+                                    <div class="o_dropdown_kanban dropdown">
+                                        <a class="dropdown-toggle o-no-caret btn" data-bs-toggle="dropdown" href="#" role="button" aria-label="Dropdown menu" title="Dropdown menu">
+                                            <span class="fa fa-ellipsis-v"/>
+                                        </a>
+                                        <ul class="dropdown-menu" role="menu">
+                                            <li><a name="action_download_attachments" type="object">Télécharger</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="o_kanban_record_body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <span>Partenaires: <field name="partner_count"/></span>
+                                    </div>
+                                    <div class="col-6">
+                                        <span t-attf-class="badge #{record.status.raw_value == 'success' ? 'text-bg-success' : record.status.raw_value == 'error' ? 'text-bg-danger' : 'text-bg-warning'}">
+                                            <t t-if="record.status.raw_value == 'success'">Succès</t>
+                                            <t t-elif="record.status.raw_value == 'error'">Erreur</t>
+                                            <t t-else="">Partiel</t>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt8">
+                                    <i class="fa fa-calendar"/> <field name="generation_date"/>
+                                </div>
+                                <div>
+                                    <i class="fa fa-user"/> <field name="user_id"/>
+                                </div>
+                                
+                                <div class="mt8" t-if="record.attachment_ids.raw_value.length > 0">
+                                    <i class="fa fa-file"/> 
+                                    <t t-esc="record.attachment_ids.raw_value.length"/> fichier(s)
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ================= ACTIONS POUR LES LOGS ================= -->
+    
+    <!-- Action pour voir l'historique des rapports -->
+    <record id="action_report_generation_logs" model="ir.actions.act_window">
+        <field name="name">Historique des rapports</field>
+        <field name="res_model">report.generation.log</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_report_generation_log_search"/>
+        <field name="context">{'search_default_filter_today': 1}</field>
+    </record>
+
+    <!-- Action serveur pour nettoyer les anciens logs -->
+    <record id="action_cleanup_old_logs" model="ir.actions.server">
+        <field name="name">Nettoyer anciens logs</field>
+        <field name="model_id" ref="model_report_generation_log"/>
+        <field name="state">code</field>
+        <field name="code">model.cleanup_old_logs(days=60)</field>
+    </record>
+
+    <!-- Action dashboard -->
+    <record id="action_reports_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard Rapports</field>
+        <field name="res_model">report.generation.log</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_id" ref="view_reports_dashboard_kanban"/>
+        <field name="context">{'search_default_filter_week': 1}</field>
+    </record>
+
+    <!-- Vue graphique pour les statistiques des rapports -->
+    <record id="view_report_stats_graph" model="ir.ui.view">
+        <field name="name">report.generation.log.graph</field>
+        <field name="model">report.generation.log</field>
+        <field name="arch" type="xml">
+            <graph string="Statistiques des rapports" type="bar">
+                <field name="generation_date" type="row" interval="day"/>
+                <field name="partner_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vue pivot pour analyse -->
+    <record id="view_report_stats_pivot" model="ir.ui.view">
+        <field name="name">report.generation.log.pivot</field>
+        <field name="model">report.generation.log</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des rapports">
+                <field name="report_type" type="row"/>
+                <field name="status" type="col"/>
+                <field name="partner_count" type="measure"/>
+                <field name="email_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Action pour les statistiques -->
+    <record id="action_report_statistics" model="ir.actions.act_window">
+        <field name="name">Statistiques des rapports</field>
+        <field name="res_model">report.generation.log</field>
+        <field name="view_mode">graph,pivot</field>
+        <field name="view_ids" eval="[(5, 0, 0), 
+                                    (0, 0, {'view_mode': 'graph', 'view_id': ref('view_report_stats_graph')}),
+                                    (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_report_stats_pivot')})]"/>
+    </record>
+</odoo>

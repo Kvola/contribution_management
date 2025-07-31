@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= RAPPORT SIMPLE DES ACTIVITÉS ================= -->
+
+    <!-- Action pour le rapport simple -->
+    <record id="action_report_group_activity_simple" model="ir.actions.report">
+        <field name="name">Rapport d'activité (Simple)</field>
+        <field name="model">group.activity</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_group_activity_simple_template</field>
+        <field name="report_file">contribution_management.report_group_activity_simple_template</field>
+        <field name="binding_model_id" ref="model_group_activity"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+    <record id="action_report_group_activity_list" model="ir.actions.report">
+        <field name="name">Rapport d'activité (Liste)</field>
+        <field name="model">group.activity</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_group_activity_list_template</field>
+        <field name="report_file">contribution_management.report_group_activity_list_template</field>
+        <field name="binding_model_id" ref="model_group_activity"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <!-- ================= RAPPORT SIMPLE DES ACTIVITÉS - FIXED ================= -->
+
+    <!-- Template simplifié du rapport - FIXED -->
+    <template id="report_group_activity_simple_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="activity">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- En-tête -->
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">RAPPORT D'ACTIVITÉ</h1>
+                            <h2 style="font-size: 18px; color: #666; margin-bottom: 0px;" t-esc="activity.name"/>
+                        </div>
+
+                        <!-- Informations générales dans un tableau - FIXED -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
+                            <tr>
+                                <td style="width: 25%; padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Groupe organisateur</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;" t-esc="activity.group_id.name"/>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Date de début</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;" t-esc="activity.date_start.strftime('%d/%m/%Y à %H:%M') if activity.date_start else 'Non définie'"/>
+                            </tr>
+                            <tr t-if="activity.date_end">
+                                <td style="padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Date de fin</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;" t-esc="activity.date_end.strftime('%d/%m/%Y à %H:%M')"/>
+                            </tr>
+                            <tr t-if="activity.location">
+                                <td style="padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Lieu</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;" t-esc="activity.location"/>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Montant cotisation</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;" t-esc="'{:.2f} {}'.format(activity.cotisation_amount, activity.currency_id.symbol)"/>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Statut</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">
+                                    <span t-if="activity.state == 'draft'">Brouillon</span>
+                                    <span t-elif="activity.state == 'confirmed'">Confirmée</span>
+                                    <span t-elif="activity.state == 'ongoing'">En cours</span>
+                                    <span t-elif="activity.state == 'completed'">Terminée</span>
+                                    <span t-elif="activity.state == 'cancelled'">Annulée</span>
+                                    <span t-else="" t-esc="activity.state"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Description si présente -->
+                        <div t-if="activity.description" style="margin-bottom: 30px;">
+                            <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">Description</h3>
+                            <div style="padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff;">
+                                <div t-raw="activity.description"/>
+                            </div>
+                        </div>
+
+                        <!-- Statistiques - FIXED -->
+                        <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">Statistiques des cotisations</h3>
+                        
+                        <!-- Tableau des statistiques - FIXED -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
+                            <tr>
+                                <td style="width: 25%; padding: 12px; border: 1px solid #ddd; background-color: #e3f2fd; font-weight: bold; text-align: center;">
+                                    <div style="font-size: 20px; color: #1976d2;" t-esc="activity.total_members"/>
+                                    <div style="font-size: 12px;">Membres total</div>
+                                </td>
+                                <td style="width: 25%; padding: 12px; border: 1px solid #ddd; background-color: #e8f5e8; font-weight: bold; text-align: center;">
+                                    <div style="font-size: 20px; color: #388e3c;" t-esc="activity.paid_members"/>
+                                    <div style="font-size: 12px;">Ont payé</div>
+                                </td>
+                                <td style="width: 25%; padding: 12px; border: 1px solid #ddd; background-color: #fff3e0; font-weight: bold; text-align: center;">
+                                    <div style="font-size: 20px; color: #f57c00;" t-esc="activity.unpaid_members"/>
+                                    <div style="font-size: 12px;">N'ont pas payé</div>
+                                </td>
+                                <td style="width: 25%; padding: 12px; border: 1px solid #ddd; background-color: #e0f2f1; font-weight: bold; text-align: center;">
+                                    <div style="font-size: 20px; color: #00796b;">
+                                        <span t-esc="round(activity.completion_rate, 1)"/>%
+                                    </div>
+                                    <div style="font-size: 12px;">Taux completion</div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Résumé financier - FIXED -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
+                            <tr>
+                                <td style="width: 50%; padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Total attendu</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #1976d2;" t-esc="'{:.2f} {}'.format(activity.total_expected, activity.currency_id.symbol)"/>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Total collecté</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #388e3c;" t-esc="'{:.2f} {}'.format(activity.total_collected, activity.currency_id.symbol)"/>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Restant à collecter</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #d32f2f;" t-esc="'{:.2f} {}'.format(activity.total_expected - activity.total_collected, activity.currency_id.symbol)"/>
+                            </tr>
+                        </table>
+
+                        <!-- Liste des cotisations - version simplifiée - FIXED -->
+                        <t t-if="activity.cotisation_ids">
+                            <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">Liste des membres et cotisations</h3>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead>
+                                    <tr style="background-color: #f5f5f5;">
+                                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Membre</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">Montant dû</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">Montant payé</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">Restant</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="activity.cotisation_ids.filtered(lambda c: c.active).sorted(key=lambda c: c.member_id.name)" t-as="cotisation">
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 6px;" t-esc="cotisation.member_id.name"/>
+                                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;" t-esc="'{:.2f} {}'.format(cotisation.amount_due, cotisation.currency_id.symbol)"/>
+                                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;" t-esc="'{:.2f} {}'.format(cotisation.amount_paid, cotisation.currency_id.symbol)"/>
+                                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;" t-esc="'{:.2f} {}'.format(cotisation.remaining_amount, cotisation.currency_id.symbol)"/>
+                                            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">
+                                                <span t-if="cotisation.state == 'paid'" style="color: #388e3c; font-weight: bold;">✓ Payé</span>
+                                                <span t-elif="cotisation.state == 'partial'" style="color: #f57c00; font-weight: bold;">⚠ Partiel</span>
+                                                <span t-elif="cotisation.state == 'overdue'" style="color: #d32f2f; font-weight: bold;">⚡ Retard</span>
+                                                <span t-elif="cotisation.state == 'pending'" style="color: #1976d2;">⏳ Attente</span>
+                                                <span t-elif="cotisation.state == 'cancelled'" style="color: #666;">✕ Annulée</span>
+                                                <span t-else="" t-esc="cotisation.state"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background-color: #f5f5f5; font-weight: bold;">
+                                        <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" t-esc="'{:.2f} {}'.format(activity.total_expected, activity.currency_id.symbol)"/>
+                                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" t-esc="'{:.2f} {}'.format(activity.total_collected, activity.currency_id.symbol)"/>
+                                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" t-esc="'{:.2f} {}'.format(activity.total_expected - activity.total_collected, activity.currency_id.symbol)"/>
+                                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">-</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- Message si aucune cotisation -->
+                        <t t-if="not activity.cotisation_ids">
+                            <div style="background-color: #e3f2fd; border: 1px solid #1976d2; padding: 20px; text-align: center; border-radius: 5px;">
+                                <h4 style="color: #1976d2; margin-bottom: 10px;">ℹ️ Aucune cotisation générée</h4>
+                                <p style="margin: 0; color: #666;">Confirmez l'activité pour générer automatiquement les cotisations des membres du groupe.</p>
+                            </div>
+                        </t>
+
+                        <!-- Informations supplémentaires -->
+                        <t t-if="activity.max_participants or activity.min_participants">
+                            <div style="margin-top: 30px;">
+                                <h4 style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Informations sur les participants</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                    <tr t-if="activity.max_participants">
+                                        <td style="width: 30%; padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Maximum autorisé</td>
+                                        <td style="padding: 8px; border: 1px solid #ddd;" t-esc="activity.max_participants"/>
+                                    </tr>
+                                    <tr t-if="activity.min_participants">
+                                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Minimum requis</td>
+                                        <td style="padding: 8px; border: 1px solid #ddd;" t-esc="activity.min_participants"/>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Participants actuels</td>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #1976d2;" t-esc="activity.participant_count"/>
+                                    </tr>
+                                    <tr t-if="activity.max_participants">
+                                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold;">Places disponibles</td>
+                                        <td style="padding: 8px; border: 1px solid #ddd;" t-esc="activity.available_spots if activity.available_spots >= 0 else 'Illimité'"/>
+                                    </tr>
+                                </table>
+                            </div>
+                        </t>
+
+                        <!-- Pied de page -->
+                        <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; color: #666; font-size: 11px;">
+                            <p style="margin-bottom: 5px;">
+                                Rapport généré le <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y à %H:%M')"/>
+                            </p>
+                            <p style="margin: 0;">
+                                <span t-esc="env.company.name"/> - Système de gestion des contributions
+                            </p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ================= RAPPORT LISTE SIMPLE - FIXED ================= -->
+
+    <!-- Template pour liste simple des cotisations - FIXED -->
+    <template id="report_group_activity_list_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="activity">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- En-tête simplifié -->
+                        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 15px;">
+                            <h1 style="font-size: 20px; font-weight: bold; margin-bottom: 5px; color: #007bff;">LISTE DES COTISATIONS</h1>
+                            <h2 style="font-size: 16px; margin-bottom: 5px;" t-esc="activity.name"/>
+                            <p style="font-size: 12px; color: #666; margin: 0;">
+                                <span t-esc="activity.group_id.name"/> - 
+                                <span t-esc="activity.date_start.strftime('%d/%m/%Y') if activity.date_start else 'Date non définie'"/>
+                            </p>
+                        </div>
+
+                        <!-- Résumé rapide - FIXED -->
+                        <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                                <span><strong>Participants:</strong> <span t-esc="activity.total_members"/></span>
+                                <span><strong>Payé:</strong> <span style="color: #28a745;" t-esc="activity.paid_members"/></span>
+                                <span><strong>En attente:</strong> <span style="color: #ffc107;" t-esc="activity.unpaid_members"/></span>
+                                <span><strong>Total collecté:</strong> 
+                                    <span style="color: #007bff; font-weight: bold;" t-esc="'{:.2f} {}'.format(activity.total_collected, activity.currency_id.symbol)"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Liste des cotisations - FIXED -->
+                        <t t-if="activity.cotisation_ids">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead>
+                                    <tr style="background-color: #007bff; color: white;">
+                                        <th style="border: 1px solid #007bff; padding: 10px; text-align: left; font-weight: bold;">N°</th>
+                                        <th style="border: 1px solid #007bff; padding: 10px; text-align: left; font-weight: bold;">Membre</th>
+                                        <th style="border: 1px solid #007bff; padding: 10px; text-align: center; font-weight: bold;">Montant</th>
+                                        <th style="border: 1px solid #007bff; padding: 10px; text-align: center; font-weight: bold;">Payé</th>
+                                        <th style="border: 1px solid #007bff; padding: 10px; text-align: center; font-weight: bold;">Restant</th>
+                                        <th style="border: 1px solid #007bff; padding: 10px; text-align: center; font-weight: bold;">Échéance</th>
+                                        <th style="border: 1px solid #007bff; padding: 10px; text-align: center; font-weight: bold;">Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="activity.cotisation_ids.filtered(lambda c: c.active).sorted(key=lambda c: c.member_id.name)" t-as="cotisation">
+                                        <tr t-att-style="'background-color: ' + (
+                                            '#d4edda' if cotisation.state == 'paid' else
+                                            '#fff3cd' if cotisation.state == 'partial' else
+                                            '#f8d7da' if cotisation.state == 'overdue' else
+                                            'white'
+                                        ) + ';'">
+                                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" t-esc="cotisation_index + 1"/>
+                                            <td style="border: 1px solid #ddd; padding: 8px; font-weight: 500;" t-esc="cotisation.member_id.name"/>
+                                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" t-esc="'{:.2f}'.format(cotisation.amount_due)"/>
+                                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;" t-esc="'{:.2f}'.format(cotisation.amount_paid)"/>
+                                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" t-esc="'{:.2f}'.format(cotisation.remaining_amount)"/>
+                                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;" t-esc="cotisation.due_date.strftime('%d/%m/%Y') if cotisation.due_date else '-'"/>
+                                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">
+                                                <span t-if="cotisation.state == 'paid'" style="color: #155724;">PAYÉ</span>
+                                                <span t-elif="cotisation.state == 'partial'" style="color: #856404;">PARTIEL</span>
+                                                <span t-elif="cotisation.state == 'overdue'" style="color: #721c24;">RETARD</span>
+                                                <span t-elif="cotisation.state == 'pending'" style="color: #004085;">ATTENTE</span>
+                                                <span t-elif="cotisation.state == 'cancelled'" style="color: #6c757d;">ANNULÉ</span>
+                                                <span t-else="" t-esc="cotisation.state"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #007bff;">
+                                        <td colspan="2" style="border: 1px solid #ddd; padding: 10px; text-align: right;">TOTAL:</td>
+                                        <td style="border: 1px solid #ddd; padding: 10px; text-align: center;" t-esc="'{:.2f}'.format(activity.total_expected)"/>
+                                        <td style="border: 1px solid #ddd; padding: 10px; text-align: center; color: #28a745; font-weight: bold;" t-esc="'{:.2f}'.format(activity.total_collected)"/>
+                                        <td style="border: 1px solid #ddd; padding: 10px; text-align: center; color: #dc3545; font-weight: bold;" t-esc="'{:.2f}'.format(activity.total_expected - activity.total_collected)"/>
+                                        <td colspan="2" style="border: 1px solid #ddd; padding: 10px; text-align: center; color: #666;">
+                                            <span t-esc="activity.currency_id.symbol"/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- Message si aucune cotisation -->
+                        <t t-if="not activity.cotisation_ids">
+                            <div style="text-align: center; padding: 50px; background-color: #f8f9fa; border-radius: 10px;">
+                                <h3 style="color: #6c757d; margin-bottom: 15px;">📋 Aucune cotisation trouvée</h3>
+                                <p style="color: #6c757d; margin: 0;">L'activité doit être confirmée pour générer les cotisations des membres.</p>
+                            </div>
+                        </t>
+
+                        <!-- Signatures pour impression -->
+                        <div style="margin-top: 60px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <div style="width: 45%; text-align: center;">
+                                    <div style="border-bottom: 1px solid #333; margin-bottom: 5px; padding-bottom: 50px;"></div>
+                                    <p style="font-size: 12px; margin: 0;"><strong>Responsable du groupe</strong></p>
+                                    <p style="font-size: 10px; color: #666; margin: 0;">Signature et date</p>
+                                </div>
+                                <div style="width: 45%; text-align: center;">
+                                    <div style="border-bottom: 1px solid #333; margin-bottom: 5px; padding-bottom: 50px;"></div>
+                                    <p style="font-size: 12px; margin: 0;"><strong>Trésorier</strong></p>
+                                    <p style="font-size: 10px; color: #666; margin: 0;">Signature et date</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pied de page -->
+                        <div style="position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; color: #666; font-size: 10px;">
+                            <p style="margin: 0;">
+                                Document généré le <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y à %H:%M')"/> - 
+                                <span t-esc="env.company.name"/>
+                            </p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+
+</odoo>

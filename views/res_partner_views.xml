@@ -20,7 +20,7 @@
                 <!-- Bouton cotisations en retard pour les membres -->
                 <button name="action_view_overdue_cotisations" type="object" 
                         class="oe_stat_button" icon="fa-exclamation-triangle"
-                        invisible="is_company or overdue_cotisations == 0"
+                        invisible="is_company or not overdue_cotisations"
                         context="{'search_default_overdue': 1}">
                     <field name="overdue_cotisations" widget="statinfo" string="En retard"/>
                 </button>
@@ -116,7 +116,7 @@
                                 string="Voir toutes mes cotisations" class="btn btn-primary"/>
                         <button name="action_pay_all_outstanding" type="object" 
                                 string="Payer les cotisations en attente" class="btn btn-secondary"
-                                invisible="pending_cotisations == 0 and partial_cotisations == 0 and overdue_cotisations == 0"/>
+                                invisible="not pending_cotisations and not partial_cotisations and not overdue_cotisations"/>
                         <button name="action_send_payment_reminders" type="object" 
                                 string="Envoyer rappels" class="btn btn-info"/>
                     </div>
@@ -200,9 +200,9 @@
             
             <!-- Ajouter des champs cachés nécessaires aux calculs -->
             <xpath expr="//field[@name='is_company']" position="after">
-                <field name="has_overdue_payments" invisible="1"/>
-                <field name="is_good_payer" invisible="1"/>
-                <field name="days_since_last_payment" invisible="1"/>
+                <field name="has_overdue_payments" column_invisible="1"/>
+                <field name="is_good_payer" column_invisible="1"/>
+                <field name="days_since_last_payment" column_invisible="1"/>
             </xpath>
         </field>
     </record>
@@ -250,18 +250,18 @@
                 <div class="oe_kanban_footer" invisible="is_company">
                     <div class="o_kanban_record_bottom">
                         <div class="oe_kanban_bottom_left">
-                            <span class="badge text-bg-primary" invisible="total_cotisations == 0">
+                            <span class="badge text-bg-primary" invisible="not total_cotisations">
                                 <field name="total_cotisations"/> Cotisations
                             </span>
-                            <span class="badge text-bg-danger" invisible="overdue_cotisations == 0">
+                            <span class="badge text-bg-danger" invisible="not overdue_cotisations">
                                 <field name="overdue_cotisations"/> En retard
                             </span>
                         </div>
                         <div class="oe_kanban_bottom_right">
-                            <span class="badge text-bg-success" invisible="payment_rate == 0 or payment_rate &lt; 80">
+                            <span class="badge text-bg-success" invisible="not payment_rate or payment_rate &lt; 80">
                                 <field name="payment_rate" widget="percentage"/>
                             </span>
-                            <span class="badge text-bg-warning" invisible="payment_rate == 0 or payment_rate >= 80">
+                            <span class="badge text-bg-warning" invisible="not payment_rate or payment_rate >= 80">
                                 <field name="payment_rate" widget="percentage"/>
                             </span>
                         </div>
@@ -272,18 +272,18 @@
                 <div class="oe_kanban_footer" invisible="not is_company">
                     <div class="o_kanban_record_bottom">
                         <div class="oe_kanban_bottom_left">
-                            <span class="badge text-bg-primary" invisible="activities_count == 0">
+                            <span class="badge text-bg-primary" invisible="not activities_count">
                                 <field name="activities_count"/> Activités
                             </span>
-                            <span class="badge text-bg-info" invisible="group_members_count == 0">
+                            <span class="badge text-bg-info" invisible="not group_members_count">
                                 <field name="group_members_count"/> Membres
                             </span>
                         </div>
                         <div class="oe_kanban_bottom_right">
-                            <span class="badge text-bg-success" invisible="group_collection_rate == 0 or group_collection_rate &lt; 80">
+                            <span class="badge text-bg-success" invisible="not group_collection_rate or group_collection_rate &lt; 80">
                                 <field name="group_collection_rate" widget="percentage"/>
                             </span>
-                            <span class="badge text-bg-warning" invisible="group_collection_rate == 0 or group_collection_rate >= 80">
+                            <span class="badge text-bg-warning" invisible="not group_collection_rate or group_collection_rate >= 80">
                                 <field name="group_collection_rate" widget="percentage"/>
                             </span>
                         </div>
@@ -334,6 +334,100 @@
                 <filter string="Type (Membre/Groupe)" name="group_by_type" context="{'group_by': 'is_company'}"/>
                 <filter string="Statut de paiement" name="group_by_payment_status" 
                         context="{'group_by': 'is_good_payer'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Amélioration de la vue membre avec section rapports -->
+    <record id="view_partner_member_reports_section" model="ir.ui.view">
+        <field name="name">res.partner.member.reports.section</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Rapports" name="reports" invisible="is_company">
+                    <group>
+                        <group name="report_actions">
+                            <div class="o_form_label">Actions rapides</div>
+                            <div>
+                                <button name="action_print_member_report" 
+                                        string="Imprimer rapport" 
+                                        type="object" 
+                                        class="btn-primary oe_inline"/>
+                                <button name="action_email_member_report" 
+                                        string="Envoyer par email" 
+                                        type="object" 
+                                        class="btn-secondary oe_inline"
+                                        invisible="not email"/>
+                            </div>
+                        </group>
+                        
+                        <group name="report_stats">
+                            <div class="o_form_label">Statistiques rapports</div>
+                            <div class="o_group">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_value">
+                                        <field name="total_cotisations"/>
+                                    </span>
+                                    <span class="o_stat_text">Total cotisations</span>
+                                </div>
+                                <div class="o_stat_info">
+                                    <span class="o_stat_value">
+                                        <field name="payment_rate" widget="percentage"/>
+                                    </span>
+                                    <span class="o_stat_text">Taux paiement</span>
+                                </div>
+                            </div>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Amélioration de la vue groupe avec section rapports -->
+    <record id="view_partner_group_reports_section" model="ir.ui.view">
+        <field name="name">res.partner.group.reports.section</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Rapports" name="reports" invisible="not is_company">
+                    <group>
+                        <group name="report_actions">
+                            <div class="o_form_label">Actions rapides</div>
+                            <div>
+                                <button name="action_print_group_report" 
+                                        string="Imprimer synthèse" 
+                                        type="object" 
+                                        class="btn-primary oe_inline"/>
+                                <button name="action_email_group_report" 
+                                        string="Envoyer par email" 
+                                        type="object" 
+                                        class="btn-secondary oe_inline"
+                                        invisible="not email"/>
+                            </div>
+                        </group>
+                        
+                        <group name="report_stats">
+                            <div class="o_form_label">Statistiques groupe</div>
+                            <div class="o_group">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_value">
+                                        <field name="group_members_count"/>
+                                    </span>
+                                    <span class="o_stat_text">Membres</span>
+                                </div>
+                                <div class="o_stat_info">
+                                    <span class="o_stat_value">
+                                        <field name="group_collection_rate" widget="percentage"/>
+                                    </span>
+                                    <span class="o_stat_text">Taux collecte</span>
+                                </div>
+                            </div>
+                        </group>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>

@@ -215,8 +215,9 @@ class MonthlyCotisation(models.Model):
             monthly.total_collected = sum(cotisations.mapped('amount_paid'))
             monthly.total_expected = monthly.total_members * monthly.amount
             
+            # Correction du calcul du taux de completion - multiplier par 100 pour obtenir le pourcentage
             if monthly.total_expected > 0:
-                monthly.completion_rate = (monthly.total_collected / monthly.total_expected) / 100
+                monthly.completion_rate = (monthly.total_collected / monthly.total_expected) * 100
             else:
                 monthly.completion_rate = 0.0
     
@@ -318,73 +319,34 @@ class MonthlyCotisation(models.Model):
                 message_type='comment'
             )
             
-            _logger.info(f"Cotisation mensuelle {self.display_name} fermée")
+            _logger.info(f"Cotisation mensuelle {self.display_name} activée avec {len(cotisations)} cotisations")
+            
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'Information',
-                    'message': 'Cotisation mensuelle fermée',
-                    'type': 'info',
+                    'title': 'Succès',
+                    'message': f'Cotisation activée avec {len(cotisations)} cotisations créées',
+                    'type': 'success',
                 }
             }
         except Exception as e:
             _logger.error(f"Erreur lors de l'activation de {self.display_name}: {e}")
             raise UserError(f"Erreur lors de l'activation: {str(e)}")
 
-    
-    def action_reopen(self):
-        """Réouvre une cotisation fermée"""
+    def action_close(self):
+        """Ferme la cotisation mensuelle"""
         self.ensure_one()
-        if self.state != 'closed':
-            raise UserError("Seules les cotisations fermées peuvent être réouvertes.")
+        if self.state != 'active':
+            raise UserError("Seules les cotisations actives peuvent être fermées.")
         
         self.write({
-            'state': 'active',
-            'closure_date': False
+            'state': 'closed',
+            'closure_date': fields.Datetime.now()
         })
         
         self.message_post(
-            body=f"Cotisation mensuelle réouverte le {fields.Datetime.now()}",
-            message_type='comment'
-        )
-        
-        _logger.info(f"Cotisation mensuelle {self.display_name} réouverte")
-        
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Succès',
-                'message': 'Cotisation mensuelle réouverte',
-                'type': 'success',
-            }
-        }
-    
-    def action_reset_to_draft(self):
-        """Remet la cotisation en brouillon"""
-        self.ensure_one()
-        if self.state not in ['active', 'closed']:
-            raise UserError("Seules les cotisations actives ou fermées peuvent être remises en brouillon.")
-        
-        # Vérifier qu'aucun paiement n'a été effectué
-        paid_cotisations = self.cotisation_ids.filtered(lambda c: c.amount_paid > 0)
-        if paid_cotisations:
-            raise UserError(
-                f"Impossible de remettre en brouillon: {len(paid_cotisations)} paiements ont déjà été effectués."
-            )
-        
-        # Supprimer toutes les cotisations
-        self.cotisation_ids.unlink()
-        
-        self.write({
-            'state': 'draft',
-            'activation_date': False,
-            'closure_date': False
-        })
-        
-        self.message_post(
-            body=f"Cotisation mensuelle remise en brouillon le {fields.Datetime.now()}",
+            body=f"Cotisation mensuelle fermée le {fields.Datetime.now()}",
             message_type='comment'
         )
         
@@ -562,7 +524,7 @@ class MonthlyCotisation(models.Model):
     def _cron_auto_close_expired(self):
         """Cron pour fermer automatiquement les cotisations expirées"""
         # Fermer les cotisations actives dont la date limite est dépassée de plus de 2 mois
-        limit_date = fields.Date.today().replace(day=1) - fields.Date.to_date('60 00:00:00')
+        limit_date = fields.Date.subtract(fields.Date.today(), months=2)
         
         expired_cotisations = self.search([
             ('state', '=', 'active'),
@@ -648,49 +610,138 @@ class MonthlyCotisation(models.Model):
             result.append((record.id, name))
         return result
 
-    # def action_activate(self):
-    #     """Active la cotisation mensuelle"""
-    #     self.ensure_one()
-    #     if self.state != 'draft':
-    #         raise UserError("Seules les cotisations brouillon peuvent être activées.")
-
-    #     # Créer les cotisations pour chaque membre du groupe
-    #     cotisations_data = []
-    #     for member in self.group_id.member_ids:
-    #         cotisation = self.env['member.cotisation'].create({
-    #             'member_id': member.id,
-    #             'activity_id': self.id,
-    #             'amount': self.cotisation_amount,
-    #             'currency_id': self.currency_id.id,
-    #         })
-    #         cotisations_data.append(cotisation)
-
-    #     _logger.info(f"Cotisation mensuelle {self.display_name} activée avec {len(cotisations_data)} cotisations créées")
-
-    #     return {
-    #         'type': 'ir.actions.client',
-    #         'tag': 'display_notification',
-    #         'params': {
-    #             'title': 'Succès',
-    #             'message': f'Cotisation activée avec {len(cotisations_data)} cotisations créées',
-    #             'type': 'success',
-    #         }
-    #     }
-    
-    def action_close(self):
-        """Ferme la cotisation mensuelle"""
+    def action_print_monthly_report(self):
+        """Action bouton pour imprimer le rapport mensuel"""
         self.ensure_one()
-        if self.state != 'active':
-            raise UserError("Seules les cotisations actives peuvent être fermées.")
+        if not self.is_company:
+            return {"type": "ir.actions.act_window_close"}
+
+        return self.env.ref(
+            "contribution_management.action_report_monthly_cotisation"
+        ).report_action(self)
+
+    def action_print_report(self):
+        """Action pour imprimer le rapport PDF"""
+        self.ensure_one()
+        return self.env.ref('contribution_management.action_report_monthly_cotisation').report_action(self)
+    
+    def action_send_report_by_email(self):
+        """Action pour envoyer le rapport par email"""
+        self.ensure_one()
+        
+        # Générer le PDF
+        report = self.env.ref('contribution_management.action_report_monthly_cotisation')
+        pdf_content, _ = report._render_qweb_pdf(self.ids)
+        
+        # Créer l'attachement
+        attachment = self.env['ir.attachment'].create({
+            'name': f'Rapport_Cotisation_{self.display_name.replace(" ", "_")}.pdf',
+            'type': 'binary',
+            'datas': pdf_content,
+            'res_model': self._name,
+            'res_id': self.id,
+            'mimetype': 'application/pdf'
+        })
+        
+        # Composer l'email
+        mail_template = self.env.ref('contribution_management.email_template_monthly_cotisation_report', 
+                                   raise_if_not_found=False)
+        
+        if mail_template:
+            mail_template.attachment_ids = [(6, 0, [attachment.id])]
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'mail.compose.message',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_template_id': mail_template.id,
+                    'default_model': self._name,
+                    'default_res_id': self.id,
+                    'default_composition_mode': 'comment',
+                    'default_attachment_ids': [(6, 0, [attachment.id])]
+                }
+            }
+        else:
+            # Composer générique
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'mail.compose.message',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_model': self._name,
+                    'default_res_id': self.id,
+                    'default_composition_mode': 'comment',
+                    'default_subject': f'Rapport de cotisation - {self.display_name}',
+                    'default_attachment_ids': [(6, 0, [attachment.id])]
+                }
+            }
+            print(f"Cotisation mensuelle {self.display_name} fermée")
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Information',
+                'message': 'Cotisation mensuelle fermée',
+                'type': 'info',
+            }
+        }
+    
+    def action_reopen(self):
+        """Réouvre une cotisation fermée"""
+        self.ensure_one()
+        if self.state != 'closed':
+            raise UserError("Seules les cotisations fermées peuvent être réouvertes.")
         
         self.write({
-            'state': 'closed',
-            'closure_date': fields.Datetime.now()
+            'state': 'active',
+            'closure_date': False
         })
         
         self.message_post(
-            body=f"Cotisation mensuelle fermée le {fields.Datetime.now()}",
+            body=f"Cotisation mensuelle réouverte le {fields.Datetime.now()}",
             message_type='comment'
         )
         
-        _logger.info(f"Cotisation mensuelle {self.display_name} fermée")
+        _logger.info(f"Cotisation mensuelle {self.display_name} réouverte")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Succès',
+                'message': 'Cotisation mensuelle réouverte',
+                'type': 'success',
+            }
+        }
+    
+    def action_reset_to_draft(self):
+        """Remet la cotisation en brouillon"""
+        self.ensure_one()
+        if self.state not in ['active', 'closed']:
+            raise UserError("Seules les cotisations actives ou fermées peuvent être remises en brouillon.")
+        
+        # Vérifier qu'aucun paiement n'a été effectué
+        paid_cotisations = self.cotisation_ids.filtered(lambda c: c.amount_paid > 0)
+        if paid_cotisations:
+            raise UserError(
+                f"Impossible de remettre en brouillon: {len(paid_cotisations)} paiements ont déjà été effectués."
+            )
+        
+        # Supprimer toutes les cotisations
+        self.cotisation_ids.unlink()
+        
+        self.write({
+            'state': 'draft',
+            'activation_date': False,
+            'closure_date': False
+        })
+        
+        self.message_post(
+            body=f"Cotisation mensuelle remise en brouillon le {fields.Datetime.now()}",
+            message_type='comment'
+        )
+
+        _logger.info(f"Cotisation mensuelle {self.display_name} remise en brouillon")

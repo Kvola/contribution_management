@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Ajouter les rapports au menu contextuel des activités -->
+        
+        <!-- Action du menu pour rapport complet -->
+        <record id="ir_actions_report_activity_complete" model="ir.actions.server">
+            <field name="name">Imprimer rapport complet</field>
+            <field name="model_id" ref="model_group_activity"/>
+            <field name="binding_model_id" ref="model_group_activity"/>
+            <field name="binding_type">action</field>
+            <field name="state">code</field>
+            <field name="code">
+# Get active IDs from context
+active_ids = env.context.get('active_ids', [])
+
+if not active_ids:
+    raise UserError("Aucune activité sélectionnée pour générer le rapport.")
+
+action = {
+    'type': 'ir.actions.report',
+    'report_name': 'contribution_management.report_group_activity_template',
+    'report_type': 'qweb-pdf',
+    'context': env.context,
+    'data': {'ids': active_ids},
+}
+            </field>
+        </record>
+
+        <!-- Action du menu pour rapport simple -->
+        <record id="ir_actions_report_activity_simple" model="ir.actions.server">
+            <field name="name">Imprimer rapport simple</field>
+            <field name="model_id" ref="model_group_activity"/>
+            <field name="binding_model_id" ref="model_group_activity"/>
+            <field name="binding_type">action</field>
+            <field name="state">code</field>
+            <field name="code">
+# Get active IDs from context
+active_ids = env.context.get('active_ids', [])
+
+if not active_ids:
+    raise UserError("Aucune activité sélectionnée pour générer le rapport.")
+
+action = {
+    'type': 'ir.actions.report',
+    'report_name': 'contribution_management.report_group_activity_simple_template',
+    'report_type': 'qweb-pdf',
+    'context': env.context,
+    'data': {'ids': active_ids},
+}
+            </field>
+        </record>
+
+        <!-- Action du menu pour liste des cotisations -->
+        <record id="ir_actions_report_activity_list" model="ir.actions.server">
+            <field name="name">Imprimer liste des cotisations</field>
+            <field name="model_id" ref="model_group_activity"/>
+            <field name="binding_model_id" ref="model_group_activity"/>
+            <field name="binding_type">action</field>
+            <field name="state">code</field>
+            <field name="code">
+# Get active IDs from context
+active_ids = env.context.get('active_ids', [])
+
+if not active_ids:
+    raise UserError("Aucune activité sélectionnée pour générer le rapport.")
+
+action = {
+    'type': 'ir.actions.report',
+    'report_name': 'contribution_management.report_group_activity_list_template',
+    'report_type': 'qweb-pdf',
+    'context': env.context,
+    'data': {'ids': active_ids},
+}
+            </field>
+        </record>
+
+        <!-- Formats de papier personnalisés -->
+        <record id="paperformat_activity_report" model="report.paperformat">
+            <field name="name">Format activité A4</field>
+            <field name="format">A4</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">40</field>
+            <field name="margin_bottom">40</field>
+            <field name="margin_left">20</field>
+            <field name="margin_right">20</field>
+            <field name="header_line">false</field>
+            <field name="header_spacing">35</field>
+            <field name="dpi">90</field>
+        </record>
+
+        <!-- Mettre à jour les formats de papier des rapports -->
+        <!-- NOTE: Ces records doivent exister dans un autre fichier XML de votre module -->
+        <!-- Si les reports n'existent pas encore, vous devez d'abord les créer -->
+        <record id="action_report_group_activity" model="ir.actions.report">
+            <field name="name">Rapport Activité Complet</field>
+            <field name="model">group.activity</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">contribution_management.report_group_activity_template</field>
+            <field name="paperformat_id" ref="paperformat_activity_report"/>
+        </record>
+
+        <record id="action_report_group_activity_simple" model="ir.actions.report">
+            <field name="name">Rapport Activité Simple</field>
+            <field name="model">group.activity</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">contribution_management.report_group_activity_simple_template</field>
+            <field name="paperformat_id" ref="paperformat_activity_report"/>
+        </record>
+
+        <record id="action_report_group_activity_list" model="ir.actions.report">
+            <field name="name">Liste des Cotisations</field>
+            <field name="model">group.activity</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">contribution_management.report_group_activity_list_template</field>
+            <field name="paperformat_id" ref="paperformat_activity_report"/>
+        </record>
+
+    </data>
+</odoo>

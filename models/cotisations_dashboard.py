@@ -575,17 +575,32 @@ class CotisationsDashboard(models.TransientModel):
         """Action pour exporter un rapport"""
         self.ensure_one()
         
+        return self.env.ref('contribution_management.dashboard_report').report_action(self)
+
+    def print_dashboard_report(self):
+        """Alternative pour l'impression directe"""
+        self.ensure_one()
+        
         return {
-            'name': 'Rapport de cotisations',
             'type': 'ir.actions.report',
-            'report_name': 'contribution_management.cotisations_dashboard_report',
+            'report_name': 'contribution_management.dashboard_tpl',
             'report_type': 'qweb-pdf',
-            'context': {
-                'dashboard_id': self.id,
-                'dashboard_type': self.dashboard_type
-            }
+            'context': dict(self.env.context, active_ids=[self.id]),
         }
-    
+
+    @api.model
+    def _get_report_values(self, docids, data=None):
+        """Prépare les données pour le rapport"""
+        docs = self.browse(docids)
+        return {
+            'doc_ids': docids,
+            'doc_model': 'cotisations.dashboard',
+            'docs': docs,
+            'data': data,
+            'json': json,  # Rendre json disponible dans le template
+            'datetime': datetime,  # Rendre datetime disponible dans le template
+        }
+
     def action_refresh_data(self):
         """Actualise les données du tableau de bord"""
         self.ensure_one()

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================= VUES POUR LE WIZARD DE RAPPORTS EN LOT ================= -->
+    
+    <!-- Vue formulaire du wizard -->
+    <record id="view_bulk_report_wizard_form" model="ir.ui.view">
+        <field name="name">bulk.report.wizard.form</field>
+        <field name="model">bulk.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Génération de rapports en lot">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="report_type" widget="radio" options="{'horizontal': true}"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group name="selection">
+                            <field name="partner_ids" 
+                                   domain="[('is_company', '=', report_type == 'group'), ('active', '=', True)]"
+                                   widget="many2many_tags"
+                                   options="{'color_field': 'color', 'no_create_edit': True}"/>
+                            <field name="format_type" widget="radio" options="{'horizontal': true}"/>
+                            <field name="separate_files"/>
+                        </group>
+                        
+                        <group name="options">
+                            <field name="include_email"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Aperçu" name="preview">
+                            <group>
+                                <field name="partner_ids" mode="tree" readonly="1" nolabel="1">
+                                    <tree string="Partenaires sélectionnés" create="false" edit="false">
+                                        <field name="name"/>
+                                        <field name="email"/>
+                                        <field name="phone"/>
+                                        <field name="is_company" column_invisible="1"/>
+                                        <!-- Champs spécifiques aux membres -->
+                                        <field name="total_cotisations" invisible="is_company"/>
+                                        <field name="payment_rate" invisible="is_company"/>
+                                        <!-- Champs spécifiques aux groupes -->
+                                        <field name="group_members_count" invisible="not is_company"/>
+                                        <field name="group_collection_rate" invisible="not is_company"/>
+                                    </tree>
+                                </field>
+                            </group>
+                        </page>
+                        
+                        <page string="Options avancées" name="advanced">
+                            <group>
+                                <group name="filters">
+                                    <label for="date_from" string="Période"/>
+                                    <div class="o_row">
+                                        <field name="date_from" class="oe_inline"/> - 
+                                        <field name="date_to" class="oe_inline"/>
+                                    </div>
+                                </group>
+                                
+                                <group name="email_options" invisible="not include_email">
+                                    <div class="o_form_label">Options d'envoi</div>
+                                    <div class="alert alert-info">
+                                        <p>Les rapports seront automatiquement envoyés par email aux partenaires ayant une adresse email valide.</p>
+                                    </div>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                    
+                </sheet>
+                
+                <footer>
+                    <button name="action_preview_reports" 
+                            string="Prévisualiser" 
+                            type="object" 
+                            class="btn-secondary"/>
+                    <button name="action_generate_reports" 
+                            string="Générer les rapports" 
+                            type="object" 
+                            class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Action du menu pour le wizard de génération de rapports en lot -->
+    <!-- Action pour rapport membres en lot -->
+    <record id="action_bulk_member_reports" model="ir.actions.act_window">
+        <field name="name">Rapports membres en lot</field>
+        <field name="res_model">bulk.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'member'}</field>
+    </record>
+
+    <!-- Action pour rapport groupes en lot -->
+    <record id="action_bulk_group_reports" model="ir.actions.act_window">
+        <field name="name">Rapports groupes en lot</field>
+        <field name="res_model">bulk.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'group'}</field>
+    </record>
+
+    <!-- Vue liste pour la prévisualisation -->
+    <record id="view_bulk_report_preview_tree" model="ir.ui.view">
+        <field name="name">bulk.report.preview.tree</field>
+        <field name="model">bulk.report.preview</field>
+        <field name="arch" type="xml">
+            <tree string="Prévisualisation des rapports" create="false" edit="false">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="cotisations" invisible="report_type != 'member'"/>
+                <field name="taux_paiement" invisible="report_type != 'member'"/>
+                <field name="membres" invisible="report_type != 'group'"/>
+                <field name="taux_collecte" invisible="report_type != 'group'"/>
+                <field name="report_type" column_invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action pour générer rapports depuis la liste des partenaires -->
+    <record id="action_generate_reports_from_partners" model="ir.actions.act_window">
+        <field name="name">Générer rapports</field>
+        <field name="res_model">bulk.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_type">action</field>
+        <field name="context">{
+            'default_partner_ids': active_ids,
+            'default_report_type': 'member' if not context.get('default_is_company') else 'group'
+        }</field>
+    </record>
+</odoo>

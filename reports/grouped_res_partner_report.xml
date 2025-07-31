@@ -1,273 +1,770 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-        <!-- ================= RAPPORT DE SYNTHÈSE PAR GROUPE ================= -->
+    <!-- ================= RAPPORT DE SYNTHÈSE PAR GROUPE ================= -->
 
-        <!-- Action pour le rapport de synthèse -->
-        <record id="action_report_group_synthesis" model="ir.actions.report">
-            <field name="name">Synthèse des cotisations du groupe</field>
-            <field name="model">res.partner</field>
-            <field name="report_type">qweb-pdf</field>
-            <field name="report_name">contribution_management.report_group_synthesis_template</field>
-            <field name="report_file">contribution_management.report_group_synthesis_template</field>
-            <field name="binding_model_id" ref="base.model_res_partner" />
-            <field name="binding_type">report</field>
-        </record>
+    <!-- Action pour le rapport de synthèse -->
+    <record id="action_report_group_synthesis" model="ir.actions.report">
+        <field name="name">Synthèse des cotisations du groupe</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_group_synthesis_template</field>
+        <field name="report_file">contribution_management.report_group_synthesis_template</field>
+        <field name="binding_model_id" ref="base.model_res_partner" />
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro" />
+    </record>
 
-        <!-- Template du rapport de synthèse -->
-        <template id="report_group_synthesis_template">
-            <t t-call="web.html_container">
-                <t t-foreach="docs.filtered(lambda p: p.is_company)" t-as="group">
-                    <t t-call="web.external_layout">
-                        <div class="page">
-                            <div class="oe_structure" />
+    <!-- Template du rapport de synthèse -->
+    <template id="report_group_synthesis_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs.filtered(lambda p: p.is_company)" t-as="group">
+                <t t-set="current_date" t-value="datetime.datetime.now()" />
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="oe_structure" />
 
-                            <!-- En-tête du rapport -->
-                            <div class="row">
-                                <div class="col-12">
-                                    <h2 class="text-center">
-                                        <strong>SYNTHÈSE DES COTISATIONS</strong>
-                                    </h2>
-                                    <h3 class="text-center text-muted">
-                                        <span t-field="group.name" />
-                                    </h3>
-                                    <p class="text-center text-muted"> Rapport généré le <span
-                                            t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y à %H:%M')" />
-                                    </p>
-                                </div>
+                        <!-- En-tête du rapport -->
+                        <div class="row mb-4">
+                            <div class="col-12 text-center">
+                                <h2 class="mb-2">
+                                    <strong>SYNTHÈSE DES COTISATIONS</strong>
+                                </h2>
+                                <h3 class="text-muted mb-3">
+                                    <t t-esc="group.name" />
+                                </h3>
+                                <p class="text-muted"> Rapport généré le <t
+                                        t-esc="current_date.strftime('%d/%m/%Y à %H:%M')" />
+                                </p>
                             </div>
-
-                            <!-- Informations du groupe -->
-                            <div class="row mt-4">
-                                <div class="col-6">
-                                    <strong>Type:</strong> Groupe/Organisation </div>
-                                <div class="col-6">
-                                    <strong>Email:</strong>
-                                    <span t-field="group.email" />
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-6">
-                                    <strong>Téléphone:</strong>
-                                    <span t-field="group.phone" />
-                                </div>
-                                <div class="col-6">
-                                    <strong>Devise:</strong>
-                                    <span t-field="group.currency_id.name" />
-                                </div>
-                            </div>
-
-                            <!-- Statistiques générales -->
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <h4>Statistiques générales</h4>
-                                    <div class="row">
-                                        <div class="col-3">
-                                            <div class="card text-center">
-                                                <div class="card-body">
-                                                    <h5 class="card-title"
-                                                        t-esc="group.activities_count" />
-                                                    <p class="card-text">Activités</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-3">
-                                            <div class="card text-center">
-                                                <div class="card-body">
-                                                    <h5 class="card-title"
-                                                        t-esc="group.monthly_cotisations_count" />
-                                                    <p class="card-text">Cotisations mensuelles</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-3">
-                                            <div class="card text-center">
-                                                <div class="card-body">
-                                                    <h5 class="card-title"
-                                                        t-esc="group.group_total_collected"
-                                                        t-options="{'widget': 'monetary', 'display_currency': group.currency_id}" />
-                                                    <p class="card-text">Total collecté</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-3">
-                                            <div class="card text-center">
-                                                <div class="card-body">
-                                                    <h5 class="card-title"
-                                                        t-esc="'%.1f%%' % group.group_collection_rate" />
-                                                    <p class="card-text">Taux de collecte</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Activités du groupe -->
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <h4>Activités récentes</h4>
-                                    <t t-if="group.group_activities">
-                                        <table class="table table-sm table-bordered">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Activité</th>
-                                                    <th>Date début</th>
-                                                    <th>Date fin</th>
-                                                    <th>Total collecté</th>
-                                                    <th>Total attendu</th>
-                                                    <th>Taux de collecte</th>
-                                                    <th>État</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <t
-                                                    t-foreach="group.group_activities.filtered('active').sorted(key=lambda a: a.create_date, reverse=True)[:10]"
-                                                    t-as="activity">
-                                                    <tr>
-                                                        <td>
-                                                            <span t-field="activity.name" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-field="activity.date_start"
-                                                                t-options="{'widget': 'date'}" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-field="activity.date_end"
-                                                                t-options="{'widget': 'date'}" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-field="activity.total_collected"
-                                                                t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-field="activity.total_expected"
-                                                                t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-if="activity.total_expected > 0"
-                                                                t-esc="'%.1f%%' % ((activity.total_collected / activity.total_expected) * 100)" />
-                                                            <span t-else="">N/A</span>
-                                                        </td>
-                                                        <td>
-                                                            <span class="badge"
-                                                                t-attf-class="badge-{{ 'success' if activity.state == 'completed' else 'warning' if activity.state == 'in_progress' else 'secondary' }}">
-                                                                <span t-field="activity.state" />
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                </t>
-                                            </tbody>
-                                        </table>
-                                    </t>
-                                    <t t-else="">
-                                        <div class="alert alert-info">
-                                            <i class="fa fa-info-circle" /> Aucune activité
-                                            enregistrée pour ce groupe. </div>
-                                    </t>
-                                </div>
-                            </div>
-
-                            <!-- Cotisations mensuelles -->
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <h4>Cotisations mensuelles récentes</h4>
-                                    <t t-if="group.monthly_cotisations">
-                                        <table class="table table-sm table-bordered">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Période</th>
-                                                    <th>Montant unitaire</th>
-                                                    <th>Total collecté</th>
-                                                    <th>Total attendu</th>
-                                                    <th>Taux de collecte</th>
-                                                    <th>État</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <t
-                                                    t-foreach="group.monthly_cotisations.filtered('active').sorted(key=lambda m: (m.year, int(m.month) if m.month.isdigit() else 0), reverse=True)[:12]"
-                                                    t-as="monthly">
-                                                    <tr>
-                                                        <td>
-                                                            <span t-field="monthly.display_name" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-field="monthly.amount"
-                                                                t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-field="monthly.total_collected"
-                                                                t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-field="monthly.total_expected"
-                                                                t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
-                                                        </td>
-                                                        <td>
-                                                            <span t-if="monthly.total_expected > 0"
-                                                                t-esc="'%.1f%%' % ((monthly.total_collected / monthly.total_expected) * 100)" />
-                                                            <span t-else="">N/A</span>
-                                                        </td>
-                                                        <td>
-                                                            <span class="badge"
-                                                                t-attf-class="badge-{{ 'success' if monthly.state == 'completed' else 'warning' if monthly.state == 'in_progress' else 'secondary' }}">
-                                                                <span t-field="monthly.state" />
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                </t>
-                                            </tbody>
-                                        </table>
-                                    </t>
-                                    <t t-else="">
-                                        <div class="alert alert-info">
-                                            <i class="fa fa-info-circle" /> Aucune cotisation
-                                            mensuelle enregistrée pour ce groupe. </div>
-                                    </t>
-                                </div>
-                            </div>
-
-                            <!-- Résumé financier -->
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <h4>Résumé financier</h4>
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-4">
-                                                    <p>
-                                                        <strong>Total collecté:</strong>
-                                                    </p>
-                                                    <h5 class="text-success"
-                                                        t-esc="group.group_total_collected"
-                                                        t-options="{'widget': 'monetary', 'display_currency': group.currency_id}" />
-                                                </div>
-                                                <div class="col-4">
-                                                    <p>
-                                                        <strong>Total attendu:</strong>
-                                                    </p>
-                                                    <h5 class="text-primary"
-                                                        t-esc="group.group_total_expected"
-                                                        t-options="{'widget': 'monetary', 'display_currency': group.currency_id}" />
-                                                </div>
-                                                <div class="col-4">
-                                                    <p>
-                                                        <strong>Taux de collecte global:</strong>
-                                                    </p>
-                                                    <h5
-                                                        t-attf-class="text-{{ 'success' if group.group_collection_rate >= 80 else 'warning' if group.group_collection_rate >= 50 else 'danger' }}"
-                                                        t-esc="'%.1f%%' % group.group_collection_rate" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="oe_structure" />
                         </div>
-                    </t>
+
+                        <!-- Informations du groupe -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong>Type:</strong> Groupe/Organisation </div>
+                            <div class="col-6">
+                                <strong>Email:</strong>
+                                <t t-esc="group.email or 'Non renseigné'" />
+                            </div>
+                            <div class="col-6 mt-2">
+                                <strong>Téléphone:</strong>
+                                <t t-esc="group.phone or 'Non renseigné'" />
+                            </div>
+                            <div class="col-6 mt-2">
+                                <strong>Devise:</strong>
+                                <t
+                                    t-esc="group.currency_id.name or group.env.company.currency_id.name" />
+                            </div>
+                        </div>
+
+                        <!-- Statistiques générales -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Statistiques générales</h4>
+                                <div class="row">
+                                    <div class="col-3">
+                                        <div class="card text-center h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-primary">
+                                                    <t t-esc="group.activities_count" />
+                                                </h5>
+                                                <p class="card-text small">Activités totales</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="card text-center h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-info">
+                                                    <t t-esc="group.monthly_cotisations_count" />
+                                                </h5>
+                                                <p class="card-text small">Cotisations mensuelles</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="card text-center h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-success">
+                                                    <t
+                                                        t-esc="'{:,.0f}'.format(group.group_total_collected)" />
+                                                    <small
+                                                        t-esc="group.currency_id.symbol or group.env.company.currency_id.symbol" />
+                                                </h5>
+                                                <p class="card-text small">Total collecté</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="card text-center h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title"
+                                                    t-attf-class="text-{{ 'success' if group.group_collection_rate >= 80 else 'warning' if group.group_collection_rate >= 50 else 'danger' }}">
+                                                    <t
+                                                        t-esc="'{:.1f}%'.format(group.group_collection_rate)" />
+                                                </h5>
+                                                <p class="card-text small">Taux de collecte</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informations sur les membres -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Membres du groupe</h4>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="card">
+                                            <div class="card-body text-center">
+                                                <h5 class="card-title text-primary">
+                                                    <t t-esc="group.group_members_count" />
+                                                </h5>
+                                                <p class="card-text">Total membres</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="card">
+                                            <div class="card-body text-center">
+                                                <h5 class="card-title text-success">
+                                                    <t t-esc="group.group_active_members_count" />
+                                                </h5>
+                                                <p class="card-text">Membres actifs</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Activités du groupe -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Activités récentes</h4>
+                                <t t-set="recent_activities"
+                                    t-value="group.group_activities.filtered('active').sorted(key=lambda a: a.create_date, reverse=True)[:10]" />
+                                <t t-if="recent_activities">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 25%;">Activité</th>
+                                                    <th style="width: 12%;">Date début</th>
+                                                    <th style="width: 12%;">Date fin</th>
+                                                    <th style="width: 15%;">Collecté</th>
+                                                    <th style="width: 15%;">Attendu</th>
+                                                    <th style="width: 11%;">Taux</th>
+                                                    <th style="width: 10%;">État</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="recent_activities" t-as="activity">
+                                                    <tr>
+                                                        <td>
+                                                            <strong t-esc="activity.name" />
+                                                            <br />
+                                                            <small class="text-muted"
+                                                                t-esc="activity.description[:50] + '...' if activity.description and len(activity.description) > 50 else activity.description or ''" />
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="activity.date_start">
+                                                                <t
+                                                                    t-esc="activity.date_start.strftime('%d/%m/%Y')" />
+                                                            </t>
+                                                            <t t-else="">-</t>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="activity.date_end">
+                                                                <t
+                                                                    t-esc="activity.date_end.strftime('%d/%m/%Y')" />
+                                                            </t>
+                                                            <t t-else="">-</t>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(activity.total_collected)" />
+                                                            <small
+                                                                t-esc="activity.currency_id.symbol or group.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(activity.total_expected)" />
+                                                            <small
+                                                                t-esc="activity.currency_id.symbol or group.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <t t-if="activity.total_expected > 0">
+                                                                <span
+                                                                    t-attf-class="badge badge-{{ 'success' if (activity.total_collected / activity.total_expected) * 100 >= 80 else 'warning' if (activity.total_collected / activity.total_expected) * 100 >= 50 else 'danger' }}">
+                                                                    <t
+                                                                        t-esc="'{:.1f}%'.format((activity.total_collected / activity.total_expected) * 100)" />
+                                                                </span>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="badge badge-secondary">
+                                                                    N/A</span>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span
+                                                                t-attf-class="badge badge-{{ 'success' if activity.state == 'completed' else 'primary' if activity.state == 'ongoing' else 'info' if activity.state == 'confirmed' else 'secondary' }}">
+                                                                <t t-if="activity.state == 'draft'">
+                                                                    Brouillon</t>
+                                                                <t
+                                                                    t-elif="activity.state == 'confirmed'">
+                                                                    Confirmé</t>
+                                                                <t
+                                                                    t-elif="activity.state == 'ongoing'">En
+                                                                    cours</t>
+                                                                <t
+                                                                    t-elif="activity.state == 'completed'">
+                                                                    Terminé</t>
+                                                                <t
+                                                                    t-elif="activity.state == 'cancelled'">
+                                                                    Annulé</t>
+                                                                <t t-else="" t-esc="activity.state" />
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle" /> Aucune activité enregistrée
+                                        pour ce groupe. </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Cotisations mensuelles -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Cotisations mensuelles récentes</h4>
+                                <t t-set="recent_monthlies"
+                                    t-value="group.monthly_cotisations.filtered('active').sorted(key=lambda m: (m.year, int(m.month) if m.month.isdigit() else 0), reverse=True)[:12]" />
+                                <t t-if="recent_monthlies">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 20%;">Période</th>
+                                                    <th style="width: 15%;">Montant unitaire</th>
+                                                    <th style="width: 15%;">Collecté</th>
+                                                    <th style="width: 15%;">Attendu</th>
+                                                    <th style="width: 12%;">Taux</th>
+                                                    <th style="width: 10%;">Participants</th>
+                                                    <th style="width: 13%;">État</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="recent_monthlies" t-as="monthly">
+                                                    <tr>
+                                                        <td>
+                                                            <strong>
+                                                                <t t-if="monthly.month.isdigit()">
+                                                                    <t t-set="month_names"
+                                                                        t-value="['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']" />
+                                                                    <t
+                                                                        t-esc="month_names[int(monthly.month)]" />
+                                                                    <t t-esc="monthly.year" />
+                                                                </t>
+                                                                <t t-else="">
+                                                                    <t t-esc="monthly.month" />
+                                                                    <t t-esc="monthly.year" />
+                                                                </t>
+                                                            </strong>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(monthly.amount)" />
+                                                            <small
+                                                                t-esc="monthly.currency_id.symbol or group.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(monthly.total_collected)" />
+                                                            <small
+                                                                t-esc="monthly.currency_id.symbol or group.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(monthly.total_expected)" />
+                                                            <small
+                                                                t-esc="monthly.currency_id.symbol or group.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <t t-if="monthly.total_expected > 0">
+                                                                <span
+                                                                    t-attf-class="badge badge-{{ 'success' if (monthly.total_collected / monthly.total_expected) * 100 >= 80 else 'warning' if (monthly.total_collected / monthly.total_expected) * 100 >= 50 else 'danger' }}">
+                                                                    <t
+                                                                        t-esc="'{:.1f}%'.format((monthly.total_collected / monthly.total_expected) * 100)" />
+                                                                </span>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="badge badge-secondary">
+                                                                    N/A</span>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <t
+                                                                t-esc="len(monthly.cotisation_ids.filtered('active'))" />
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span
+                                                                t-attf-class="badge badge-{{ 'success' if monthly.state == 'completed' else 'primary' if monthly.state == 'in_progress' else 'secondary' }}">
+                                                                <t t-if="monthly.state == 'draft'">
+                                                                    Brouillon</t>
+                                                                <t
+                                                                    t-elif="monthly.state == 'in_progress'">En
+                                                                    cours</t>
+                                                                <t
+                                                                    t-elif="monthly.state == 'completed'">
+                                                                    Terminé</t>
+                                                                <t t-else="" t-esc="monthly.state" />
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle" /> Aucune cotisation mensuelle
+                                        enregistrée pour ce groupe. </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Résumé financier -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Résumé financier</h4>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <div class="text-center">
+                                                    <p class="mb-2">
+                                                        <strong>Total collecté</strong>
+                                                    </p>
+                                                    <h4 class="text-success mb-0">
+                                                        <t
+                                                            t-esc="'{:,.0f}'.format(group.group_total_collected)" />
+                                                        <small
+                                                            t-esc="group.currency_id.symbol or group.env.company.currency_id.symbol" />
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="text-center">
+                                                    <p class="mb-2">
+                                                        <strong>Total attendu</strong>
+                                                    </p>
+                                                    <h4 class="text-primary mb-0">
+                                                        <t
+                                                            t-esc="'{:,.0f}'.format(group.group_total_expected)" />
+                                                        <small
+                                                            t-esc="group.currency_id.symbol or group.env.company.currency_id.symbol" />
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="text-center">
+                                                    <p class="mb-2">
+                                                        <strong>Taux de collecte global</strong>
+                                                    </p>
+                                                    <h4 class="mb-0"
+                                                        t-attf-class="text-{{ 'success' if group.group_collection_rate >= 80 else 'warning' if group.group_collection_rate >= 50 else 'danger' }}">
+                                                        <t
+                                                            t-esc="'{:.1f}%'.format(group.group_collection_rate)" />
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <hr />
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <p class="mb-1">
+                                                    <strong>Écart:</strong>
+                                                </p>
+                                                <t t-set="gap"
+                                                    t-value="group.group_total_expected - group.group_total_collected" />
+                                                <span
+                                                    t-attf-class="text-{{ 'success' if gap &lt;= 0 else 'danger' }}">
+                                                    <t t-esc="'{:,.0f}'.format(gap)" />
+                                                    <small
+                                                        t-esc="group.currency_id.symbol or group.env.company.currency_id.symbol" />
+                                                </span>
+                                            </div>
+                                            <div class="col-6">
+                                                <p class="mb-1">
+                                                    <strong>Performance:</strong>
+                                                </p>
+                                                <t t-if="group.group_collection_rate >= 90">
+                                                    <span class="text-success"><i class="fa fa-star" />
+                                                        Excellente</span>
+                                                </t>
+                                                <t t-elif="group.group_collection_rate >= 80">
+                                                    <span class="text-success"><i
+                                                            class="fa fa-thumbs-up" /> Très bonne</span>
+                                                </t>
+                                                <t t-elif="group.group_collection_rate >= 60">
+                                                    <span class="text-warning"><i
+                                                            class="fa fa-warning" /> Correcte</span>
+                                                </t>
+                                                <t t-else="">
+                                                    <span class="text-danger"><i
+                                                            class="fa fa-exclamation-triangle" /> À
+                                                        améliorer</span>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pied de page avec informations supplémentaires -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-3">
+                                                <small>
+                                                    <strong>Activités actives:</strong>
+                                                    <br />
+                                                    <span class="text-primary"
+                                                        t-esc="group.active_activities_count" />
+                                                </small>
+                                            </div>
+                                            <div class="col-3">
+                                                <small>
+                                                    <strong>Dernière activité:</strong>
+                                                    <br />
+                                                    <t t-set="last_activity"
+                                                        t-value="group.group_activities.filtered('active').sorted('create_date', reverse=True)[:1]" />
+                                                    <t t-if="last_activity">
+                                                        <span
+                                                            t-esc="last_activity.create_date.strftime('%d/%m/%Y')" />
+                                                    </t>
+                                                    <t t-else="">Aucune</t>
+                                                </small>
+                                            </div>
+                                            <div class="col-3">
+                                                <small>
+                                                    <strong>Dernière cotisation:</strong>
+                                                    <br />
+                                                    <t t-set="last_monthly"
+                                                        t-value="group.monthly_cotisations.filtered('active').sorted('create_date', reverse=True)[:1]" />
+                                                    <t t-if="last_monthly">
+                                                        <span
+                                                            t-esc="last_monthly.create_date.strftime('%d/%m/%Y')" />
+                                                    </t>
+                                                    <t t-else="">Aucune</t>
+                                                </small>
+                                            </div>
+                                            <div class="col-3">
+                                                <small>
+                                                    <strong>Groupe créé:</strong>
+                                                    <br />
+                                                    <span
+                                                        t-esc="group.create_date.strftime('%d/%m/%Y')" />
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="oe_structure" />
+                    </div>
                 </t>
             </t>
-        </template>
+        </t>
+    </template>
+
+    <!-- Template pour un rapport de paiement individuel -->
+    <template id="report_member_payment_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs.filtered(lambda p: not p.is_company)" t-as="member">
+                <t t-set="current_date" t-value="datetime.datetime.now()" />
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- En-tête du rapport membre -->
+                        <div class="row mb-4">
+                            <div class="col-12 text-center">
+                                <h2 class="mb-2">
+                                    <strong>RAPPORT DE PAIEMENT</strong>
+                                </h2>
+                                <h3 class="text-muted mb-3">
+                                    <t t-esc="member.name" />
+                                </h3>
+                                <p class="text-muted"> Rapport généré le <t
+                                        t-esc="current_date.strftime('%d/%m/%Y à %H:%M')" />
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Informations du membre -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong>Email:</strong>
+                                <t t-esc="member.email or 'Non renseigné'" />
+                            </div>
+                            <div class="col-6">
+                                <strong>Téléphone:</strong>
+                                <t t-esc="member.phone or 'Non renseigné'" />
+                            </div>
+                            <div class="col-6 mt-2">
+                                <strong>Groupe principal:</strong>
+                                <t t-esc="member.parent_id.name if member.parent_id else 'Aucun'" />
+                            </div>
+                            <div class="col-6 mt-2">
+                                <strong>Statut:</strong>
+                                <span
+                                    t-attf-class="badge badge-{{ 'success' if member.is_good_payer else 'warning' }}">
+                                    <t t-if="member.is_good_payer">Bon payeur</t>
+                                    <t t-else="">À surveiller</t>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Statistiques du membre -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Statistiques de paiement</h4>
+                                <div class="row">
+                                    <div class="col-2">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-primary">
+                                                    <t t-esc="member.total_cotisations" />
+                                                </h5>
+                                                <p class="card-text small">Total cotisations</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-success">
+                                                    <t t-esc="member.paid_cotisations" />
+                                                </h5>
+                                                <p class="card-text small">Payées</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-warning">
+                                                    <t t-esc="member.pending_cotisations" />
+                                                </h5>
+                                                <p class="card-text small">En attente</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-info">
+                                                    <t t-esc="member.partial_cotisations" />
+                                                </h5>
+                                                <p class="card-text small">Partielles</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-danger">
+                                                    <t t-esc="member.overdue_cotisations" />
+                                                </h5>
+                                                <p class="card-text small">En retard</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-primary">
+                                                    <t t-esc="'{:.1f}%'.format(member.payment_rate)" />
+                                                </h5>
+                                                <p class="card-text small">Taux de paiement</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Liste des cotisations -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Historique des cotisations</h4>
+                                <t t-set="cotisations"
+                                    t-value="member.cotisation_ids.filtered('active').sorted('create_date', reverse=True)" />
+                                <t t-if="cotisations">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Activité/Cotisation</th>
+                                                    <th>Groupe</th>
+                                                    <th>Date limite</th>
+                                                    <th>Montant dû</th>
+                                                    <th>Montant payé</th>
+                                                    <th>Restant</th>
+                                                    <th>État</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="cotisations" t-as="cotisation">
+                                                    <tr>
+                                                        <td>
+                                                            <strong t-esc="cotisation.display_name" />
+                                                        </td>
+                                                        <td>
+                                                            <t
+                                                                t-esc="cotisation.group_id.name if cotisation.group_id else 'N/A'" />
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="cotisation.due_date">
+                                                                <t
+                                                                    t-esc="cotisation.due_date.strftime('%d/%m/%Y')" />
+                                                            </t>
+                                                            <t t-else="">-</t>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(cotisation.amount_due)" />
+                                                            <small
+                                                                t-esc="cotisation.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(cotisation.amount_paid)" />
+                                                            <small
+                                                                t-esc="cotisation.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <t
+                                                                t-esc="'{:,.0f}'.format(cotisation.remaining_amount)" />
+                                                            <small
+                                                                t-esc="cotisation.currency_id.symbol" />
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span
+                                                                t-attf-class="badge badge-{{ 'success' if cotisation.state == 'paid' else 'warning' if cotisation.state == 'partial' else 'info' if cotisation.state == 'pending' else 'danger' }}">
+                                                                <t
+                                                                    t-if="cotisation.state == 'pending'">En
+                                                                    attente</t>
+                                                                <t
+                                                                    t-elif="cotisation.state == 'partial'">
+                                                                    Partiel</t>
+                                                                <t
+                                                                    t-elif="cotisation.state == 'paid'">
+                                                                    Payé</t>
+                                                                <t
+                                                                    t-elif="cotisation.state == 'overdue'">En
+                                                                    retard</t>
+                                                                <t t-else=""
+                                                                    t-esc="cotisation.state" />
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle" /> Aucune cotisation
+                                        enregistrée pour ce membre. </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Résumé financier du membre -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Résumé financier</h4>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <div class="text-center">
+                                                    <p class="mb-2">
+                                                        <strong>Total dû</strong>
+                                                    </p>
+                                                    <h4 class="text-primary mb-0">
+                                                        <t
+                                                            t-esc="'{:,.0f}'.format(member.total_amount_due)" />
+                                                        <small
+                                                            t-esc="member.currency_id.symbol or member.env.company.currency_id.symbol" />
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="text-center">
+                                                    <p class="mb-2">
+                                                        <strong>Total payé</strong>
+                                                    </p>
+                                                    <h4 class="text-success mb-0">
+                                                        <t
+                                                            t-esc="'{:,.0f}'.format(member.total_amount_paid)" />
+                                                        <small
+                                                            t-esc="member.currency_id.symbol or member.env.company.currency_id.symbol" />
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="text-center">
+                                                    <p class="mb-2">
+                                                        <strong>Restant à payer</strong>
+                                                    </p>
+                                                    <h4 class="mb-0"
+                                                        t-attf-class="text-{{ 'success' if member.remaining_amount &lt;= 0 else 'danger' }}">
+                                                        <t
+                                                            t-esc="'{:,.0f}'.format(member.remaining_amount)" />
+                                                        <small
+                                                            t-esc="member.currency_id.symbol or member.env.company.currency_id.symbol" />
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Action pour le rapport de paiement individuel -->
+    <record id="action_report_member_payment" model="ir.actions.report">
+        <field name="name">Rapport de paiement membre</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_member_payment_template</field>
+        <field name="report_file">contribution_management.report_member_payment_template</field>
+        <field name="binding_model_id" ref="base.model_res_partner" />
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro" />
+    </record>
+
 </odoo>

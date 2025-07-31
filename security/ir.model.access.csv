@@ -20,3 +20,7 @@ access_cotisations_dashboard_user,cotisations.dashboard.user,model_cotisations_d
 access_cotisations_dashboard_public,cotisations.dashboard.public,model_cotisations_dashboard,base.group_public,1,0,0,0
 access_cotisations_dashboard_portal,cotisations.dashboard.portal,model_cotisations_dashboard,base.group_portal,1,0,0,0
 access_cotisations_dashboard_manager,cotisations.dashboard.manager,model_cotisations_dashboard,base.group_system,1,1,1,1
+access_report_generation_log_user,report.generation.log.user,model_report_generation_log,base.group_user,1,0,1,0
+access_report_generation_log_manager,report.generation.log.manager,model_report_generation_log,base.group_system,1,1,1,1
+access_bulk_report_wizard_user,bulk.report.wizard.user,model_bulk_report_wizard,base.group_user,1,1,1,1
+access_bulk_report_preview_user,bulk.report.preview.user,model_bulk_report_preview,base.group_user,1,0,0,0

@@ -231,4 +231,85 @@
         <field name="perm_create" eval="1"/>
         <field name="perm_unlink" eval="1"/>
     </record>
+
+    <!-- ================= RÈGLES DE SÉCURITÉ ================= -->
+    
+    <!-- Accès au wizard de rapports -->
+    <record id="access_bulk_report_wizard_user" model="ir.model.access">
+        <field name="name">bulk.report.wizard.user</field>
+        <field name="model_id" ref="model_bulk_report_wizard"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Accès aux logs pour utilisateurs -->
+    <record id="access_report_generation_log_user" model="ir.model.access">
+        <field name="name">report.generation.log.user</field>
+        <field name="model_id" ref="model_report_generation_log"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- Accès complet aux logs pour managers -->
+    <record id="access_report_generation_log_manager" model="ir.model.access">
+        <field name="name">report.generation.log.manager</field>
+        <field name="model_id" ref="model_report_generation_log"/>
+        <field name="group_id" ref="base.group_system"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+        <!-- Accès au modèle de prévisualisation -->
+    <record id="access_bulk_report_preview_user" model="ir.model.access">
+        <field name="name">bulk.report.preview.user</field>
+        <field name="model_id" ref="model_bulk_report_preview"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- Règle pour le wizard de rapports en lot -->
+    <record id="bulk_report_wizard_rule_global" model="ir.rule">
+        <field name="name">Wizard de rapports en lot: accès global</field>
+        <field name="model_id" ref="model_bulk_report_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règle pour les logs de génération de rapports -->
+    <record id="report_generation_log_rule_global" model="ir.rule">
+        <field name="name">Logs de rapports: accès global</field>
+        <field name="model_id" ref="model_report_generation_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- Règle pour les managers sur les logs de génération de rapports -->
+    <record id="report_generation_log_rule_manager" model="ir.rule">
+        <field name="name">Logs de rapports: accès manager</field>
+        <field name="model_id" ref="model_report_generation_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
 </odoo>

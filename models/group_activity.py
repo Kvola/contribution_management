@@ -221,7 +221,7 @@ class GroupActivity(models.Model):
             activity.total_expected = activity.total_members * activity.cotisation_amount
             
             if activity.total_expected > 0:
-                activity.completion_rate = (activity.total_collected / activity.total_expected) / 100
+                activity.completion_rate = (activity.total_collected / activity.total_expected) * 100  # Changed from / 100 to * 100
             else:
                 activity.completion_rate = 0.0
     
@@ -352,6 +352,8 @@ class GroupActivity(models.Model):
             _logger.error(f"Erreur lors de la confirmation de {self.name}: {e}")
             raise UserError(f"Erreur lors de la confirmation: {str(e)}")
     
+    # Correction de la méthode action_start dans group_activity.py
+
     def action_start(self):
         """Démarre l'activité"""
         self.ensure_one()
@@ -366,7 +368,48 @@ class GroupActivity(models.Model):
                     f"Participants actuels: {self.participant_count}"
                 )
         
-        self.state = 'cancelled'
+        # CORRECTION: Changer le state à 'ongoing' au lieu de 'cancelled'
+        self.state = 'ongoing'
+        
+        self.message_post(
+            body=f"Activité démarrée le {fields.Datetime.now()}",
+            message_type='comment'
+        )
+        
+        _logger.info(f"Activité {self.name} démarrée")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Succès',
+                'message': 'Activité démarrée',
+                'type': 'success',
+            }
+        }
+
+    def action_cancel(self):
+        """Annule l'activité"""
+        self.ensure_one()
+        if self.state == 'completed':
+            raise UserError("Une activité terminée ne peut pas être annulée.")
+        
+        # Annuler toutes les cotisations non payées
+        unpaid_cotisations = self.cotisation_ids.filtered(
+            lambda c: c.state not in ['paid'] and c.active
+        )
+        unpaid_cotisations.write({'active': False})
+        
+        # Gérer les cotisations partiellement payées
+        partial_cotisations = self.cotisation_ids.filtered(
+            lambda c: c.state == 'partial' and c.active
+        )
+        
+        # CORRECTION: Définir correctement le state et completion_date
+        self.write({
+            'state': 'cancelled',
+            'completion_date': fields.Datetime.now()
+        })
         
         message = f"Activité annulée le {fields.Datetime.now()}"
         if unpaid_cotisations:
@@ -818,23 +861,3 @@ class GroupActivity(models.Model):
                 'type': 'info',
             }
         }
-    
-    def action_cancel(self):
-        """Annule l'activité"""
-        self.ensure_one()
-        if self.state == 'completed':
-            raise UserError("Une activité terminée ne peut pas être annulée.")
-        
-        # Annuler toutes les cotisations non payées
-        unpaid_cotisations = self.cotisation_ids.filtered(
-            lambda c: c.state not in ['paid'] and c.active
-        )
-        unpaid_cotisations.write({'active': False})
-        
-        # Gérer les cotisations partiellement payées
-        partial_cotisations = self.cotisation_ids.filtered(
-            lambda c: c.state == 'partial' and c.active
-        )
-        
-        self.state = 'cancelled'
-        self.completion_date = fields.Datetime.now()

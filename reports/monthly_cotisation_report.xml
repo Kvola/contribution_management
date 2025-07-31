@@ -6,6 +6,139 @@
             <t t-foreach="docs" t-as="monthly">
                 <t t-call="web.external_layout">
                     <div class="page">
+                        <!-- Styles CSS spécifiques pour le PDF -->
+                        <style type="text/css">
+                            .page {
+                            font-family: 'DejaVu Sans', Arial, sans-serif;
+                            font-size: 12px;
+                            line-height: 1.4;
+                            }
+
+                            .report-header {
+                            border-bottom: 3px solid #007cba;
+                            margin-bottom: 20px;
+                            padding-bottom: 15px;
+                            }
+
+                            .info-section {
+                            background-color: #f8f9fa;
+                            padding: 15px;
+                            border-radius: 5px;
+                            margin-bottom: 20px;
+                            }
+
+                            .stats-card {
+                            text-align: center;
+                            padding: 15px;
+                            border: 1px solid #dee2e6;
+                            border-radius: 5px;
+                            margin-bottom: 10px;
+                            }
+
+                            .stats-card.success {
+                            background-color: #d4edda;
+                            border-color: #c3e6cb;
+                            color: #155724;
+                            }
+
+                            .stats-card.warning {
+                            background-color: #fff3cd;
+                            border-color: #ffeaa7;
+                            color: #856404;
+                            }
+
+                            .stats-card.info {
+                            background-color: #d1ecf1;
+                            border-color: #bee5eb;
+                            color: #0c5460;
+                            }
+
+                            .table-cotisations {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 15px;
+                            }
+
+                            .table-cotisations th,
+                            .table-cotisations td {
+                            border: 1px solid #dee2e6;
+                            padding: 8px;
+                            font-size: 11px;
+                            }
+
+                            .table-cotisations th {
+                            background-color: #f8f9fa;
+                            font-weight: bold;
+                            text-align: center;
+                            }
+
+                            .table-cotisations .text-end {
+                            text-align: right;
+                            }
+
+                            .table-cotisations .text-center {
+                            text-align: center;
+                            }
+
+                            .badge {
+                            padding: 3px 8px;
+                            border-radius: 3px;
+                            font-size: 10px;
+                            font-weight: bold;
+                            color: white;
+                            }
+
+                            .badge.bg-success { background-color: #28a745; }
+                            .badge.bg-warning { background-color: #ffc107; color: #212529; }
+                            .badge.bg-danger { background-color: #dc3545; }
+                            .badge.bg-info { background-color: #17a2b8; }
+                            .badge.bg-secondary { background-color: #6c757d; }
+
+                            .financial-summary {
+                            background-color: #f8f9fa;
+                            border: 1px solid #dee2e6;
+                            border-radius: 5px;
+                            padding: 20px;
+                            margin-top: 20px;
+                            }
+
+                            .financial-summary h5 {
+                            color: #007cba;
+                            margin-bottom: 15px;
+                            border-bottom: 2px solid #007cba;
+                            padding-bottom: 5px;
+                            }
+
+                            .amount-display {
+                            font-size: 16px;
+                            font-weight: bold;
+                            }
+
+                            .amount-display.primary { color: #007cba; }
+                            .amount-display.success { color: #28a745; }
+                            .amount-display.warning { color: #ffc107; }
+
+                            .footer-info {
+                            margin-top: 30px;
+                            padding-top: 15px;
+                            border-top: 1px solid #dee2e6;
+                            font-size: 10px;
+                            color: #6c757d;
+                            }
+
+                            /* Éviter les sauts de page dans les sections importantes */
+                            .stats-section,
+                            .financial-summary {
+                            page-break-inside: avoid;
+                            }
+
+                            /* Force la largeur des colonnes pour la lisibilité */
+                            .table-cotisations .col-member { width: 25%; }
+                            .table-cotisations .col-amount { width: 12%; }
+                            .table-cotisations .col-date { width: 12%; }
+                            .table-cotisations .col-status { width: 10%; }
+                            .table-cotisations .col-notes { width: 17%; }
+                        </style>
                         <div class="oe_structure" />
 
                         <!-- En-tête du rapport -->
@@ -106,8 +239,8 @@
                             <div class="col-3">
                                 <div class="card text-center bg-info text-white">
                                     <div class="card-body">
-                                        <h5 class="card-title"
-                                            t-esc="'%.1f%%' % monthly.completion_rate" />
+                                        <h5 style="font-weight: bold; margin-bottom: 5px;">
+                                            <span t-esc="'%.1f' % monthly.completion_rate" />% </h5>
                                         <p class="card-text">Taux completion</p>
                                     </div>
                                 </div>
@@ -162,9 +295,7 @@
                                                             t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
                                                     </td>
                                                     <td class="text-end">
-                                                        <span
-                                                            t-esc="cotisation.amount_due - cotisation.amount_paid"
-                                                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                        <span t-esc="'%.2f' % (cotisation.amount_due - cotisation.amount_paid)" />
                                                     </td>
                                                     <td>
                                                         <span t-field="cotisation.payment_date"
@@ -232,9 +363,7 @@
                                                     <p>
                                                         <strong>Montant restant à collecter:</strong>
                                                     </p>
-                                                    <h4 class="text-warning"
-                                                        t-esc="monthly.total_expected - monthly.total_collected"
-                                                        t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}" />
+                                                    <h4 class="text-warning" t-esc="'%.2f' % (monthly.total_expected - monthly.total_collected)" />
                                                 </div>
                                             </div>
                                         </div>
@@ -242,6 +371,15 @@
                                 </div>
                             </div>
                         </t>
+
+                        <!-- Pied de page avec date de génération -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center text-muted">
+                                <small> Rapport généré le <span
+                                        t-esc="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')" />
+                                </small>
+                            </div>
+                        </div>
 
                         <div class="oe_structure" />
                     </div>
@@ -260,5 +398,7 @@
         <field name="binding_model_id" ref="contribution_management.model_monthly_cotisation" />
         <field name="binding_type">report</field>
         <field name="paperformat_id" ref="base.paperformat_euro" />
+        <field name="print_report_name">'Rapport_Cotisation_' + object.display_name.replace(' ',
+            '_') + '_' + time.strftime('%Y%m%d')</field>
     </record>
 </odoo>

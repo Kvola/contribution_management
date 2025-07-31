@@ -1,87 +1,159 @@
 <odoo>
-    <!-- Vue QWeb pour impression du tableau de bord -->
-    <template id="cotisations_dashboard_report_template">
+    <!-- Template QWeb avec nom court -->
+    <template id="dashboard_tpl">
         <t t-call="web.html_container">
-            <t t-call="web.external_layout">
-                <div class="page">
-                    <h2>Tableau de bord des cotisations</h2>
-                    
-                    <div class="row">
-                        <div class="col-6">
-                            <h4>Période d'analyse</h4>
-                            <p>Du <span t-field="o.date_from"/> au <span t-field="o.date_to"/></p>
-                            <p>Type: <span t-field="o.dashboard_type"/></p>
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Tableau de bord des cotisations</h2>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <h4>Période d'analyse</h4>
+                                <p>Du <span t-esc="o.date_from"/> au <span t-esc="o.date_to"/></p>
+                                <p>Type: <span t-esc="dict(o._fields['dashboard_type'].selection).get(o.dashboard_type, o.dashboard_type)"/></p>
+                                <t t-if="o.dashboard_type == 'member' and o.member_id">
+                                    <p>Membre: <span t-esc="o.member_id.name"/></p>
+                                </t>
+                                <t t-if="o.dashboard_type == 'group' and o.group_id">
+                                    <p>Groupe: <span t-esc="o.group_id.name"/></p>
+                                </t>
+                            </div>
+                            <div class="col-6">
+                                <h4>Résumé</h4>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Total cotisations:</td>
+                                        <td><strong t-esc="o.total_cotisations"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Montant total dû:</td>
+                                        <td><strong t-esc="o.total_amount_due" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Montant payé:</td>
+                                        <td><strong t-esc="o.total_amount_paid" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Montant restant:</td>
+                                        <td><strong t-esc="o.total_remaining" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Taux de collecte:</td>
+                                        <td><strong><span t-esc="'{:.1f}'.format(o.global_collection_rate)"/>%</strong></td>
+                                    </tr>
+                                </table>
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <h4>Résumé</h4>
-                            <table class="table table-sm">
-                                <tr>
-                                    <td>Total cotisations:</td>
-                                    <td><strong t-field="o.total_cotisations"/></td>
-                                </tr>
-                                <tr>
-                                    <td>Montant total dû:</td>
-                                    <td><strong t-field="o.total_amount_due" t-options="{'widget': 'monetary'}"/></td>
-                                </tr>
-                                <tr>
-                                    <td>Montant payé:</td>
-                                    <td><strong t-field="o.total_amount_paid" t-options="{'widget': 'monetary'}"/></td>
-                                </tr>
-                                <tr>
-                                    <td>Taux de collecte:</td>
-                                    <td><strong t-field="o.global_collection_rate" t-options="{'widget': 'percentage'}"></strong></td>
-                                </tr>
-                            </table>
+                        
+                        <h4>Répartition par statut</h4>
+                        <div class="row">
+                            <div class="col-3 text-center">
+                                <div class="border p-2">
+                                    <h3 class="text-success" t-esc="o.paid_count"/>
+                                    <p>Payées</p>
+                                </div>
+                            </div>
+                            <div class="col-3 text-center">
+                                <div class="border p-2">
+                                    <h3 class="text-warning" t-esc="o.pending_count"/>
+                                    <p>En attente</p>
+                                </div>
+                            </div>
+                            <div class="col-3 text-center">
+                                <div class="border p-2">
+                                    <h3 class="text-info" t-esc="o.partial_count"/>
+                                    <p>Partielles</p>
+                                </div>
+                            </div>
+                            <div class="col-3 text-center">
+                                <div class="border p-2">
+                                    <h3 class="text-danger" t-esc="o.overdue_count"/>
+                                    <p>En retard</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Montants par statut -->
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <h5>Montants en attente</h5>
+                                <p class="text-warning">
+                                    <strong t-esc="o.pending_amount" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <h5>Montants en retard</h5>
+                                <p class="text-danger">
+                                    <strong t-esc="o.overdue_amount" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Indicateurs de performance -->
+                        <h4 class="mt-4">Indicateurs de performance</h4>
+                        <div class="row">
+                            <div class="col-4">
+                                <h6>Délai moyen de paiement</h6>
+                                <p><span t-esc="'{:.1f}'.format(o.avg_payment_delay)"/> jours</p>
+                            </div>
+                            <div class="col-4">
+                                <h6>Retards critiques (&gt;30j)</h6>
+                                <p class="text-danger"><span t-esc="o.critical_overdue_count"/></p>
+                            </div>
+                            <div class="col-4">
+                                <h6>Taux de bons payeurs</h6>
+                                <p><span t-esc="'{:.1f}'.format(o.good_payers_rate)"/>%</p>
+                            </div>
+                        </div>
+
+                        <!-- Alertes -->
+                        <t t-if="o.alerts_count > 0">
+                            <h4 class="mt-4">Alertes</h4>
+                            <t t-set="alerts" t-value="o.alerts_json and json.loads(o.alerts_json) or []"/>
+                            <t t-foreach="alerts" t-as="alert">
+                                <div t-attf-class="alert alert-#{alert.get('type') == 'danger' and 'danger' or (alert.get('type') == 'warning' and 'warning' or 'info')}">
+                                    <strong t-esc="alert.get('title', '')"/>: <span t-esc="alert.get('message', '')"/>
+                                </div>
+                            </t>
+                        </t>
+
+                        <!-- Prévisions -->
+                        <h4 class="mt-4">Prévisions</h4>
+                        <div class="row">
+                            <div class="col-6">
+                                <h6>Attendu le mois prochain</h6>
+                                <p t-esc="o.expected_next_month" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                            </div>
+                            <div class="col-6">
+                                <h6>Taux de collecte prévu</h6>
+                                <p><span t-esc="'{:.1f}'.format(o.forecast_collection_rate)"/>%</p>
+                            </div>
+                        </div>
+
+                        <!-- Pied de page -->
+                        <div class="mt-5 pt-3 border-top">
+                            <p class="text-muted small">
+                                Rapport généré le <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/> 
+                                par <span t-esc="user.name"/> 
+                                - Société: <span t-esc="o.company_id.name"/>
+                            </p>
                         </div>
                     </div>
-                    
-                    <h4>Répartition par statut</h4>
-                    <div class="row">
-                        <div class="col-3 text-center">
-                            <div class="border p-2">
-                                <h3 class="text-success" t-field="o.paid_count"/>
-                                <p>Payées</p>
-                            </div>
-                        </div>
-                        <div class="col-3 text-center">
-                            <div class="border p-2">
-                                <h3 class="text-warning" t-field="o.pending_count"/>
-                                <p>En attente</p>
-                            </div>
-                        </div>
-                        <div class="col-3 text-center">
-                            <div class="border p-2">
-                                <h3 class="text-info" t-field="o.partial_count"/>
-                                <p>Partielles</p>
-                            </div>
-                        </div>
-                        <div class="col-3 text-center">
-                            <div class="border p-2">
-                                <h3 class="text-danger" t-field="o.overdue_count"/>
-                                <p>En retard</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <t t-if="o.alerts_count > 0">
-                        <h4 class="mt-4">Alertes</h4>
-                        <div class="alert alert-warning">
-                            <strong t-field="o.alerts_count"/> alerte(s) active(s)
-                        </div>
-                    </t>
-                </div>
+                </t>
             </t>
         </t>
     </template>
 
-    <!-- Rapport PDF pour le tableau de bord -->
-    <record id="cotisations_dashboard_report" model="ir.actions.report">
-        <field name="name">Rapport tableau de bord</field>
+    <!-- Définition du rapport avec nom court -->
+    <record id="dashboard_report" model="ir.actions.report">
+        <field name="name">Tableau de bord cotisations</field>
         <field name="model">cotisations.dashboard</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">contribution_management.cotisations_dashboard_report_template</field>
-        <field name="report_file">contribution_management.cotisations_dashboard_report</field>
+        <field name="report_name">contribution_management.dashboard_tpl</field>
+        <field name="report_file">dashboard_report</field>
         <field name="binding_model_id" ref="model_cotisations_dashboard"/>
         <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
     </record>
 </odoo>

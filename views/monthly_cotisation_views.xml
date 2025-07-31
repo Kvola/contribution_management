@@ -60,6 +60,9 @@
                             confirm="Attention : Cette action supprimera toutes les cotisations individuelles sans paiement. Continuer ?"/>
                     <button name="action_duplicate" string="Dupliquer" type="object" 
                             class="btn-secondary"/>
+                    <button name="action_print_monthly_report" string="Imprimer le rapport mensuel" type="object" 
+                            class="btn-secondary" 
+                            invisible="state != 'closed'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
                 </header>
                 
