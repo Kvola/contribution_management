@@ -62,7 +62,7 @@
                             class="btn-secondary"/>
                     <button name="action_print_monthly_report" string="Imprimer le rapport mensuel" type="object" 
                             class="btn-secondary" 
-                            invisible="state != 'closed'"/>
+                            invisible="state == 'draft'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
                 </header>
                 

@@ -613,7 +613,7 @@ class MonthlyCotisation(models.Model):
     def action_print_monthly_report(self):
         """Action bouton pour imprimer le rapport mensuel"""
         self.ensure_one()
-        if not self.is_company:
+        if not self.group_id.is_company:
             return {"type": "ir.actions.act_window_close"}
 
         return self.env.ref(

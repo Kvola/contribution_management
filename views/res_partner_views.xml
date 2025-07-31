@@ -200,9 +200,9 @@
             
             <!-- Ajouter des champs cachés nécessaires aux calculs -->
             <xpath expr="//field[@name='is_company']" position="after">
-                <field name="has_overdue_payments" column_invisible="1"/>
-                <field name="is_good_payer" column_invisible="1"/>
-                <field name="days_since_last_payment" column_invisible="1"/>
+                <field name="has_overdue_payments" invisible="1"/>
+                <field name="is_good_payer" invisible="1"/>
+                <field name="days_since_last_payment" invisible="1"/>
             </xpath>
         </field>
     </record>
