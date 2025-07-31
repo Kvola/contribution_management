@@ -27,4 +27,4 @@ access_bulk_report_preview_user,bulk.report.preview.user,model_bulk_report_previ
 access_mass_payment_line_user,mass.payment.line.user,model_mass_payment_line,base.group_user,1,1,1,1
 access_mass_payment_line_manager,mass.payment.line.manager,model_mass_payment_line,base.group_system,1,1,1,1
 access_mass_payment_line_public,mass.payment.line.public,model_mass_payment_line,base.group_public,1,0,0,0
-access_mass_payment_line_portal,mass.payment.line.portal,model_mass_payment,base.group_portal,1,0,0,0
+access_mass_payment_line_portal,mass.payment.line.portal,model_mass_payment_line,base.group_portal,1,0,0,0
