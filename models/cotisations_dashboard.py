@@ -559,16 +559,20 @@ class CotisationsDashboard(models.TransientModel):
                 }
             }
         
+        # Créer le wizard avec les cotisations présélectionnées
+        wizard = self.env['cotisation.reminder.wizard'].create({
+            'cotisation_ids': [(6, 0, unpaid_cotisations.ids)],
+            'reminder_type': 'first'
+        })
+        
         return {
             'name': 'Envoyer des rappels en masse',
             'type': 'ir.actions.act_window',
             'res_model': 'cotisation.reminder.wizard',
+            'res_id': wizard.id,
             'view_mode': 'form',
             'target': 'new',
-            'context': {
-                'default_cotisation_ids': [(6, 0, unpaid_cotisations.ids)],
-                'default_reminder_type': 'first'
-            }
+            'context': {}
         }
     
     def action_export_report(self):
