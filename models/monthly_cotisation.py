@@ -153,8 +153,8 @@ class MonthlyCotisation(models.Model):
     active = fields.Boolean(default=True)
     activation_date = fields.Datetime(string="Date d'activation", readonly=True)
     closure_date = fields.Datetime(string="Date de fermeture", readonly=True)
-    
-    @api.depends('group_id', 'month', 'year')
+
+    @api.depends('group_id', 'month', 'year', 'amount')
     def _compute_display_name(self):
         """Calcule le nom d'affichage"""
         month_names = {
@@ -165,7 +165,7 @@ class MonthlyCotisation(models.Model):
         for record in self:
             if record.group_id and record.month and record.year:
                 month_name = month_names.get(record.month, record.month)
-                record.display_name = f"{record.group_id.name} - {month_name} {record.year}"
+                record.display_name = f"{record.group_id.name} - {month_name} {record.year} - {str(record.amount)}"
             else:
                 record.display_name = "Cotisation mensuelle"
     
@@ -220,8 +220,8 @@ class MonthlyCotisation(models.Model):
                 monthly.completion_rate = (monthly.total_collected / monthly.total_expected) * 100
             else:
                 monthly.completion_rate = 0.0
-    
-    @api.constrains('group_id', 'month', 'year')
+
+    @api.constrains('group_id', 'month', 'year', 'amount')
     def _check_unique_monthly(self):
         """Vérifie qu'il n'y a qu'une seule cotisation mensuelle par groupe/mois/année"""
         for record in self:
@@ -230,6 +230,7 @@ class MonthlyCotisation(models.Model):
                 ('month', '=', record.month),
                 ('year', '=', record.year),
                 ('id', '!=', record.id),
+                ('amount', '=', record.amount),
                 ('active', '=', True)
             ]
             existing = self.search(domain, limit=1)
