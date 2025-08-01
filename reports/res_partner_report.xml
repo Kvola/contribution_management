@@ -983,7 +983,7 @@
     </template>
 
     <!-- ================= ACTIONS DE RAPPORT SÉCURISÉES ================= -->
-    <record id="action_report_member_cotisations_ultra_safe" model="ir.actions.report">
+    <record id="action_report_member_cotisations" model="ir.actions.report">
         <field name="name">Rapport Cotisations Membre (Ultra-Sécurisé)</field>
         <field name="model">res.partner</field>
         <field name="report_type">qweb-pdf</field>
