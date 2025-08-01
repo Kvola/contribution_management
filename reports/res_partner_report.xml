@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ================= RAPPORT INDIVIDUEL DU MEMBRE (FIXED) ================= -->
-     <record id="action_report_member_cotisations" model="ir.actions.report">
-        <field name="name">Rapport de cotisations du membre</field>
-        <field name="model">res.partner</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">contribution_management.report_member_cotisations_template</field>
-        <field name="report_file">contribution_management.report_member_cotisations_template</field>
-        <field name="binding_model_id" ref="base.model_res_partner" />
-        <field name="binding_type">report</field>
-        <field name="paperformat_id" ref="base.paperformat_euro" />
-    </record>
-
-    <!-- Template du rapport individuel avec formatage sécurisé -->
-    <template id="report_member_cotisations_template">
+    <!-- ================= TEMPLATE ULTRA-SÉCURISÉ SANS FORMATAGE COMPLEXE ================= -->
+    <template id="report_member_cotisations_template_ultra_safe">
         <t t-call="web.html_container">
             <t t-foreach="docs.filtered(lambda p: not p.is_company)" t-as="member">
                 <t t-call="web.external_layout">
@@ -40,8 +28,10 @@
                             </div>
                             <div class="col-6">
                                 <strong>Email:</strong>
-                                <span t-field="member.email"/>
-                                <t t-if="not member.email">
+                                <t t-if="member.email">
+                                    <span t-field="member.email"/>
+                                </t>
+                                <t t-else="">
                                     <span class="text-muted">Non défini</span>
                                 </t>
                             </div>
@@ -50,8 +40,10 @@
                         <div class="row mt-2">
                             <div class="col-6">
                                 <strong>Téléphone:</strong>
-                                <span t-field="member.phone"/>
-                                <t t-if="not member.phone">
+                                <t t-if="member.phone">
+                                    <span t-field="member.phone"/>
+                                </t>
+                                <t t-else="">
                                     <span class="text-muted">Non défini</span>
                                 </t>
                             </div>
@@ -71,7 +63,7 @@
                             </div>
                         </t>
 
-                        <!-- Statistiques -->
+                        <!-- Statistiques - Version ultra-sécurisée -->
                         <div class="row mt-4">
                             <div class="col-12">
                                 <h4 class="mb-3">Résumé des cotisations</h4>
@@ -83,7 +75,7 @@
                                 <div class="card text-center border-primary">
                                     <div class="card-body">
                                         <h5 class="card-title text-primary">
-                                            <span t-esc="member.total_cotisations or 0"/>
+                                            <span t-esc="member.get_safe_total_cotisations()"/>
                                         </h5>
                                         <p class="card-text small">Total cotisations</p>
                                     </div>
@@ -93,7 +85,7 @@
                                 <div class="card text-center bg-success text-white">
                                     <div class="card-body">
                                         <h5 class="card-title">
-                                            <span t-esc="member.paid_cotisations or 0"/>
+                                            <span t-esc="member.get_safe_paid_cotisations()"/>
                                         </h5>
                                         <p class="card-text small">Payées</p>
                                     </div>
@@ -103,7 +95,7 @@
                                 <div class="card text-center bg-warning text-dark">
                                     <div class="card-body">
                                         <h5 class="card-title">
-                                            <span t-esc="member.pending_cotisations or 0"/>
+                                            <span t-esc="member.get_safe_pending_cotisations()"/>
                                         </h5>
                                         <p class="card-text small">En attente</p>
                                     </div>
@@ -113,7 +105,7 @@
                                 <div class="card text-center bg-danger text-white">
                                     <div class="card-body">
                                         <h5 class="card-title">
-                                            <span t-esc="member.overdue_cotisations or 0"/>
+                                            <span t-esc="member.get_safe_overdue_cotisations()"/>
                                         </h5>
                                         <p class="card-text small">En retard</p>
                                     </div>
@@ -121,7 +113,7 @@
                             </div>
                         </div>
 
-                        <!-- Montants et taux de paiement -->
+                        <!-- Montants et taux de paiement - Version ultra-sécurisée -->
                         <div class="row mt-3 mb-4">
                             <div class="col-4">
                                 <div class="card">
@@ -149,16 +141,15 @@
                                         <strong class="text-info">Taux de paiement:</strong>
                                         <br/>
                                         <span class="h5">
-                                            <!-- CORRECTION: Formatage sécurisé du taux de paiement -->
-                                            <t t-set="safe_payment_rate" t-value="member.payment_rate if member.payment_rate is not None else 0.0"/>
-                                            <span t-esc="'%.1f%%' % safe_payment_rate"/>
+                                            <!-- UTILISATION DE LA MÉTHODE ULTRA-SÉCURISÉE -->
+                                            <span t-esc="member.get_safe_payment_rate()"/>
                                         </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Statut du membre -->
+                        <!-- Statut du membre - Version ultra-sécurisée -->
                         <div class="row mt-3 mb-4">
                             <div class="col-12">
                                 <div class="card">
@@ -174,23 +165,22 @@
                                                 </t>
                                             </div>
                                             <div class="col-4 text-center">
-                                                <strong>Retards:</strong><br/>
+                                                <strong>Retards de paiement:</strong><br/>
                                                 <t t-if="member.has_overdue_payments">
-                                                    <span class="badge bg-danger">Paiements en retard</span>
+                                                    <span class="badge bg-danger">Oui</span>
                                                 </t>
                                                 <t t-else="">
-                                                    <span class="badge bg-success">À jour</span>
+                                                    <span class="badge bg-success">Non</span>
                                                 </t>
                                             </div>
                                             <div class="col-4 text-center">
                                                 <strong>Dernier paiement:</strong><br/>
-                                                <!-- CORRECTION: Gestion sécurisée des jours depuis le dernier paiement -->
-                                                <t t-set="safe_days_since_payment" t-value="member.days_since_last_payment if member.days_since_last_payment is not None else 999"/>
-                                                <t t-if="safe_days_since_payment &lt; 999">
-                                                    <span t-esc="safe_days_since_payment"/> jours
+                                                <t t-set="safe_days" t-value="member.get_safe_days_since_payment()"/>
+                                                <t t-if="safe_days and safe_days &lt; 999">
+                                                    <span t-esc="safe_days"/> jours
                                                 </t>
                                                 <t t-else="">
-                                                    <span class="text-muted">Aucun paiement</span>
+                                                    <span class="text-muted">Aucun</span>
                                                 </t>
                                             </div>
                                         </div>
@@ -199,194 +189,763 @@
                             </div>
                         </div>
 
-                        <!-- Historique des cotisations -->
+                        <!-- Détail des cotisations - Version ultra-sécurisée -->
                         <div class="row mt-4">
                             <div class="col-12">
-                                <h4 class="mb-3">Historique des cotisations</h4>
-
-                                <t t-set="active_cotisations" t-value="member.cotisation_ids.filtered('active')"/>
-                                
-                                <t t-if="not active_cotisations">
-                                    <div class="alert alert-info text-center">
-                                        <strong>Aucune cotisation enregistrée pour ce membre.</strong>
-                                    </div>
-                                </t>
-                                <t t-else="">
+                                <h4 class="mb-3">Détail des cotisations</h4>
+                                <t t-if="member.cotisation_ids.filtered('active')">
                                     <div class="table-responsive">
-                                        <table class="table table-sm table-bordered table-striped">
-                                            <thead class="table-light">
+                                        <table class="table table-striped table-bordered">
+                                            <thead class="table-dark">
                                                 <tr>
-                                                    <th class="text-center">Type</th>
-                                                    <th>Activité/Mois</th>
+                                                    <th>Cotisation</th>
                                                     <th>Groupe</th>
-                                                    <th class="text-end">Montant dû</th>
-                                                    <th class="text-end">Montant payé</th>
-                                                    <th class="text-center">Date échéance</th>
-                                                    <th class="text-center">Date paiement</th>
-                                                    <th class="text-center">Statut</th>
+                                                    <th>Date échéance</th>
+                                                    <th>Montant dû</th>
+                                                    <th>Montant payé</th>
+                                                    <th>Reste à payer</th>
+                                                    <th>Statut</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <t t-foreach="active_cotisations.sorted(lambda c: c.due_date or c.create_date, reverse=True)" t-as="cotisation">
+                                                <t t-foreach="member.cotisation_ids.filtered('active').sorted('create_date', reverse=True)" t-as="cotisation">
                                                     <tr>
-                                                        <td class="text-center">
-                                                            <t t-if="cotisation.cotisation_type == 'activity'">
-                                                                <span class="badge bg-primary">Activité</span>
+                                                        <td>
+                                                            <span t-field="cotisation.name"/>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="cotisation.group_id">
+                                                                <span t-field="cotisation.group_id.name"/>
                                                             </t>
                                                             <t t-else="">
-                                                                <span class="badge bg-info">Mensuelle</span>
+                                                                <span class="text-muted">-</span>
                                                             </t>
                                                         </td>
                                                         <td>
-                                                            <t t-if="cotisation.activity_id">
-                                                                <span t-field="cotisation.activity_id.name"/>
-                                                            </t>
-                                                            <t t-elif="cotisation.monthly_cotisation_id">
-                                                                <span t-field="cotisation.monthly_cotisation_id.display_name"/>
+                                                            <t t-if="cotisation.due_date">
+                                                                <span t-field="cotisation.due_date"/>
                                                             </t>
                                                             <t t-else="">
-                                                                <em class="text-muted">Non défini</em>
+                                                                <span class="text-muted">Non définie</span>
                                                             </t>
                                                         </td>
-                                                        <td>
-                                                            <span t-field="cotisation.group_id.name"/>
-                                                            <t t-if="not cotisation.group_id">
-                                                                <em class="text-muted">Non défini</em>
-                                                            </t>
-                                                        </td>
-                                                        <td class="text-end">
+                                                        <td class="text-right">
                                                             <span t-field="cotisation.amount_due"
                                                                   t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"/>
                                                         </td>
-                                                        <td class="text-end">
+                                                        <td class="text-right">
                                                             <span t-field="cotisation.amount_paid"
                                                                   t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"/>
                                                         </td>
-                                                        <td class="text-center">
-                                                            <t t-if="cotisation.due_date">
-                                                                <span t-field="cotisation.due_date" t-options="{'widget': 'date'}"/>
-                                                            </t>
-                                                            <t t-else="">
-                                                                <em class="text-muted">-</em>
-                                                            </t>
+                                                        <td class="text-right">
+                                                            <span t-field="cotisation.remaining_amount"
+                                                                  t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"/>
                                                         </td>
-                                                        <td class="text-center">
-                                                            <t t-if="cotisation.payment_date">
-                                                                <span t-field="cotisation.payment_date" t-options="{'widget': 'date'}"/>
-                                                            </t>
-                                                            <t t-else="">
-                                                                <em class="text-muted">-</em>
-                                                            </t>
-                                                        </td>
-                                                        <td class="text-center">
+                                                        <td>
                                                             <t t-if="cotisation.state == 'paid'">
-                                                                <span class="badge bg-success">Payé</span>
+                                                                <span class="badge bg-success">Payée</span>
                                                             </t>
                                                             <t t-elif="cotisation.state == 'partial'">
-                                                                <span class="badge bg-warning text-dark">Partiel</span>
+                                                                <span class="badge bg-warning">Partielle</span>
                                                             </t>
                                                             <t t-elif="cotisation.state == 'overdue'">
                                                                 <span class="badge bg-danger">En retard</span>
-                                                                <t t-if="hasattr(cotisation, 'days_overdue') and cotisation.days_overdue">
-                                                                    <br/><small>(<span t-esc="cotisation.days_overdue"/> j.)</small>
-                                                                </t>
-                                                            </t>
-                                                            <t t-elif="cotisation.state == 'pending'">
-                                                                <span class="badge bg-info">En attente</span>
                                                             </t>
                                                             <t t-else="">
-                                                                <span class="badge bg-secondary" t-esc="cotisation.state"/>
+                                                                <span class="badge bg-secondary">En attente</span>
                                                             </t>
                                                         </td>
                                                     </tr>
                                                 </t>
                                             </tbody>
                                         </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle"/> Aucune cotisation trouvée pour ce membre.
                                     </div>
                                 </t>
                             </div>
                         </div>
 
-                        <!-- Résumé par groupe (si applicable) -->
-                        <t t-if="active_cotisations">
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <h4 class="mb-3">Résumé par groupe</h4>
-                                    <t t-set="groups_summary" t-value="{}"/>
-                                    
-                                    <!-- Calcul du résumé par groupe -->
-                                    <t t-foreach="active_cotisations" t-as="cotisation">
-                                        <t t-set="group_name" t-value="cotisation.group_id.name if cotisation.group_id else 'Non défini'"/>
-                                        <t t-if="group_name not in groups_summary">
-                                            <t t-set="groups_summary" t-value="groups_summary.update({group_name: {'count': 0, 'due': 0, 'paid': 0}}) or groups_summary"/>
-                                        </t>
-                                        <t t-set="groups_summary" t-value="groups_summary.update({group_name: {
-                                            'count': groups_summary[group_name]['count'] + 1,
-                                            'due': groups_summary[group_name]['due'] + (cotisation.amount_due or 0),
-                                            'paid': groups_summary[group_name]['paid'] + (cotisation.amount_paid or 0)
-                                        }}) or groups_summary"/>
-                                    </t>
+                        <!-- Pied de page avec informations de génération -->
+                        <div class="row mt-5">
+                            <div class="col-12">
+                                <hr/>
+                                <p class="text-muted text-center small">
+                                    Rapport généré le <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/>
+                                    par le système de gestion des cotisations
+                                </p>
+                            </div>
+                        </div>
 
+                        <div class="oe_structure"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ================= TEMPLATE GROUPE ULTRA-SÉCURISÉ ================= -->
+    <template id="report_group_synthesis_template_ultra_safe">
+        <t t-call="web.html_container">
+            <t t-foreach="docs.filtered(lambda p: p.is_company)" t-as="group">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="oe_structure"/>
+
+                        <!-- En-tête du rapport groupe -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h2 class="text-center mb-2">
+                                    <strong>RAPPORT DE SYNTHÈSE GROUPE</strong>
+                                </h2>
+                                <h3 class="text-center text-muted mb-4">
+                                    <span t-field="group.name"/>
+                                </h3>
+                            </div>
+                        </div>
+
+                        <!-- Informations du groupe -->
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <strong>Groupe:</strong>
+                                <span t-field="group.name"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Email:</strong>
+                                <t t-if="group.email">
+                                    <span t-field="group.email"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="text-muted">Non défini</span>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <strong>Téléphone:</strong>
+                                <t t-if="group.phone">
+                                    <span t-field="group.phone"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="text-muted">Non défini</span>
+                                </t>
+                            </div>
+                            <div class="col-6">
+                                <strong>Date rapport:</strong>
+                                <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y %H:%M')"/>
+                            </div>
+                        </div>
+
+                        <!-- Statistiques du groupe - Version ultra-sécurisée -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Vue d'ensemble du groupe</h4>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-3">
+                                <div class="card text-center border-info">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-info">
+                                            <span t-esc="group.safe_format_integer(group.group_members_count)"/>
+                                        </h5>
+                                        <p class="card-text small">Membres total</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card text-center bg-success text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span t-esc="group.safe_format_integer(group.group_active_members_count)"/>
+                                        </h5>
+                                        <p class="card-text small">Membres actifs</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card text-center bg-primary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span t-esc="group.safe_format_integer(group.activities_count)"/>
+                                        </h5>
+                                        <p class="card-text small">Activités</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="card text-center bg-warning text-dark">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span t-esc="group.safe_format_integer(group.monthly_cotisations_count)"/>
+                                        </h5>
+                                        <p class="card-text small">Cotisations mensuelles</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Montants financiers - Version ultra-sécurisée -->
+                        <div class="row mt-3 mb-4">
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <strong class="text-primary">Total attendu:</strong>
+                                        <br/>
+                                        <span class="h5" t-field="group.group_total_expected"
+                                              t-options="{'widget': 'monetary', 'display_currency': group.currency_id}"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <strong class="text-success">Total collecté:</strong>
+                                        <br/>
+                                        <span class="h5" t-field="group.group_total_collected"
+                                              t-options="{'widget': 'monetary', 'display_currency': group.currency_id}"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <strong class="text-info">Taux de collecte:</strong>
+                                        <br/>
+                                        <span class="h5">
+                                            <!-- UTILISATION DE LA MÉTHODE ULTRA-SÉCURISÉE -->
+                                            <span t-esc="group.get_safe_collection_rate()"/>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance du groupe -->
+                        <div class="row mt-3 mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Performance du groupe</h5>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>Niveau de performance:</strong>
+                                                <t t-set="collection_rate" t-value="group.safe_format_float(group.group_collection_rate)"/>
+                                                <t t-if="collection_rate >= 90">
+                                                    <span class="badge bg-success ms-2">Excellente</span>
+                                                </t>
+                                                <t t-elif="collection_rate >= 80">
+                                                    <span class="badge bg-success ms-2">Très bonne</span>
+                                                </t>
+                                                <t t-elif="collection_rate >= 60">
+                                                    <span class="badge bg-warning ms-2">Correcte</span>
+                                                </t>
+                                                <t t-else="">
+                                                    <span class="badge bg-danger ms-2">À améliorer</span>
+                                                </t>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Montant restant à collecter:</strong>
+                                                <t t-set="gap_amount" t-value="group.safe_format_float(group.group_total_expected) - group.safe_format_float(group.group_total_collected)"/>
+                                                <span t-esc="'%.2f' % max(0, gap_amount)"/>
+                                                <span t-if="group.currency_id"> <span t-field="group.currency_id.symbol"/></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Liste des activités récentes - Version sécurisée -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Activités récentes</h4>
+                                <t t-if="group.group_activities.filtered('active')">
                                     <div class="table-responsive">
-                                        <table class="table table-sm table-bordered">
-                                            <thead class="table-light">
+                                        <table class="table table-striped table-bordered">
+                                            <thead class="table-dark">
                                                 <tr>
-                                                    <th>Groupe</th>
-                                                    <th class="text-center">Cotisations</th>
-                                                    <th class="text-end">Total dû</th>
-                                                    <th class="text-end">Total payé</th>
-                                                    <th class="text-center">Taux paiement</th>
+                                                    <th>Activité</th>
+                                                    <th>Date début</th>
+                                                    <th>Date fin</th>
+                                                    <th>Attendu</th>
+                                                    <th>Collecté</th>
+                                                    <th>Taux</th>
+                                                    <th>Statut</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <t t-foreach="groups_summary.items()" t-as="group_item">
-                                                    <t t-set="group_name" t-value="group_item[0]"/>
-                                                    <t t-set="group_data" t-value="group_item[1]"/>
+                                                <t t-foreach="group.group_activities.filtered('active').sorted('create_date', reverse=True)[:10]" t-as="activity">
                                                     <tr>
-                                                        <td><span t-esc="group_name"/></td>
-                                                        <td class="text-center"><span t-esc="group_data['count']"/></td>
-                                                        <td class="text-end">
-                                                            <span t-esc="group_data['due']" 
-                                                                  t-options="{'widget': 'monetary', 'display_currency': member.currency_id}"/>
+                                                        <td>
+                                                            <span t-field="activity.name"/>
                                                         </td>
-                                                        <td class="text-end">
-                                                            <span t-esc="group_data['paid']"
-                                                                  t-options="{'widget': 'monetary', 'display_currency': member.currency_id}"/>
+                                                        <td>
+                                                            <t t-if="activity.date_start">
+                                                                <span t-field="activity.date_start"/>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">-</span>
+                                                            </t>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="activity.date_end">
+                                                                <span t-field="activity.date_end"/>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">-</span>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <span t-field="activity.total_expected"
+                                                                  t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <span t-field="activity.total_collected"
+                                                                  t-options="{'widget': 'monetary', 'display_currency': activity.currency_id}"/>
                                                         </td>
                                                         <td class="text-center">
-                                                            <!-- CORRECTION: Calcul sécurisé du taux par groupe -->
-                                                            <t t-set="safe_group_rate" t-value="(group_data['paid'] / group_data['due'] * 100) if group_data['due'] > 0 else 0.0"/>
-                                                            <span t-esc="'%.1f%%' % safe_group_rate"/>
+                                                            <t t-set="activity_rate" t-value="group.calculate_group_payment_rate_safe(activity.total_expected, activity.total_collected)"/>
+                                                            <span t-esc="activity_rate"/>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="activity.state == 'completed'">
+                                                                <span class="badge bg-success">Terminée</span>
+                                                            </t>
+                                                            <t t-elif="activity.state == 'ongoing'">
+                                                                <span class="badge bg-primary">En cours</span>
+                                                            </t>
+                                                            <t t-elif="activity.state == 'confirmed'">
+                                                                <span class="badge bg-info">Confirmée</span>
+                                                            </t>
+                                                            <t t-elif="activity.state == 'cancelled'">
+                                                                <span class="badge bg-danger">Annulée</span>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="badge bg-secondary">Brouillon</span>
+                                                            </t>
                                                         </td>
                                                     </tr>
                                                 </t>
                                             </tbody>
                                         </table>
                                     </div>
-                                </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle"/> Aucune activité trouvée pour ce groupe.
+                                    </div>
+                                </t>
                             </div>
-                        </t>
+                        </div>
 
-                        <!-- Pied de page avec résumé -->
-                        <div class="row mt-5">
+                        <!-- Liste des cotisations mensuelles récentes -->
+                        <div class="row mt-4">
                             <div class="col-12">
-                                <div class="border-top pt-3">
+                                <h4 class="mb-3">Cotisations mensuelles récentes</h4>
+                                <t t-if="group.monthly_cotisations.filtered('active')">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-bordered">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Période</th>
+                                                    <th>Montant unitaire</th>
+                                                    <th>Attendu</th>
+                                                    <th>Collecté</th>
+                                                    <th>Taux</th>
+                                                    <th>Participants</th>
+                                                    <th>Statut</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="group.monthly_cotisations.filtered('active').sorted(lambda m: (m.year, int(m.month) if m.month.isdigit() else 0), reverse=True)[:12]" t-as="monthly">
+                                                    <tr>
+                                                        <td>
+                                                            <t t-set="month_names" t-value="['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']"/>
+                                                            <t t-set="month_display" t-value="month_names[int(monthly.month)] if monthly.month.isdigit() and 1 &lt;= int(monthly.month) &lt;= 12 else monthly.month"/>
+                                                            <span t-esc="month_display"/> <span t-field="monthly.year"/>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <span t-field="monthly.amount"
+                                                                  t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <span t-field="monthly.total_expected"
+                                                                  t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <span t-field="monthly.total_collected"
+                                                                  t-options="{'widget': 'monetary', 'display_currency': monthly.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <t t-set="monthly_rate" t-value="group.calculate_group_payment_rate_safe(monthly.total_expected, monthly.total_collected)"/>
+                                                            <span t-esc="monthly_rate"/>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span t-esc="len(monthly.cotisation_ids.filtered('active'))"/>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="monthly.state == 'completed'">
+                                                                <span class="badge bg-success">Terminée</span>
+                                                            </t>
+                                                            <t t-elif="monthly.state == 'in_progress'">
+                                                                <span class="badge bg-primary">En cours</span>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="badge bg-secondary">Brouillon</span>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle"/> Aucune cotisation mensuelle trouvée pour ce groupe.
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Analyse des membres - Version sécurisée -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Analyse des membres</h4>
+                                <t t-if="group.child_ids.filtered(lambda c: not c.is_company)">
                                     <div class="row">
                                         <div class="col-6">
-                                            <small class="text-muted">
-                                                Rapport généré le <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/>
-                                            </small>
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">Répartition des paiements</h6>
+                                                    <t t-set="good_payers" t-value="group.child_ids.filtered(lambda c: not c.is_company and c.is_good_payer)"/>
+                                                    <t t-set="bad_payers" t-value="group.child_ids.filtered(lambda c: not c.is_company and not c.is_good_payer)"/>
+                                                    
+                                                    <div class="mb-2">
+                                                        <strong>Bons payeurs:</strong>
+                                                        <span class="badge bg-success ms-2" t-esc="len(good_payers)"/>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <strong>À surveiller:</strong>
+                                                        <span class="badge bg-warning ms-2" t-esc="len(bad_payers)"/>
+                                                    </div>
+                                                    <div class="progress mt-3">
+                                                        <t t-set="total_members" t-value="len(group.child_ids.filtered(lambda c: not c.is_company))"/>
+                                                        <t t-set="good_percentage" t-value="(len(good_payers) * 100 / total_members) if total_members > 0 else 0"/>
+                                                        <div class="progress-bar bg-success" 
+                                                             t-attf-style="width: #{good_percentage}%"
+                                                             t-esc="'%.0f%%' % good_percentage"/>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-6 text-end">
-                                            <small class="text-muted">
-                                                Total cotisations: <strong t-esc="member.total_cotisations or 0"/> | 
-                                                Taux de paiement: <strong>
-                                                    <!-- CORRECTION: Formatage sécurisé final -->
-                                                    <t t-set="final_safe_rate" t-value="member.payment_rate if member.payment_rate is not None else 0.0"/>
-                                                    <span t-esc="'%.1f%%' % final_safe_rate"/>
-                                                </strong>
-                                            </small>
+                                        <div class="col-6">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">Retards de paiement</h6>
+                                                    <t t-set="members_with_overdue" t-value="group.child_ids.filtered(lambda c: not c.is_company and c.has_overdue_payments)"/>
+                                                    <t t-set="members_without_overdue" t-value="group.child_ids.filtered(lambda c: not c.is_company and not c.has_overdue_payments)"/>
+                                                    
+                                                    <div class="mb-2">
+                                                        <strong>Avec retards:</strong>
+                                                        <span class="badge bg-danger ms-2" t-esc="len(members_with_overdue)"/>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <strong>Sans retards:</strong>
+                                                        <span class="badge bg-success ms-2" t-esc="len(members_without_overdue)"/>
+                                                    </div>
+                                                    <div class="progress mt-3">
+                                                        <t t-set="overdue_percentage" t-value="(len(members_with_overdue) * 100 / total_members) if total_members > 0 else 0"/>
+                                                        <div class="progress-bar bg-danger" 
+                                                             t-attf-style="width: #{overdue_percentage}%"
+                                                             t-esc="'%.0f%%' % overdue_percentage"/>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle"/> Aucun membre trouvé pour ce groupe.
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Top des meilleurs contributeurs -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Top des contributeurs</h4>
+                                <t t-set="top_contributors" t-value="group.child_ids.filtered(lambda c: not c.is_company and c.total_amount_paid > 0).sorted('total_amount_paid', reverse=True)[:5]"/>
+                                <t t-if="top_contributors">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Rang</th>
+                                                    <th>Membre</th>
+                                                    <th>Total payé</th>
+                                                    <th>Taux de paiement</th>
+                                                    <th>Statut</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="top_contributors" t-as="contributor">
+                                                    <tr>
+                                                        <td>
+                                                            <strong t-esc="contributor_index + 1"/>
+                                                            <t t-if="contributor_index == 0">
+                                                                <i class="fa fa-trophy text-warning ms-1"/>
+                                                            </t>
+                                                        </td>
+                                                        <td>
+                                                            <span t-field="contributor.name"/>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <span t-field="contributor.total_amount_paid"
+                                                                  t-options="{'widget': 'monetary', 'display_currency': contributor.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span t-esc="contributor.get_safe_payment_rate()"/>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="contributor.is_good_payer">
+                                                                <span class="badge bg-success">Bon payeur</span>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="badge bg-warning">À surveiller</span>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle"/> Aucun paiement enregistré pour les membres de ce groupe.
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Alertes et recommandations -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Alertes et recommandations</h4>
+                                
+                                <!-- Alertes critiques -->
+                                <t t-set="critical_overdue" t-value="group.child_ids.filtered(lambda c: not c.is_company and c.has_overdue_payments and c.days_since_last_payment > 60)"/>
+                                <t t-if="critical_overdue">
+                                    <div class="alert alert-danger">
+                                        <h6><i class="fa fa-exclamation-triangle"/> Alerte critique - Retards importants</h6>
+                                        <p><strong t-esc="len(critical_overdue)"> membre(s)</strong> ont des retards de paiement de plus de 60 jours :</p>
+                                        <ul class="mb-0">
+                                            <t t-foreach="critical_overdue[:3]" t-as="critical_member">
+                                                <li>
+                                                    <strong t-field="critical_member.name"/> - 
+                                                    <span t-esc="critical_member.get_safe_days_since_payment() or 'Plus de 999'"/> jours depuis le dernier paiement
+                                                </li>
+                                            </t>
+                                            <t t-if="len(critical_overdue) > 3">
+                                                <li class="text-muted">... et <span t-esc="len(critical_overdue) - 3"/> autre(s)</li>
+                                            </t>
+                                        </ul>
+                                    </div>
+                                </t>
+
+                                <!-- Alertes d'avertissement -->
+                                <t t-set="warning_members" t-value="group.child_ids.filtered(lambda c: not c.is_company and not c.is_good_payer and not c.has_overdue_payments)"/>
+                                <t t-if="warning_members">
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fa fa-warning"/> Membres à surveiller</h6>
+                                        <p><strong t-esc="len(warning_members)"> membre(s)</strong> ont un taux de paiement inférieur à 80% :</p>
+                                        <ul class="mb-0">
+                                            <t t-foreach="warning_members[:3]" t-as="warning_member">
+                                                <li>
+                                                    <strong t-field="warning_member.name"/> - 
+                                                    Taux: <span t-esc="warning_member.get_safe_payment_rate()"/>
+                                                </li>
+                                            </t>
+                                            <t t-if="len(warning_members) > 3">
+                                                <li class="text-muted">... et <span t-esc="len(warning_members) - 3"/> autre(s)</li>
+                                            </t>
+                                        </ul>
+                                    </div>
+                                </t>
+
+                                <!-- Recommandations positives -->
+                                <t t-set="collection_rate" t-value="group.safe_format_float(group.group_collection_rate)"/>
+                                <t t-if="collection_rate >= 90">
+                                    <div class="alert alert-success">
+                                        <h6><i class="fa fa-thumbs-up"/> Excellente performance !</h6>
+                                        <p>Votre groupe maintient un excellent taux de collecte de <strong t-esc="group.get_safe_collection_rate()"></strong>. 
+                                           Continuez sur cette lancée !</p>
+                                    </div>
+                                </t>
+                                <t t-elif="collection_rate >= 70">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fa fa-info-circle"/> Bonne performance</h6>
+                                        <p>Votre groupe a un taux de collecte de <strong t-esc="group.get_safe_collection_rate()"></strong>. 
+                                           Quelques améliorations permettraient d'atteindre l'excellence.</p>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fa fa-chart-line"/> Marge d'amélioration</h6>
+                                        <p>Le taux de collecte de <strong t-esc="group.get_safe_collection_rate()"></strong> peut être amélioré. 
+                                           Considérez des actions de relance auprès des membres.</p>
+                                    </div>
+                                </t>
+
+                                <!-- Recommandations spécifiques -->
+                                <div class="alert alert-light">
+                                    <h6><i class="fa fa-lightbulb-o"/> Recommandations</h6>
+                                    <ul class="mb-0">
+                                        <t t-if="len(critical_overdue) > 0">
+                                            <li>Contactez immédiatement les membres avec des retards critiques</li>
+                                        </t>
+                                        <t t-if="len(warning_members) > 0">
+                                            <li>Envoyez des rappels préventifs aux membres à surveiller</li>
+                                        </t>
+                                        <t t-if="collection_rate &lt; 80">
+                                            <li>Organisez une réunion pour discuter des difficultés de paiement</li>
+                                            <li>Considérez des facilités de paiement ou des échéanciers</li>
+                                        </t>
+                                        <t t-if="group.activities_count == 0">
+                                            <li>Planifiez de nouvelles activités pour dynamiser le groupe</li>
+                                        </t>
+                                        <li>Planifiez un suivi mensuel des paiements</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Graphique de tendance (version texte sécurisée) -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Évolution des performances</h4>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Résumé mensuel</h6>
+                                        <t t-set="recent_monthlies" t-value="group.monthly_cotisations.filtered('active').sorted(lambda m: (m.year, int(m.month) if m.month.isdigit() else 0), reverse=True)[:6]"/>
+                                        <t t-if="recent_monthlies">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Mois</th>
+                                                            <th>Taux de collecte</th>
+                                                            <th>Tendance</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="recent_monthlies" t-as="monthly_trend">
+                                                            <t t-set="monthly_rate" t-value="(monthly_trend.total_collected * 100 / monthly_trend.total_expected) if monthly_trend.total_expected > 0 else 0"/>
+                                                            <tr>
+                                                                <td>
+                                                                    <t t-set="month_names" t-value="['', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']"/>
+                                                                    <t t-set="month_display" t-value="month_names[int(monthly_trend.month)] if monthly_trend.month.isdigit() and 1 &lt;= int(monthly_trend.month) &lt;= 12 else monthly_trend.month"/>
+                                                                    <span t-esc="month_display"/> <span t-field="monthly_trend.year"/>
+                                                                </td>
+                                                                <td>
+                                                                    <span t-esc="'%.1f%%' % monthly_rate"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-if="monthly_rate >= 90">
+                                                                        <i class="fa fa-arrow-up text-success"/> Excellent
+                                                                    </t>
+                                                                    <t t-elif="monthly_rate >= 70">
+                                                                        <i class="fa fa-arrow-right text-warning"/> Stable
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <i class="fa fa-arrow-down text-danger"/> À améliorer
+                                                                    </t>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <p class="text-muted">Données insuffisantes pour l'analyse de tendance.</p>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informations de contact et actions -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Informations de contact</h4>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>Responsable du groupe</h6>
+                                                <p class="mb-1"><strong>Nom:</strong> <span t-field="group.name"/></p>
+                                                <p class="mb-1">
+                                                    <strong>Email:</strong> 
+                                                    <t t-if="group.email">
+                                                        <a t-attf-href="mailto:#{group.email}" t-field="group.email"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="text-muted">Non renseigné</span>
+                                                    </t>
+                                                </p>
+                                                <p class="mb-1">
+                                                    <strong>Téléphone:</strong>
+                                                    <t t-if="group.phone">
+                                                        <a t-attf-href="tel:#{group.phone}" t-field="group.phone"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="text-muted">Non renseigné</span>
+                                                    </t>
+                                                </p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Statistiques système</h6>
+                                                <p class="mb-1"><strong>Groupe créé le:</strong> <span t-field="group.create_date" t-options="{'widget': 'date'}"/></p>
+                                                <p class="mb-1"><strong>Dernière mise à jour:</strong> <span t-field="group.write_date" t-options="{'widget': 'datetime'}"/></p>
+                                                <t t-if="group.last_activity_date">
+                                                    <p class="mb-1"><strong>Dernière activité:</strong> <span t-field="group.last_activity_date" t-options="{'widget': 'date'}"/></p>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pied de page avec informations de génération -->
+                        <div class="row mt-5">
+                            <div class="col-12">
+                                <hr/>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <p class="text-muted small mb-0">
+                                            Rapport généré le <span t-esc="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/>
+                                        </p>
+                                        <p class="text-muted small mb-0">
+                                            Système de gestion des cotisations - Version sécurisée
+                                        </p>
+                                    </div>
+                                    <div class="text-end">
+                                        <p class="text-muted small mb-0">
+                                            <strong t-esc="len(group.child_ids.filtered(lambda c: not c.is_company))"> membres</strong> |
+                                            <strong t-esc="group.activities_count"> activités</strong> |
+                                            <strong t-esc="group.get_safe_collection_rate()"> de collecte</strong>
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -398,4 +957,63 @@
             </t>
         </t>
     </template>
+
+    <!-- ================= TEMPLATE DE RAPPORT COMBINÉ ULTRA-SÉCURISÉ ================= -->
+    <template id="report_cotisations_combined_ultra_safe">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="partner">
+                
+                <!-- Rapport membre si c'est un individu -->
+                <t t-if="not partner.is_company">
+                    <t t-call="contribution_management.report_member_cotisations_template_ultra_safe"/>
+                </t>
+                
+                <!-- Rapport groupe si c'est une organisation -->
+                <t t-if="partner.is_company">
+                    <t t-call="contribution_management.report_group_synthesis_template_ultra_safe"/>
+                </t>
+                
+                <!-- Saut de page entre les rapports -->
+                <t t-if="not partner_last">
+                    <div style="page-break-after: always;"/>
+                </t>
+                
+            </t>
+        </t>
+    </template>
+
+    <!-- ================= ACTIONS DE RAPPORT SÉCURISÉES ================= -->
+    <record id="action_report_member_cotisations_ultra_safe" model="ir.actions.report">
+        <field name="name">Rapport Cotisations Membre (Ultra-Sécurisé)</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_member_cotisations_template_ultra_safe</field>
+        <field name="report_file">contribution_management.report_member_cotisations_template_ultra_safe</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <record id="action_report_group_synthesis_ultra_safe" model="ir.actions.report">
+        <field name="name">Rapport Synthèse Groupe (Ultra-Sécurisé)</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_group_synthesis_template_ultra_safe</field>
+        <field name="report_file">contribution_management.report_group_synthesis_template_ultra_safe</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <record id="action_report_cotisations_combined_ultra_safe" model="ir.actions.report">
+        <field name="name">Rapport Cotisations Combiné (Ultra-Sécurisé)</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.report_cotisations_combined_ultra_safe</field>
+        <field name="report_file">contribution_management.report_cotisations_combined_ultra_safe</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
 </odoo>

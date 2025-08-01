@@ -192,6 +192,92 @@ class ResPartnerCotisation(models.Model):
         store=True,
     )
 
+    @api.model
+    def safe_format_percentage(self, value):
+        """Formate un pourcentage de manière ultra-sécurisée pour les templates"""
+        try:
+            if value is None or value is False:
+                return "0.0%"
+            
+            # Conversion sécurisée en float
+            numeric_value = float(value)
+            
+            # Vérification des valeurs aberrantes
+            if numeric_value < 0:
+                numeric_value = 0.0
+            elif numeric_value > 999:  # Limite raisonnable
+                numeric_value = 999.0
+                
+            return "%.1f%%" % numeric_value
+            
+        except (TypeError, ValueError, OverflowError) as e:
+            _logger.warning(f"Erreur lors du formatage du pourcentage {value}: {e}")
+            return "0.0%"
+
+    @api.model
+    def safe_format_integer(self, value):
+        """Formate un entier de manière ultra-sécurisée"""
+        try:
+            if value is None or value is False:
+                return 0
+            return int(value)
+        except (TypeError, ValueError) as e:
+            _logger.warning(f"Erreur lors du formatage de l'entier {value}: {e}")
+            return 0
+
+    @api.model
+    def safe_format_float(self, value):
+        """Formate un float de manière ultra-sécurisée"""
+        try:
+            if value is None or value is False:
+                return 0.0
+            return float(value)
+        except (TypeError, ValueError) as e:
+            _logger.warning(f"Erreur lors du formatage du float {value}: {e}")
+            return 0.0
+
+    def get_safe_payment_rate(self):
+        """Retourne le taux de paiement formaté de manière ultra-sécurisée"""
+        return self.safe_format_percentage(self.payment_rate)
+
+    def get_safe_collection_rate(self):
+        """Retourne le taux de collecte formaté de manière ultra-sécurisée"""
+        return self.safe_format_percentage(self.group_collection_rate)
+
+    def get_safe_days_since_payment(self):
+        """Retourne les jours depuis le dernier paiement de manière sécurisée"""
+        days = self.safe_format_integer(self.days_since_last_payment)
+        return days if days < 999 else None
+
+    def get_safe_total_cotisations(self):
+        """Retourne le nombre total de cotisations de manière sécurisée"""
+        return self.safe_format_integer(self.total_cotisations)
+
+    def get_safe_paid_cotisations(self):
+        """Retourne le nombre de cotisations payées de manière sécurisée"""
+        return self.safe_format_integer(self.paid_cotisations)
+
+    def get_safe_pending_cotisations(self):
+        """Retourne le nombre de cotisations en attente de manière sécurisée"""
+        return self.safe_format_integer(self.pending_cotisations)
+
+    def get_safe_overdue_cotisations(self):
+        """Retourne le nombre de cotisations en retard de manière sécurisée"""
+        return self.safe_format_integer(self.overdue_cotisations)
+
+    def get_safe_total_amount_due(self):
+        """Retourne le montant total dû de manière sécurisée"""
+        return self.safe_format_float(self.total_amount_due)
+
+    def get_safe_total_amount_paid(self):
+        """Retourne le montant total payé de manière sécurisée"""
+        return self.safe_format_float(self.total_amount_paid)
+
+    def get_safe_remaining_amount(self):
+        """Retourne le montant restant de manière sécurisée"""
+        return self.safe_format_float(self.remaining_amount)
+
+
     @api.depends("group_activities", "group_activities.create_date")
     def _compute_last_activity_info(self):
         """Calcule la date de la dernière activité"""
@@ -220,6 +306,7 @@ class ResPartnerCotisation(models.Model):
             else:
                 partner.last_monthly_cotisation_date = False
 
+    # CORRECTION DE LA MÉTHODE DE CALCUL POUR ÉVITER LES ERREURS DE FORMATAGE
     @api.depends(
         "cotisation_ids",
         "cotisation_ids.state",
@@ -228,7 +315,7 @@ class ResPartnerCotisation(models.Model):
         "cotisation_ids.active",
     )
     def _compute_cotisation_stats(self):
-        """Calcule les statistiques de cotisation avec gestion sécurisée des valeurs nulles"""
+        """Calcule les statistiques de cotisation avec gestion ultra-sécurisée des valeurs nulles"""
         for partner in self:
             if partner.is_company:
                 # Pour les organisations, on ne calcule pas les statistiques personnelles
@@ -241,7 +328,7 @@ class ResPartnerCotisation(models.Model):
                     'total_amount_due': 0.0,
                     'total_amount_paid': 0.0,
                     'remaining_amount': 0.0,
-                    'payment_rate': 0.0,
+                    'payment_rate': 0.0,  # Toujours un float, jamais None/False
                 })
             else:
                 try:
@@ -268,35 +355,38 @@ class ResPartnerCotisation(models.Model):
                             _logger.warning(f"Erreur de conversion pour cotisation {cotisation.id}: {e}")
                             continue
                     
-                    remaining_amount = total_amount_due - total_amount_paid
+                    remaining_amount = max(0.0, total_amount_due - total_amount_paid)
                     
-                    # Calcul sécurisé du taux de paiement
+                    # Calcul ultra-sécurisé du taux de paiement - TOUJOURS un float valide
                     payment_rate = 0.0
                     if total_amount_due > 0:
                         try:
                             payment_rate = (total_amount_paid / total_amount_due) * 100.0
                             # S'assurer que le taux est dans une plage raisonnable
                             payment_rate = max(0.0, min(100.0, payment_rate))
-                        except (ZeroDivisionError, TypeError, ValueError) as e:
+                            # S'assurer que c'est un float valide (pas NaN ou Inf)
+                            if not (payment_rate >= 0 and payment_rate <= 100):
+                                payment_rate = 0.0
+                        except (ZeroDivisionError, TypeError, ValueError, OverflowError) as e:
                             _logger.warning(f"Erreur de calcul du taux pour {partner.name}: {e}")
                             payment_rate = 0.0
                     
-                    # Mise à jour des champs avec validation
+                    # Mise à jour des champs avec validation stricte
                     partner.update({
-                        'total_cotisations': total_cotisations,
-                        'paid_cotisations': paid_cotisations,
-                        'pending_cotisations': pending_cotisations,
-                        'partial_cotisations': partial_cotisations,
-                        'overdue_cotisations': overdue_cotisations,
-                        'total_amount_due': total_amount_due,
-                        'total_amount_paid': total_amount_paid,
-                        'remaining_amount': remaining_amount,
-                        'payment_rate': payment_rate,
+                        'total_cotisations': max(0, total_cotisations),
+                        'paid_cotisations': max(0, paid_cotisations),
+                        'pending_cotisations': max(0, pending_cotisations),
+                        'partial_cotisations': max(0, partial_cotisations),
+                        'overdue_cotisations': max(0, overdue_cotisations),
+                        'total_amount_due': max(0.0, total_amount_due),
+                        'total_amount_paid': max(0.0, total_amount_paid),
+                        'remaining_amount': max(0.0, remaining_amount),
+                        'payment_rate': float(payment_rate),  # Toujours un float valide
                     })
                     
                 except Exception as e:
                     _logger.error(f"Erreur lors du calcul des statistiques pour {partner.name}: {e}")
-                    # Valeurs par défaut sécurisées en cas d'erreur
+                    # Valeurs par défaut ultra-sécurisées en cas d'erreur
                     partner.update({
                         'total_cotisations': 0,
                         'paid_cotisations': 0,
@@ -306,20 +396,20 @@ class ResPartnerCotisation(models.Model):
                         'total_amount_due': 0.0,
                         'total_amount_paid': 0.0,
                         'remaining_amount': 0.0,
-                        'payment_rate': 0.0,
+                        'payment_rate': 0.0,  # Toujours un float, jamais None/False
                     })
 
     @api.depends(
         "cotisation_ids", "cotisation_ids.payment_date", "cotisation_ids.state"
     )
     def _compute_payment_status(self):
-        """Calcule les indicateurs de statut de paiement avec gestion sécurisée"""
+        """Calcule les indicateurs de statut de paiement avec gestion ultra-sécurisée"""
         for partner in self:
             if partner.is_company:
                 partner.update({
                     'has_overdue_payments': False,
                     'is_good_payer': True,
-                    'days_since_last_payment': 0,
+                    'days_since_last_payment': 0,  # Toujours un entier valide
                 })
             else:
                 try:
@@ -348,7 +438,9 @@ class ResPartnerCotisation(models.Model):
                             days_since_last_payment = (
                                 fields.Date.today() - last_payment_date
                             ).days
-                        except (TypeError, AttributeError):
+                            # S'assurer que c'est un entier positif
+                            days_since_last_payment = max(0, int(days_since_last_payment))
+                        except (TypeError, AttributeError, ValueError):
                             days_since_last_payment = 999
                     else:
                         days_since_last_payment = 999  # Aucun paiement
@@ -356,17 +448,18 @@ class ResPartnerCotisation(models.Model):
                     partner.update({
                         'has_overdue_payments': has_overdue_payments,
                         'is_good_payer': is_good_payer,
-                        'days_since_last_payment': days_since_last_payment,
+                        'days_since_last_payment': int(days_since_last_payment),  # Toujours un entier
                     })
                     
                 except Exception as e:
                     _logger.error(f"Erreur lors du calcul du statut de paiement pour {partner.name}: {e}")
-                    # Valeurs par défaut sécurisées
+                    # Valeurs par défaut ultra-sécurisées
                     partner.update({
                         'has_overdue_payments': False,
                         'is_good_payer': True,
                         'days_since_last_payment': 999,
                     })
+
 
     @api.depends("group_activities", "monthly_cotisations")
     def _compute_group_cotisation_counts(self):
@@ -411,7 +504,7 @@ class ResPartnerCotisation(models.Model):
         "monthly_cotisations.total_expected",
     )
     def _compute_group_financial_stats(self):
-        """Calcule les statistiques financières pour les groupes avec gestion sécurisée"""
+        """Calcule les statistiques financières pour les groupes avec gestion ultra-sécurisée"""
         for partner in self:
             if partner.is_company:
                 try:
@@ -440,23 +533,26 @@ class ResPartnerCotisation(models.Model):
                             continue
 
                     # Totaux globaux
-                    group_total_collected = activities_collected + monthly_collected
-                    group_total_expected = activities_expected + monthly_expected
+                    group_total_collected = max(0.0, activities_collected + monthly_collected)
+                    group_total_expected = max(0.0, activities_expected + monthly_expected)
 
-                    # Calcul sécurisé du taux de collecte
+                    # Calcul ultra-sécurisé du taux de collecte
                     group_collection_rate = 0.0
                     if group_total_expected > 0:
                         try:
                             group_collection_rate = (group_total_collected / group_total_expected) * 100.0
                             # S'assurer que le taux est dans une plage raisonnable
                             group_collection_rate = max(0.0, min(100.0, group_collection_rate))
-                        except (ZeroDivisionError, TypeError, ValueError):
+                            # S'assurer que c'est un float valide (pas NaN ou Inf)
+                            if not (group_collection_rate >= 0 and group_collection_rate <= 100):
+                                group_collection_rate = 0.0
+                        except (ZeroDivisionError, TypeError, ValueError, OverflowError):
                             group_collection_rate = 0.0
                     
                     partner.update({
-                        'group_total_collected': group_total_collected,
-                        'group_total_expected': group_total_expected,
-                        'group_collection_rate': group_collection_rate,
+                        'group_total_collected': float(group_total_collected),
+                        'group_total_expected': float(group_total_expected),
+                        'group_collection_rate': float(group_collection_rate),  # Toujours un float valide
                     })
                     
                 except Exception as e:
@@ -472,6 +568,98 @@ class ResPartnerCotisation(models.Model):
                     'group_total_expected': 0.0,
                     'group_collection_rate': 0.0,
                 })
+
+
+    # MÉTHODE POUR PRÉPARER LES DONNÉES DE RAPPORT ULTRA-SÉCURISÉES
+    @api.model
+    def get_report_context_safe(self, docids, data=None):
+        """Prépare le contexte pour les rapports PDF avec gestion d'erreurs ultra-complète"""
+        try:
+            docs = self.env["res.partner"].browse(docids)
+
+            # Valider et nettoyer les données des partenaires
+            for doc in docs:
+                try:
+                    # Forcer le recalcul des statistiques si nécessaire
+                    doc._compute_cotisation_stats()
+                    doc._compute_payment_status()
+                    if doc.is_company:
+                        doc._compute_group_financial_stats()
+                        doc._compute_group_cotisation_counts()
+                        doc._compute_group_members_stats()
+                    
+                    # Vérification et correction des valeurs critiques
+                    if not isinstance(doc.payment_rate, (int, float)) or doc.payment_rate is None:
+                        doc.payment_rate = 0.0
+                    
+                    if not isinstance(doc.group_collection_rate, (int, float)) or doc.group_collection_rate is None:
+                        doc.group_collection_rate = 0.0
+                        
+                    if not isinstance(doc.days_since_last_payment, (int, float)) or doc.days_since_last_payment is None:
+                        doc.days_since_last_payment = 999
+                        
+                    # S'assurer que tous les champs numériques sont des types appropriés
+                    numeric_fields = [
+                        'total_cotisations', 'paid_cotisations', 'pending_cotisations', 
+                        'overdue_cotisations', 'total_amount_due', 'total_amount_paid',
+                        'remaining_amount', 'group_total_collected', 'group_total_expected',
+                        'group_members_count', 'group_active_members_count',
+                        'activities_count', 'monthly_cotisations_count'
+                    ]
+                    
+                    for field in numeric_fields:
+                        value = getattr(doc, field, 0)
+                        if value is None or value is False:
+                            setattr(doc, field, 0 if 'count' in field or 'cotisations' in field else 0.0)
+                    
+                except Exception as field_error:
+                    _logger.warning(f"Erreur lors de la correction des champs pour {doc.name}: {field_error}")
+                    # Appliquer des valeurs par défaut ultra-sécurisées
+                    default_values = {
+                        'payment_rate': 0.0,
+                        'group_collection_rate': 0.0,
+                        'total_cotisations': 0,
+                        'paid_cotisations': 0,
+                        'pending_cotisations': 0,
+                        'overdue_cotisations': 0,
+                        'days_since_last_payment': 999,
+                        'total_amount_due': 0.0,
+                        'total_amount_paid': 0.0,
+                        'remaining_amount': 0.0,
+                    }
+                    for field, default_value in default_values.items():
+                        setattr(doc, field, default_value)
+
+            # Ajouter datetime et helpers au contexte
+            import datetime
+
+            return {
+                "doc_ids": docids,
+                "doc_model": "res.partner",
+                "docs": docs,
+                "data": data,
+                "datetime": datetime,
+                "context_timestamp": lambda dt: dt,
+                # Helpers ultra-sécurisés pour formatage
+                "safe_format_rate": self.safe_format_percentage,
+                "safe_format_number": self.safe_format_integer,
+                "safe_format_float": self.safe_format_float,
+                "safe_format_currency": self._safe_format_currency,
+            }
+        except Exception as e:
+            _logger.error(f"Erreur critique lors de la préparation du contexte de rapport: {e}")
+            # Retourner un contexte minimal plutôt que de faire échouer le rapport
+            import datetime
+            return {
+                "doc_ids": docids,
+                "doc_model": "res.partner",
+                "docs": self.env["res.partner"].browse(docids),
+                "data": data,
+                "datetime": datetime,
+                "safe_format_rate": lambda x: "0.0%",
+                "safe_format_number": lambda x: 0,
+                "safe_format_float": lambda x: 0.0,
+            }
 
     @api.depends("child_ids")
     def _compute_group_members_stats(self):
@@ -568,6 +756,19 @@ class ResPartnerCotisation(models.Model):
             raise UserError(f"Erreur lors de la génération du rapport: {e}")
 
     @api.model
+    def _safe_format_currency(self, amount, currency=None):
+        """Formate un montant de manière ultra-sécurisée"""
+        try:
+            formatted_amount = float(amount or 0.0)
+            if currency and hasattr(currency, 'symbol'):
+                symbol = currency.symbol or currency.name or "€"
+                return f"{formatted_amount:.2f} {symbol}"
+            else:
+                return f"{formatted_amount:.2f}"
+        except (TypeError, ValueError, AttributeError):
+            return "0.00"
+
+    @api.model
     def _safe_format_rate(self, rate):
         """Formate un taux de manière sécurisée"""
         try:
@@ -595,10 +796,208 @@ class ResPartnerCotisation(models.Model):
         except (TypeError, ValueError):
             return "0.00"
 
+    def _apply_safe_defaults(self):
+        """Applique des valeurs par défaut ultra-sécurisées"""
+        safe_defaults = {
+            'payment_rate': 0.0,
+            'group_collection_rate': 0.0,
+            'days_since_last_payment': 999,
+            'total_cotisations': 0,
+            'paid_cotisations': 0,
+            'pending_cotisations': 0,
+            'overdue_cotisations': 0,
+            'total_amount_due': 0.0,
+            'total_amount_paid': 0.0,
+            'remaining_amount': 0.0,
+            'group_total_collected': 0.0,
+            'group_total_expected': 0.0,
+            'group_members_count': 0,
+            'activities_count': 0,
+            'monthly_cotisations_count': 0,
+        }
+        
+        for field, default_value in safe_defaults.items():
+            try:
+                setattr(self, field, default_value)
+            except Exception as e:
+                _logger.error(f"Erreur lors de l'application de la valeur par défaut pour {field}: {e}")
+
+
+    def action_generate_member_payment_report_safe(self):
+        """Action pour générer le rapport de paiement du membre avec validation ultra-sécurisée"""
+        self.ensure_one()
+        if self.is_company:
+            raise UserError(
+                "Cette action n'est disponible que pour les membres individuels."
+            )
+
+        # Validation et correction des données avant génération
+        try:
+            self.validate_report_data_safety()
+            
+            # Forcer le recalcul des statistiques avec gestion d'erreur
+            try:
+                self._compute_cotisation_stats()
+                self._compute_payment_status()
+            except Exception as e:
+                _logger.warning(f"Erreur lors du recalcul des statistiques pour {self.name}: {e}")
+                self._apply_safe_defaults()
+            
+        except Exception as e:
+            _logger.warning(f"Erreur lors de la validation pour {self.name}: {e}")
+            self._apply_safe_defaults()
+
+        return {
+            "type": "ir.actions.report",
+            "report_name": "contribution_management.report_member_cotisations_template",
+            "report_type": "qweb-pdf",
+            "data": {"ids": [self.id]},
+            "context": {
+                "active_ids": [self.id],
+                "active_model": "res.partner",
+                "report_type": "member_payment",
+                "safe_mode": True,  # Indicateur pour le template
+            },
+        }
+
+    @api.model
+    def _cron_fix_report_data_safety(self):
+        """Cron pour corriger les données de rapport de manière préventive"""
+        try:
+            # Trouver tous les partenaires actifs
+            partners = self.search([('active', '=', True)])
+            
+            _logger.info(f"Début de la correction préventive pour {len(partners)} partenaires")
+            
+            fixed_count = 0
+            error_count = 0
+            
+            # Traiter en lots pour éviter les timeouts
+            batch_size = 50
+            for i in range(0, len(partners), batch_size):
+                batch = partners[i:i + batch_size]
+                
+                for partner in batch:
+                    try:
+                        # Valider et corriger les données
+                        if partner.validate_report_data_safety():
+                            fixed_count += 1
+                        else:
+                            error_count += 1
+                            
+                    except Exception as e:
+                        _logger.error(f"Erreur lors de la correction pour {partner.name}: {e}")
+                        error_count += 1
+                        # Appliquer des valeurs par défaut même en cas d'erreur
+                        try:
+                            partner._apply_safe_defaults()
+                        except:
+                            pass  # Ignore si même les valeurs par défaut échouent
+                
+                # Commit intermédiaire
+                try:
+                    self.env.cr.commit()
+                except Exception as e:
+                    _logger.error(f"Erreur lors du commit du lot {i//batch_size + 1}: {e}")
+                    self.env.cr.rollback()
+            
+            _logger.info(f"Correction préventive terminée: {fixed_count} succès, {error_count} erreurs")
+            return True
+            
+        except Exception as e:
+            _logger.error(f"Erreur critique lors de la correction préventive: {e}")
+            return False
+
+    # HELPER POUR TEMPLATES - CALCUL SÉCURISÉ DE POURCENTAGE PAR GROUPE
+    def calculate_group_payment_rate_safe(self, group_due, group_paid):
+        """Calcule le taux de paiement d'un groupe de manière ultra-sécurisée"""
+        try:
+            due = float(group_due or 0.0)
+            paid = float(group_paid or 0.0)
+            
+            if due <= 0:
+                return "0.0%"
+            
+            rate = (paid / due) * 100.0
+            rate = max(0.0, min(100.0, rate))  # Limiter entre 0 et 100
+            
+            # Vérifier que le résultat est un nombre valide
+            if not (rate >= 0 and rate <= 100):
+                return "0.0%"
+                
+            return "%.1f%%" % rate
+            
+        except (TypeError, ValueError, ZeroDivisionError, OverflowError):
+            return "0.0%"
+
+    # MÉTHODES DE VALIDATION AVANT GÉNÉRATION DE RAPPORT
+    def validate_report_data_safety(self):
+        """Valide et corrige les données avant génération du rapport"""
+        self.ensure_one()
+        
+        corrections_made = []
+        
+        try:
+            # Vérifier et corriger payment_rate
+            if not isinstance(self.payment_rate, (int, float)) or self.payment_rate is None:
+                self.payment_rate = 0.0
+                corrections_made.append("payment_rate corrigé à 0.0")
+            elif self.payment_rate < 0 or self.payment_rate > 100:
+                self.payment_rate = max(0.0, min(100.0, self.payment_rate))
+                corrections_made.append(f"payment_rate ajusté à {self.payment_rate}")
+            
+            # Vérifier et corriger group_collection_rate
+            if not isinstance(self.group_collection_rate, (int, float)) or self.group_collection_rate is None:
+                self.group_collection_rate = 0.0
+                corrections_made.append("group_collection_rate corrigé à 0.0")
+            elif self.group_collection_rate < 0 or self.group_collection_rate > 100:
+                self.group_collection_rate = max(0.0, min(100.0, self.group_collection_rate))
+                corrections_made.append(f"group_collection_rate ajusté à {self.group_collection_rate}")
+            
+            # Vérifier et corriger days_since_last_payment
+            if not isinstance(self.days_since_last_payment, (int, float)) or self.days_since_last_payment is None:
+                self.days_since_last_payment = 999
+                corrections_made.append("days_since_last_payment corrigé à 999")
+            
+            # Vérifier les montants monétaires
+            monetary_fields = ['total_amount_due', 'total_amount_paid', 'remaining_amount', 
+                             'group_total_collected', 'group_total_expected']
+            for field in monetary_fields:
+                value = getattr(self, field, 0)
+                if not isinstance(value, (int, float)) or value is None:
+                    setattr(self, field, 0.0)
+                    corrections_made.append(f"{field} corrigé à 0.0")
+                elif value < 0:
+                    setattr(self, field, 0.0)
+                    corrections_made.append(f"{field} corrigé à 0.0 (était négatif)")
+            
+            # Vérifier les compteurs
+            count_fields = ['total_cotisations', 'paid_cotisations', 'pending_cotisations', 
+                          'overdue_cotisations', 'group_members_count', 'activities_count']
+            for field in count_fields:
+                value = getattr(self, field, 0)
+                if not isinstance(value, (int, float)) or value is None:
+                    setattr(self, field, 0)
+                    corrections_made.append(f"{field} corrigé à 0")
+                elif value < 0:
+                    setattr(self, field, 0)
+                    corrections_made.append(f"{field} corrigé à 0 (était négatif)")
+            
+            if corrections_made:
+                _logger.info(f"Corrections appliquées pour {self.name}: {', '.join(corrections_made)}")
+            
+            return True
+            
+        except Exception as e:
+            _logger.error(f"Erreur lors de la validation des données pour {self.name}: {e}")
+            # Appliquer des valeurs par défaut en cas d'erreur critique
+            self._apply_safe_defaults()
+            return False
+
     @api.model
     def _get_report_values(self, docids, data=None):
-        """Override pour personnaliser les données des rapports"""
-        return self.get_report_context(docids, data)
+        """Override pour personnaliser les données des rapports avec sécurité maximale"""
+        return self.get_report_context_safe(docids, data)
 
     def action_generate_member_payment_report(self):
         """Action pour générer le rapport de paiement du membre avec validation"""
