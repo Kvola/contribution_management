@@ -211,7 +211,7 @@
                                                 <t t-foreach="member.cotisation_ids.filtered('active').sorted('create_date', reverse=True)" t-as="cotisation">
                                                     <tr>
                                                         <td>
-                                                            <span t-field="cotisation.name"/>
+                                                            <span t-field="cotisation.display_name"/>
                                                         </td>
                                                         <td>
                                                             <t t-if="cotisation.group_id">
