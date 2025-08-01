@@ -149,8 +149,9 @@
                                         <strong class="text-info">Taux de paiement:</strong>
                                         <br/>
                                         <span class="h5">
-                                            <t t-set="payment_rate" t-value="member.payment_rate or 0"/>
-                                            <span t-esc="'%.1f%%' % payment_rate"/>
+                                            <!-- CORRECTION: Formatage sécurisé du taux de paiement -->
+                                            <t t-set="safe_payment_rate" t-value="member.payment_rate if member.payment_rate is not None else 0.0"/>
+                                            <span t-esc="'%.1f%%' % safe_payment_rate"/>
                                         </span>
                                     </div>
                                 </div>
@@ -183,9 +184,10 @@
                                             </div>
                                             <div class="col-4 text-center">
                                                 <strong>Dernier paiement:</strong><br/>
-                                                <t t-set="days_since_payment" t-value="member.days_since_last_payment or 999"/>
-                                                <t t-if="days_since_payment &lt; 999">
-                                                    <span t-esc="days_since_payment"/> jours
+                                                <!-- CORRECTION: Gestion sécurisée des jours depuis le dernier paiement -->
+                                                <t t-set="safe_days_since_payment" t-value="member.days_since_last_payment if member.days_since_last_payment is not None else 999"/>
+                                                <t t-if="safe_days_since_payment &lt; 999">
+                                                    <span t-esc="safe_days_since_payment"/> jours
                                                 </t>
                                                 <t t-else="">
                                                     <span class="text-muted">Aucun paiement</span>
@@ -352,8 +354,9 @@
                                                                   t-options="{'widget': 'monetary', 'display_currency': member.currency_id}"/>
                                                         </td>
                                                         <td class="text-center">
-                                                            <t t-set="group_rate" t-value="(group_data['paid'] / group_data['due'] * 100) if group_data['due'] > 0 else 0"/>
-                                                            <span t-esc="'%.1f%%' % group_rate"/>
+                                                            <!-- CORRECTION: Calcul sécurisé du taux par groupe -->
+                                                            <t t-set="safe_group_rate" t-value="(group_data['paid'] / group_data['due'] * 100) if group_data['due'] > 0 else 0.0"/>
+                                                            <span t-esc="'%.1f%%' % safe_group_rate"/>
                                                         </td>
                                                     </tr>
                                                 </t>
@@ -377,7 +380,11 @@
                                         <div class="col-6 text-end">
                                             <small class="text-muted">
                                                 Total cotisations: <strong t-esc="member.total_cotisations or 0"/> | 
-                                                Taux de paiement: <strong><t t-set="final_rate" t-value="member.payment_rate or 0"/><span t-esc="'%.1f%%' % final_rate"/></strong>
+                                                Taux de paiement: <strong>
+                                                    <!-- CORRECTION: Formatage sécurisé final -->
+                                                    <t t-set="final_safe_rate" t-value="member.payment_rate if member.payment_rate is not None else 0.0"/>
+                                                    <span t-esc="'%.1f%%' % final_safe_rate"/>
+                                                </strong>
                                             </small>
                                         </div>
                                     </div>
