@@ -8,7 +8,7 @@
         <field name="model">monthly.cotisation</field>
         <field name="arch" type="xml">
             <tree decoration-info="state=='draft'" decoration-success="state=='closed'" 
-                  decoration-warning="state=='active'">
+                decoration-warning="state=='active'">
                 <field name="display_name"/>
                 <field name="group_id"/>
                 <field name="month"/>
@@ -18,11 +18,12 @@
                 <field name="due_date"/>
                 <field name="total_members"/>
                 <field name="paid_members"/>
-                <field name="completion_rate" widget="percentage"/>
+                <!-- Correction du champ completion_rate -->
+                <field name="completion_rate" widget="float" options="{'precision': 1}"/>
                 <field name="state" widget="badge" 
-                       decoration-info="state=='draft'" 
-                       decoration-success="state=='closed'"
-                       decoration-warning="state=='active'"/>
+                    decoration-info="state=='draft'" 
+                    decoration-success="state=='closed'"
+                    decoration-warning="state=='active'"/>
                 <button name="action_activate" string="Activer" type="object" 
                         class="btn-primary" icon="fa-play" 
                         invisible="state != 'draft'" 
@@ -133,7 +134,7 @@
                                 <group string="Montants">
                                     <field name="total_expected" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="total_collected" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="completion_rate" widget="percentage"/>
+                                    <field name="completion_rate" />
                                 </group>
                             </group>
                             

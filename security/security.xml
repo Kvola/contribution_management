@@ -312,4 +312,133 @@
         <field name="perm_create" eval="1"/>
         <field name="perm_unlink" eval="1"/>
     </record>
+
+    <!-- Règles pour member.payment.plan -->
+    <record id="member_payment_plan_rule_user" model="ir.rule">
+        <field name="name">Plan de paiement: accès utilisateur</field>
+        <field name="model_id" ref="model_member_payment_plan"/>
+        <field name="domain_force">[('member_id.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="member_payment_plan_rule_manager" model="ir.rule">
+        <field name="name">Plan de paiement: accès manager</field>
+        <field name="model_id" ref="model_member_payment_plan"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour member.payment.installment -->
+    <record id="member_payment_installment_rule_user" model="ir.rule">
+        <field name="name">Échéance de paiement: accès utilisateur</field>
+        <field name="model_id" ref="model_member_payment_installment"/>
+        <field name="domain_force">[('member_id.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="member_payment_installment_rule_manager" model="ir.rule">
+        <field name="name">Échéance de paiement: accès manager</field>
+        <field name="model_id" ref="model_member_payment_installment"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour payment.plan.wizard -->
+    <record id="payment_plan_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant plan de paiement: accès global</field>
+        <field name="model_id" ref="model_payment_plan_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour payment.plan.installment.preview -->
+    <!-- Règles pour payment.plan.installment.preview -->
+    <record id="payment_plan_installment_preview_rule_global" model="ir.rule">
+        <field name="name">Aperçu échéance: accès global</field>
+        <field name="model_id" ref="model_payment_plan_installment_preview"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour quick.payment.wizard -->
+    <record id="quick_payment_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant paiement rapide: accès global</field>
+        <field name="model_id" ref="model_quick_payment_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour cotisation.payment -->
+    <record id="cotisation_payment_rule_user" model="ir.rule">
+        <field name="name">Paiement cotisation: accès utilisateur</field>
+        <field name="model_id" ref="model_cotisation_payment"/>
+        <field name="domain_force">[('member_id.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="cotisation_payment_rule_manager" model="ir.rule">
+        <field name="name">Paiement cotisation: accès manager</field>
+        <field name="model_id" ref="model_cotisation_payment"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles de sécurité supplémentaires -->
+    <record id="member_payment_plan_rule_completed_readonly" model="ir.rule">
+        <field name="name">Plan de paiement terminé: lecture seule</field>
+        <field name="model_id" ref="model_member_payment_plan"/>
+        <field name="domain_force">[('state', '!=', 'completed')]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="0"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="member_payment_installment_rule_paid_readonly" model="ir.rule">
+        <field name="name">Échéance payée: lecture seule</field>
+        <field name="model_id" ref="model_member_payment_installment"/>
+        <field name="domain_force">[('state', '!=', 'paid')]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="0"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
 </odoo>

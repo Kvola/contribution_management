@@ -122,6 +122,50 @@ class MemberCotisation(models.Model):
         help="Nombre de jours de retard par rapport à la date d'échéance",
         store=True
     )
+
+    payment_plan_id = fields.Many2one(
+        "member.payment.plan",
+        string="Plan de paiement",
+        help="Plan de paiement associé à cette cotisation"
+    )
+    
+    has_payment_plan = fields.Boolean(
+        string="A un plan de paiement",
+        compute="_compute_has_payment_plan",
+        search="_search_has_payment_plan"
+    )
+
+    @api.depends("payment_plan_id")
+    def _compute_has_payment_plan(self):
+        """Détermine si la cotisation a un plan de paiement"""
+        for cotisation in self:
+            cotisation.has_payment_plan = bool(cotisation.payment_plan_id)
+
+    def _search_has_payment_plan(self, operator, value):
+        """Recherche pour les cotisations avec/sans plan de paiement"""
+        if operator == '=' and value:
+            return [('payment_plan_id', '!=', False)]
+        elif operator == '=' and not value:
+            return [('payment_plan_id', '=', False)]
+        elif operator == '!=' and value:
+            return [('payment_plan_id', '=', False)]
+        else:
+            return [('payment_plan_id', '!=', False)]
+
+    def action_view_payment_plan(self):
+        """Action pour voir le plan de paiement"""
+        self.ensure_one()
+        if not self.payment_plan_id:
+            return {"type": "ir.actions.act_window_close"}
+        
+        return {
+            'name': 'Plan de paiement',
+            'type': 'ir.actions.act_window',
+            'res_model': 'member.payment.plan',
+            'res_id': self.payment_plan_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
     
     @api.depends('member_id', 'cotisation_type', 'activity_id', 'monthly_cotisation_id')
     def _compute_display_name(self):

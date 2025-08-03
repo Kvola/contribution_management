@@ -70,6 +70,7 @@ Sécurité et contrôles :
         'account',
         'portal',
         'random_team_generator',
+        'website',
     ],
     'data': [
         # Sécurité - ordre important : d'abord les groupes de sécurité
@@ -83,6 +84,8 @@ Sécurité et contrôles :
         'views/monthly_cotisation_views.xml',
         'views/cotisation_dashboard_views.xml',
         'views/report_generation_log_views.xml',
+        'views/member_payment_plan_views.xml',
+        'views/member_payment_installment_views.xml',
         'data/data.xml',
 
         # Rapports
@@ -100,8 +103,15 @@ Sécurité et contrôles :
         'wizards/cotisation_reminder_wizard_views.xml',
         'wizards/mass_payment_wizard_views.xml',
         'wizards/bulk_report_wizard_views.xml',
+        'wizards/quick_payment_wizard_views.xml',
+        'data/email_template.xml',
         'views/menu_views.xml',
     ],
+    "assets": {
+        'web.assets_backend': [
+            'contribution_management/static/src/css/kanban_styles.css',
+        ],
+    },
     'demo': [
         'demo/demo.xml',
     ],

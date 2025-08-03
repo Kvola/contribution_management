@@ -3,7 +3,7 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, UserError
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 _logger = logging.getLogger(__name__)
 
@@ -40,26 +40,26 @@ class ResPartnerCotisation(models.Model):
         default=0,
     )
     paid_cotisations = fields.Integer(
-        string="Cotisations payées", 
-        compute="_compute_cotisation_stats", 
+        string="Cotisations payées",
+        compute="_compute_cotisation_stats",
         store=True,
         default=0,
     )
     pending_cotisations = fields.Integer(
-        string="Cotisations en attente", 
-        compute="_compute_cotisation_stats", 
+        string="Cotisations en attente",
+        compute="_compute_cotisation_stats",
         store=True,
         default=0,
     )
     partial_cotisations = fields.Integer(
-        string="Cotisations partielles", 
-        compute="_compute_cotisation_stats", 
+        string="Cotisations partielles",
+        compute="_compute_cotisation_stats",
         store=True,
         default=0,
     )
     overdue_cotisations = fields.Integer(
-        string="Cotisations en retard", 
-        compute="_compute_cotisation_stats", 
+        string="Cotisations en retard",
+        compute="_compute_cotisation_stats",
         store=True,
         default=0,
     )
@@ -85,17 +85,9 @@ class ResPartnerCotisation(models.Model):
         default=0.0,
     )
 
-    # Taux de paiement avec valeur par défaut sécurisée
-    payment_rate = fields.Float(
-        string="Taux de paiement (%)", 
-        compute="_compute_cotisation_stats", 
-        store=True,
-        default=0.0,
-    )
-
     # Indicateurs de statut membre
     has_overdue_payments = fields.Boolean(
-        string="A des paiements en retard", 
+        string="A des paiements en retard",
         compute="_compute_payment_status",
         default=False,
     )
@@ -107,7 +99,7 @@ class ResPartnerCotisation(models.Model):
         default=True,
     )
     days_since_last_payment = fields.Integer(
-        string="Jours depuis dernier paiement", 
+        string="Jours depuis dernier paiement",
         compute="_compute_payment_status",
         default=0,
     )
@@ -161,12 +153,7 @@ class ResPartnerCotisation(models.Model):
         currency_field="currency_id",
         default=0.0,
     )
-    group_collection_rate = fields.Float(
-        string="Taux de collecte du groupe (%)",
-        compute="_compute_group_financial_stats",
-        store=True,
-        default=0.0,
-    )
+
     group_members_count = fields.Integer(
         string="Nombre de membres du groupe",
         compute="_compute_group_members_stats",
@@ -192,24 +179,1172 @@ class ResPartnerCotisation(models.Model):
         store=True,
     )
 
+    # Redéfinition des champs percentage avec formatage correct
+    payment_rate = fields.Float(
+        string="Taux de paiement",
+        compute="_compute_cotisation_stats",
+        store=True,
+        default=0.0,
+        digits=(5, 2),  # Précision pour les pourcentages
+        help="Taux de paiement des cotisations (en pourcentage)",
+    )
+
+    group_collection_rate = fields.Float(
+        string="Taux de collecte du groupe",
+        compute="_compute_group_financial_stats",
+        store=True,
+        default=0.0,
+        digits=(5, 2),  # Précision pour les pourcentages
+        help="Taux de collecte du groupe (en pourcentage)",
+    )
+
+    # Nouveaux champs pour améliorer l'affichage kanban
+    kanban_payment_rate_display = fields.Char(
+        string="Affichage taux paiement",
+        compute="_compute_kanban_displays",
+        help="Affichage formaté du taux de paiement pour kanban",
+    )
+
+    kanban_collection_rate_display = fields.Char(
+        string="Affichage taux collecte",
+        compute="_compute_kanban_displays",
+        help="Affichage formaté du taux de collecte pour kanban",
+    )
+
+    kanban_status_class = fields.Char(
+        string="Classe CSS statut",
+        compute="_compute_kanban_displays",
+        help="Classe CSS pour l'affichage du statut",
+    )
+
+    kanban_priority_level = fields.Selection(
+        [
+            ("critical", "Critique"),
+            ("warning", "Attention"),
+            ("good", "Bon"),
+            ("excellent", "Excellent"),
+        ],
+        string="Niveau de priorité",
+        compute="_compute_kanban_displays",
+    )
+
+    # Champs pour l'amélioration de l'affichage des informations
+    last_payment_display = fields.Char(
+        string="Dernier paiement",
+        compute="_compute_display_fields",
+        help="Affichage formaté du dernier paiement",
+    )
+
+    status_summary = fields.Char(
+        string="Résumé du statut",
+        compute="_compute_display_fields",
+        help="Résumé du statut pour affichage rapide",
+    )
+
+    performance_indicator = fields.Char(
+        string="Indicateur de performance",
+        compute="_compute_display_fields",
+        help="Indicateur visuel de performance",
+    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # Nouveau champ pour compter les paiements
+    payments_count = fields.Integer(
+        string="Nombre de paiements",
+        compute="_compute_payments_count",
+        store=True
+    )
+
+    # Champs pour l'analyse des paiements
+    last_payment_amount = fields.Monetary(
+        string="Montant dernier paiement",
+        compute="_compute_last_payment_info",
+        currency_field="currency_id"
+    )
+
+    last_payment_method = fields.Char(
+        string="Méthode dernier paiement",
+        compute="_compute_last_payment_info"
+    )
+
+    total_payments_this_year = fields.Monetary(
+        string="Total paiements année",
+        compute="_compute_payment_analytics",
+        currency_field="currency_id"
+    )
+
+    average_payment_delay = fields.Float(
+        string="Délai moyen de paiement",
+        compute="_compute_payment_analytics",
+        help="Délai moyen en jours entre l'échéance et le paiement"
+    )
+
+    preferred_payment_method = fields.Char(
+        string="Méthode préférée",
+        compute="_compute_payment_analytics",
+        help="Méthode de paiement la plus utilisée"
+    )
+
+    @api.depends("cotisation_ids.payment_ids")
+    def _compute_payments_count(self):
+        """Calcule le nombre de paiements confirmés"""
+        for partner in self:
+            if partner.is_company:
+                partner.payments_count = 0
+            else:
+                confirmed_payments = self.env['cotisation.payment'].search([
+                    ('member_id', '=', partner.id),
+                    ('state', '=', 'confirmed')
+                ])
+                partner.payments_count = len(confirmed_payments)
+
+    @api.depends("cotisation_ids.payment_ids")
+    def _compute_last_payment_info(self):
+        """Calcule les informations du dernier paiement"""
+        for partner in self:
+            if partner.is_company:
+                partner.last_payment_amount = 0.0
+                partner.last_payment_method = ""
+            else:
+                last_payment = self.env['cotisation.payment'].search([
+                    ('member_id', '=', partner.id),
+                    ('state', '=', 'confirmed')
+                ], order='payment_date desc', limit=1)
+                
+                if last_payment:
+                    partner.last_payment_amount = last_payment.amount
+                    payment_methods = dict(last_payment._fields['payment_method'].selection)
+                    partner.last_payment_method = payment_methods.get(last_payment.payment_method, '')
+                else:
+                    partner.last_payment_amount = 0.0
+                    partner.last_payment_method = ""
+
+    @api.depends("cotisation_ids.payment_ids")
+    def _compute_payment_analytics(self):
+        """Calcule les analyses avancées des paiements"""
+        for partner in self:
+            if partner.is_company:
+                partner.total_payments_this_year = 0.0
+                partner.average_payment_delay = 0.0
+                partner.preferred_payment_method = ""
+            else:
+                current_year = fields.Date.today().year
+                year_start = date(current_year, 1, 1)
+                
+                # Paiements de cette année
+                year_payments = self.env['cotisation.payment'].search([
+                    ('member_id', '=', partner.id),
+                    ('state', '=', 'confirmed'),
+                    ('payment_date', '>=', year_start)
+                ])
+                
+                partner.total_payments_this_year = sum(year_payments.mapped('amount'))
+                
+                # Délai moyen de paiement
+                delays = []
+                for payment in year_payments:
+                    if payment.cotisation_id.due_date and payment.payment_date:
+                        delay = (payment.payment_date - payment.cotisation_id.due_date).days
+                        delays.append(delay)
+                
+                partner.average_payment_delay = sum(delays) / len(delays) if delays else 0.0
+                
+                # Méthode préférée
+                if year_payments:
+                    methods_count = {}
+                    for payment in year_payments:
+                        method = payment.payment_method
+                        methods_count[method] = methods_count.get(method, 0) + 1
+                    
+                    preferred_method = max(methods_count, key=methods_count.get)
+                    payment_methods = dict(year_payments[0]._fields['payment_method'].selection)
+                    partner.preferred_payment_method = payment_methods.get(preferred_method, '')
+                else:
+                    partner.preferred_payment_method = ""
+
+    def action_quick_payment(self):
+        """Action de paiement rapide améliorée - CORRIGÉE"""
+        self.ensure_one()
+        if self.is_company:
+            return {"type": "ir.actions.act_window_close"}
+
+        try:
+            # Rechercher les cotisations impayées avec une requête sécurisée
+            outstanding = self.env['member.cotisation'].search([
+                ('member_id', '=', self.id),
+                ('state', 'in', ['pending', 'partial', 'overdue']),
+                ('active', '=', True)
+            ])
+
+            if not outstanding:
+                return {
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "title": "Information",
+                        "message": "Aucune cotisation en attente de paiement",
+                        "type": "info",
+                    },
+                }
+
+            # Préparer le contexte de manière sécurisée
+            context = {
+                "default_member_id": self.id,
+                "default_cotisation_ids": [(6, 0, outstanding.ids)] if outstanding.ids else [],
+                "default_payment_method": self.preferred_payment_method or 'cash',
+            }
+
+            return {
+                "name": f"Paiement rapide - {self.name}",
+                "type": "ir.actions.act_window",
+                "res_model": "quick.payment.wizard",
+                "view_mode": "form",
+                "target": "new",
+                "context": context,
+            }
+            
+        except Exception as e:
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.error(f"Erreur lors du paiement rapide pour {self.name}: {e}")
+            
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": "Erreur",
+                    "message": f"Impossible d'ouvrir le paiement rapide: {str(e)}",
+                    "type": "danger",
+                },
+            }
+
+    def action_view_member_payments(self):
+        """Action pour voir l'historique des paiements du membre"""
+        self.ensure_one()
+        if self.is_company:
+            return {"type": "ir.actions.act_window_close"}
+
+        return {
+            "name": f"Paiements - {self.name}",
+            "type": "ir.actions.act_window",
+            "res_model": "cotisation.payment",
+            "view_mode": "tree,kanban,form,graph,pivot",
+            "domain": [("member_id", "=", self.id)],
+            "context": {
+                "default_member_id": self.id,
+                "hide_member": True,
+                "search_default_confirmed": 1,
+            },
+        }
+
+    # Action pour voir générer un plan de paiement
+    def action_generate_payment_plan(self):
+        """Action pour générer un plan de paiement - VERSION CORRIGÉE"""
+        self.ensure_one()
+        if self.is_company:
+            return {"type": "ir.actions.act_window_close"}
+
+        try:
+            overdue_cotisations = self.env['member.cotisation'].search([
+                ('member_id', '=', self.id),
+                ('state', '=', 'overdue'),
+                ('active', '=', True)
+            ])
+
+            if not overdue_cotisations:
+                return {
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "title": "Information",
+                        "message": "Aucune cotisation en retard pour créer un plan de paiement",
+                        "type": "info",
+                    },
+                }
+
+            total_amount = sum(overdue_cotisations.mapped('remaining_amount'))
+            if total_amount <= 0:
+                return {
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "title": "Information",
+                        "message": "Aucun montant restant à payer",
+                        "type": "info",
+                    },
+                }
+
+            # ✅ Ne pas envoyer le Many2many comme (6,0,ids) directement
+            context = {
+                'default_member_id': self.id,
+                'default_member_name': self.name,
+                'default_total_overdue_amount': total_amount,
+                'default_overdue_count': len(overdue_cotisations),
+                'default_cotisation_ids': overdue_cotisations.ids,  # ✅ Simple liste d'IDs
+            }
+            
+            return {
+                "name": f"Plan de paiement - {self.name}",
+                "type": "ir.actions.act_window",
+                "res_model": "payment.plan.wizard",
+                "view_mode": "form",
+                "target": "new",
+                "context": context,
+            }
+            
+        except Exception as e:
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.error(f"Erreur lors de la création du plan de paiement pour {self.name}: {e}")
+            
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": "Erreur",
+                    "message": f"Impossible de créer le plan de paiement: {str(e)}",
+                    "type": "danger",
+                },
+            }
+
+
+    def get_payment_statistics(self):
+        """Retourne les statistiques de paiement pour les rapports"""
+        self.ensure_one()
+        
+        if self.is_company:
+            return {}
+        
+        payments = self.env['cotisation.payment'].search([
+            ('member_id', '=', self.id),
+            ('state', '=', 'confirmed')
+        ])
+        
+        if not payments:
+            return {
+                'total_payments': 0,
+                'total_amount': 0.0,
+                'average_amount': 0.0,
+                'most_used_method': 'Aucun',
+                'payment_frequency': 'Aucun',
+            }
+        
+        # Calculs statistiques
+        total_amount = sum(payments.mapped('amount'))
+        average_amount = total_amount / len(payments)
+        
+        # Méthode la plus utilisée
+        methods = payments.mapped('payment_method')
+        most_used_method = max(set(methods), key=methods.count) if methods else 'cash'
+        method_labels = dict(payments[0]._fields['payment_method'].selection)
+        
+        # Fréquence de paiement (paiements par mois)
+        months_with_payments = len(set(p.payment_date.strftime('%Y-%m') for p in payments))
+        frequency = len(payments) / max(months_with_payments, 1)
+        
+        return {
+            'total_payments': len(payments),
+            'total_amount': total_amount,
+            'average_amount': average_amount,
+            'most_used_method': method_labels.get(most_used_method, 'Inconnu'),
+            'payment_frequency': f"{frequency:.1f} paiements/mois",
+            'currency_symbol': self.currency_id.symbol or '€',
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    @api.depends(
+        "payment_rate", "group_collection_rate", "overdue_cotisations", "is_good_payer"
+    )
+    def _compute_kanban_displays(self):
+        """Calcule les affichages spéciaux pour la vue kanban"""
+        for partner in self:
+            # Formatage sécurisé des pourcentages
+            if partner.is_company:
+                rate = float(partner.group_collection_rate or 0.0)
+                partner.kanban_collection_rate_display = f"{rate:.1f}%"
+                partner.kanban_payment_rate_display = ""
+
+                # Déterminer la classe CSS et le niveau de priorité pour les groupes
+                if rate >= 90:
+                    partner.kanban_status_class = "text-bg-success"
+                    partner.kanban_priority_level = "excellent"
+                elif rate >= 75:
+                    partner.kanban_status_class = "text-bg-info"
+                    partner.kanban_priority_level = "good"
+                elif rate >= 50:
+                    partner.kanban_status_class = "text-bg-warning"
+                    partner.kanban_priority_level = "warning"
+                else:
+                    partner.kanban_status_class = "text-bg-danger"
+                    partner.kanban_priority_level = "critical"
+            else:
+                rate = float(partner.payment_rate or 0.0)
+                partner.kanban_payment_rate_display = f"{rate:.1f}%"
+                partner.kanban_collection_rate_display = ""
+
+                # Déterminer la classe CSS et le niveau de priorité pour les membres
+                if partner.overdue_cotisations > 0:
+                    partner.kanban_status_class = "text-bg-danger"
+                    partner.kanban_priority_level = "critical"
+                elif rate >= 90 and partner.is_good_payer:
+                    partner.kanban_status_class = "text-bg-success"
+                    partner.kanban_priority_level = "excellent"
+                elif rate >= 75:
+                    partner.kanban_status_class = "text-bg-info"
+                    partner.kanban_priority_level = "good"
+                elif rate >= 50:
+                    partner.kanban_status_class = "text-bg-warning"
+                    partner.kanban_priority_level = "warning"
+                else:
+                    partner.kanban_status_class = "text-bg-danger"
+                    partner.kanban_priority_level = "critical"
+
+    @api.depends(
+        "days_since_last_payment",
+        "is_good_payer",
+        "overdue_cotisations",
+        "payment_rate",
+        "group_collection_rate",
+    )
+    def _compute_display_fields(self):
+        """Calcule les champs d'affichage améliorés"""
+        for partner in self:
+            # Affichage du dernier paiement
+            if partner.is_company:
+                partner.last_payment_display = ""
+            else:
+                days = partner.days_since_last_payment or 999
+                if days >= 999:
+                    partner.last_payment_display = "Aucun paiement"
+                elif days == 0:
+                    partner.last_payment_display = "Aujourd'hui"
+                elif days == 1:
+                    partner.last_payment_display = "Hier"
+                elif days <= 7:
+                    partner.last_payment_display = f"Il y a {days} jours"
+                elif days <= 30:
+                    partner.last_payment_display = f"Il y a {days} jours"
+                elif days <= 365:
+                    partner.last_payment_display = f"Il y a {days//30} mois"
+                else:
+                    partner.last_payment_display = f"Il y a {days//365} an(s)"
+
+            # Résumé du statut
+            if partner.is_company:
+                if partner.group_collection_rate >= 90:
+                    partner.status_summary = "🟢 Performance excellente"
+                elif partner.group_collection_rate >= 75:
+                    partner.status_summary = "🔵 Performance correcte"
+                elif partner.group_collection_rate >= 50:
+                    partner.status_summary = "🟡 Performance moyenne"
+                else:
+                    partner.status_summary = "🔴 Performance faible"
+            else:
+                if partner.overdue_cotisations > 0:
+                    partner.status_summary = (
+                        f"🔴 {partner.overdue_cotisations} retard(s)"
+                    )
+                elif partner.is_good_payer and partner.payment_rate >= 90:
+                    partner.status_summary = "🟢 Excellent payeur"
+                elif partner.payment_rate >= 75:
+                    partner.status_summary = "🔵 Bon payeur"
+                elif partner.payment_rate >= 50:
+                    partner.status_summary = "🟡 Payeur moyen"
+                elif partner.total_cotisations == 0:
+                    partner.status_summary = "⚪ Nouveau membre"
+                else:
+                    partner.status_summary = "🔴 À surveiller"
+
+            # Indicateur de performance
+            if partner.is_company:
+                rate = partner.group_collection_rate
+                if rate >= 95:
+                    partner.performance_indicator = "⭐⭐⭐"
+                elif rate >= 85:
+                    partner.performance_indicator = "⭐⭐"
+                elif rate >= 70:
+                    partner.performance_indicator = "⭐"
+                else:
+                    partner.performance_indicator = "⚠️"
+            else:
+                rate = partner.payment_rate
+                if partner.overdue_cotisations > 0:
+                    partner.performance_indicator = "🚨"
+                elif rate >= 95:
+                    partner.performance_indicator = "⭐⭐⭐"
+                elif rate >= 85:
+                    partner.performance_indicator = "⭐⭐"
+                elif rate >= 70:
+                    partner.performance_indicator = "⭐"
+                else:
+                    partner.performance_indicator = "⚠️"
+
+    @api.model
+    def safe_format_percentage(self, value, decimals=1):
+        """Formate un pourcentage de manière ultra-sécurisée"""
+        try:
+            if value is None or value is False:
+                return f"0.{'0' * decimals}%"
+
+            # Conversion sécurisée en float
+            numeric_value = float(value)
+
+            # Vérification des valeurs aberrantes
+            if numeric_value < 0:
+                numeric_value = 0.0
+            elif numeric_value > 999:  # Limite raisonnable
+                numeric_value = 999.0
+
+            # Format avec le nombre de décimales spécifié
+            format_str = f"%.{decimals}f%%"
+            return format_str % numeric_value
+
+        except (TypeError, ValueError, OverflowError) as e:
+            _logger.warning(f"Erreur lors du formatage du pourcentage {value}: {e}")
+            return f"0.{'0' * decimals}%"
+
+    def get_formatted_payment_rate(self):
+        """Retourne le taux de paiement formaté avec icône"""
+        rate = float(self.payment_rate or 0.0)
+        formatted_rate = self.safe_format_percentage(rate)
+
+        if rate >= 90:
+            return f"🟢 {formatted_rate}"
+        elif rate >= 75:
+            return f"🔵 {formatted_rate}"
+        elif rate >= 50:
+            return f"🟡 {formatted_rate}"
+        else:
+            return f"🔴 {formatted_rate}"
+
+    def get_formatted_collection_rate(self):
+        """Retourne le taux de collecte formaté avec icône"""
+        rate = float(self.group_collection_rate or 0.0)
+        formatted_rate = self.safe_format_percentage(rate)
+
+        if rate >= 90:
+            return f"🟢 {formatted_rate}"
+        elif rate >= 75:
+            return f"🔵 {formatted_rate}"
+        elif rate >= 50:
+            return f"🟡 {formatted_rate}"
+        else:
+            return f"🔴 {formatted_rate}"
+
+    def get_kanban_badge_class(self, field_type="payment"):
+        """Retourne la classe CSS appropriée pour les badges kanban"""
+        if field_type == "payment":
+            rate = float(self.payment_rate or 0.0)
+            if self.overdue_cotisations > 0:
+                return "badge text-bg-danger"
+            elif rate >= 90:
+                return "badge text-bg-success"
+            elif rate >= 75:
+                return "badge text-bg-info"
+            elif rate >= 50:
+                return "badge text-bg-warning"
+            else:
+                return "badge text-bg-danger"
+        elif field_type == "collection":
+            rate = float(self.group_collection_rate or 0.0)
+            if rate >= 90:
+                return "badge text-bg-success"
+            elif rate >= 75:
+                return "badge text-bg-info"
+            elif rate >= 50:
+                return "badge text-bg-warning"
+            else:
+                return "badge text-bg-danger"
+        return "badge text-bg-secondary"
+
+    # CORRECTION DE LA MÉTHODE DE CALCUL PRINCIPALE
+    @api.depends(
+        "cotisation_ids",
+        "cotisation_ids.state",
+        "cotisation_ids.amount_due",
+        "cotisation_ids.amount_paid",
+        "cotisation_ids.active",
+    )
+    def _compute_cotisation_stats(self):
+        """Calcule les statistiques de cotisation avec formatage correct des pourcentages"""
+        for partner in self:
+            if partner.is_company:
+                # Pour les organisations, on ne calcule pas les statistiques personnelles
+                partner.update(
+                    {
+                        "total_cotisations": 0,
+                        "paid_cotisations": 0,
+                        "pending_cotisations": 0,
+                        "partial_cotisations": 0,
+                        "overdue_cotisations": 0,
+                        "total_amount_due": 0.0,
+                        "total_amount_paid": 0.0,
+                        "remaining_amount": 0.0,
+                        "payment_rate": 0.0,
+                    }
+                )
+            else:
+                try:
+                    cotisations = partner.cotisation_ids.filtered("active")
+
+                    # Calculs de base avec gestion des erreurs
+                    total_cotisations = len(cotisations)
+                    paid_cotisations = len(
+                        cotisations.filtered(lambda c: c.state == "paid")
+                    )
+                    pending_cotisations = len(
+                        cotisations.filtered(lambda c: c.state == "pending")
+                    )
+                    partial_cotisations = len(
+                        cotisations.filtered(lambda c: c.state == "partial")
+                    )
+                    overdue_cotisations = len(
+                        cotisations.filtered(lambda c: c.state == "overdue")
+                    )
+
+                    # Calculs monétaires avec protection contre les valeurs nulles
+                    total_amount_due = 0.0
+                    total_amount_paid = 0.0
+
+                    for cotisation in cotisations:
+                        try:
+                            due_amount = float(cotisation.amount_due or 0.0)
+                            paid_amount = float(cotisation.amount_paid or 0.0)
+                            total_amount_due += due_amount
+                            total_amount_paid += paid_amount
+                        except (TypeError, ValueError) as e:
+                            _logger.warning(
+                                f"Erreur de conversion pour cotisation {cotisation.id}: {e}"
+                            )
+                            continue
+
+                    remaining_amount = max(0.0, total_amount_due - total_amount_paid)
+
+                    # Calcul CORRIGÉ du taux de paiement (maintenant en valeur décimale, pas en pourcentage)
+                    payment_rate = 0.0
+                    if total_amount_due > 0:
+                        try:
+                            # IMPORTANT: Stocker en décimal (0.0 à 100.0) pour compatibilité widget percentage
+                            payment_rate = (
+                                total_amount_paid / total_amount_due
+                            ) * 100.0
+                            # S'assurer que le taux est dans une plage raisonnable
+                            payment_rate = max(0.0, min(100.0, payment_rate))
+                            # S'assurer que c'est un float valide (pas NaN ou Inf)
+                            if not (payment_rate >= 0 and payment_rate <= 100):
+                                payment_rate = 0.0
+                        except (
+                            ZeroDivisionError,
+                            TypeError,
+                            ValueError,
+                            OverflowError,
+                        ) as e:
+                            _logger.warning(
+                                f"Erreur de calcul du taux pour {partner.name}: {e}"
+                            )
+                            payment_rate = 0.0
+
+                    # Mise à jour des champs avec validation stricte
+                    partner.update(
+                        {
+                            "total_cotisations": max(0, total_cotisations),
+                            "paid_cotisations": max(0, paid_cotisations),
+                            "pending_cotisations": max(0, pending_cotisations),
+                            "partial_cotisations": max(0, partial_cotisations),
+                            "overdue_cotisations": max(0, overdue_cotisations),
+                            "total_amount_due": max(0.0, total_amount_due),
+                            "total_amount_paid": max(0.0, total_amount_paid),
+                            "remaining_amount": max(0.0, remaining_amount),
+                            "payment_rate": float(
+                                payment_rate
+                            ),  # Valeur 0-100 pour widget percentage
+                        }
+                    )
+
+                except Exception as e:
+                    _logger.error(
+                        f"Erreur lors du calcul des statistiques pour {partner.name}: {e}"
+                    )
+                    # Valeurs par défaut ultra-sécurisées en cas d'erreur
+                    partner.update(
+                        {
+                            "total_cotisations": 0,
+                            "paid_cotisations": 0,
+                            "pending_cotisations": 0,
+                            "partial_cotisations": 0,
+                            "overdue_cotisations": 0,
+                            "total_amount_due": 0.0,
+                            "total_amount_paid": 0.0,
+                            "remaining_amount": 0.0,
+                            "payment_rate": 0.0,
+                        }
+                    )
+
+    @api.depends(
+        "group_activities",
+        "group_activities.total_collected",
+        "group_activities.total_expected",
+        "monthly_cotisations",
+        "monthly_cotisations.total_collected",
+        "monthly_cotisations.total_expected",
+    )
+    def _compute_group_financial_stats(self):
+        """Calcule les statistiques financières pour les groupes avec formatage correct"""
+        for partner in self:
+            if partner.is_company:
+                try:
+                    activities = partner.group_activities.filtered("active")
+                    monthly_cotisations = partner.monthly_cotisations.filtered("active")
+
+                    # Calculs avec protection contre les valeurs nulles
+                    activities_collected = 0.0
+                    activities_expected = 0.0
+
+                    for activity in activities:
+                        try:
+                            activities_collected += float(
+                                activity.total_collected or 0.0
+                            )
+                            activities_expected += float(activity.total_expected or 0.0)
+                        except (TypeError, ValueError):
+                            continue
+
+                    monthly_collected = 0.0
+                    monthly_expected = 0.0
+
+                    for monthly in monthly_cotisations:
+                        try:
+                            monthly_collected += float(monthly.total_collected or 0.0)
+                            monthly_expected += float(monthly.total_expected or 0.0)
+                        except (TypeError, ValueError):
+                            continue
+
+                    # Totaux globaux
+                    group_total_collected = max(
+                        0.0, activities_collected + monthly_collected
+                    )
+                    group_total_expected = max(
+                        0.0, activities_expected + monthly_expected
+                    )
+
+                    # Calcul CORRIGÉ du taux de collecte (en valeur 0-100 pour widget percentage)
+                    group_collection_rate = 0.0
+                    if group_total_expected > 0:
+                        try:
+                            group_collection_rate = (
+                                group_total_collected / group_total_expected
+                            ) * 100.0
+                            # S'assurer que le taux est dans une plage raisonnable
+                            group_collection_rate = max(
+                                0.0, min(100.0, group_collection_rate)
+                            )
+                            # S'assurer que c'est un float valide (pas NaN ou Inf)
+                            if not (
+                                group_collection_rate >= 0
+                                and group_collection_rate <= 100
+                            ):
+                                group_collection_rate = 0.0
+                        except (
+                            ZeroDivisionError,
+                            TypeError,
+                            ValueError,
+                            OverflowError,
+                        ):
+                            group_collection_rate = 0.0
+
+                    partner.update(
+                        {
+                            "group_total_collected": float(group_total_collected),
+                            "group_total_expected": float(group_total_expected),
+                            "group_collection_rate": float(
+                                group_collection_rate
+                            ),  # Valeur 0-100
+                        }
+                    )
+
+                except Exception as e:
+                    _logger.error(
+                        f"Erreur lors du calcul des statistiques financières pour {partner.name}: {e}"
+                    )
+                    partner.update(
+                        {
+                            "group_total_collected": 0.0,
+                            "group_total_expected": 0.0,
+                            "group_collection_rate": 0.0,
+                        }
+                    )
+            else:
+                partner.update(
+                    {
+                        "group_total_collected": 0.0,
+                        "group_total_expected": 0.0,
+                        "group_collection_rate": 0.0,
+                    }
+                )
+
+    # Méthodes utilitaires pour l'affichage amélioré
+    def get_priority_color(self):
+        """Retourne la couleur de priorité pour l'affichage"""
+        if self.is_company:
+            rate = self.group_collection_rate
+            if rate >= 90:
+                return "success"
+            elif rate >= 75:
+                return "info"
+            elif rate >= 50:
+                return "warning"
+            else:
+                return "danger"
+        else:
+            if self.overdue_cotisations > 0:
+                return "danger"
+            elif self.payment_rate >= 90:
+                return "success"
+            elif self.payment_rate >= 75:
+                return "info"
+            elif self.payment_rate >= 50:
+                return "warning"
+            else:
+                return "danger"
+
+    def get_status_icon(self):
+        """Retourne l'icône de statut appropriée"""
+        if self.is_company:
+            rate = self.group_collection_rate
+            if rate >= 90:
+                return "fa-star"
+            elif rate >= 75:
+                return "fa-thumbs-up"
+            elif rate >= 50:
+                return "fa-warning"
+            else:
+                return "fa-exclamation-triangle"
+        else:
+            if self.overdue_cotisations > 0:
+                return "fa-exclamation-triangle"
+            elif self.is_good_payer and self.payment_rate >= 90:
+                return "fa-star"
+            elif self.payment_rate >= 75:
+                return "fa-thumbs-up"
+            elif self.payment_rate >= 50:
+                return "fa-warning"
+            else:
+                return "fa-exclamation-triangle"
+
+    def get_kanban_summary_line(self):
+        """Retourne une ligne de résumé pour l'affichage kanban"""
+        if self.is_company:
+            if self.group_members_count > 0:
+                return f"{self.group_members_count} membres • {self.safe_format_percentage(self.group_collection_rate)} collecté"
+            else:
+                return "Aucun membre"
+        else:
+            if self.total_cotisations > 0:
+                return f"{self.paid_cotisations}/{self.total_cotisations} payées • {self.safe_format_percentage(self.payment_rate)}"
+            else:
+                return "Nouveau membre"
+
+    def get_quick_action_buttons(self):
+        """Retourne les boutons d'action rapide selon le contexte"""
+        if self.is_company:
+            return [
+                {
+                    "name": "Voir activités",
+                    "action": "action_view_group_activities",
+                    "icon": "fa-calendar",
+                },
+                {
+                    "name": "Nouveau membre",
+                    "action": "action_add_group_member",
+                    "icon": "fa-user-plus",
+                },
+                {
+                    "name": "Rapport",
+                    "action": "action_print_group_report",
+                    "icon": "fa-file-pdf-o",
+                },
+            ]
+        else:
+            buttons = [
+                {
+                    "name": "Mes cotisations",
+                    "action": "action_view_my_cotisations",
+                    "icon": "fa-list",
+                },
+                {
+                    "name": "Rapport",
+                    "action": "action_print_member_report",
+                    "icon": "fa-file-pdf-o",
+                },
+            ]
+            if self.pending_cotisations > 0 or self.overdue_cotisations > 0:
+                buttons.insert(
+                    0,
+                    {
+                        "name": "Payer",
+                        "action": "action_pay_all_outstanding",
+                        "icon": "fa-credit-card",
+                    },
+                )
+            return buttons
+
+    # Méthodes d'amélioration des performances pour le kanban
+    @api.model
+    def get_kanban_data_optimized(self, domain=None, limit=None):
+        """Méthode optimisée pour récupérer les données kanban"""
+        if domain is None:
+            domain = []
+
+        # Recherche avec tous les champs nécessaires
+        partners = self.search(domain, limit=limit)
+
+        # Précharger toutes les relations nécessaires
+        partners.read(
+            [
+                "display_name",
+                "is_company",
+                "email",
+                "phone",
+                "total_cotisations",
+                "paid_cotisations",
+                "pending_cotisations",
+                "overdue_cotisations",
+                "payment_rate",
+                "group_collection_rate",
+                "is_good_payer",
+                "group_members_count",
+                "activities_count",
+                "active_activities_count",
+                "kanban_status_class",
+                "status_summary",
+                "performance_indicator",
+            ]
+        )
+
+        return partners
+
+    # Actions améliorées pour l'interface
+    def action_add_group_member(self):
+        """Action rapide pour ajouter un membre au groupe"""
+        self.ensure_one()
+        if not self.is_company:
+            return {"type": "ir.actions.act_window_close"}
+
+        return {
+            "name": f"Nouveau membre - {self.name}",
+            "type": "ir.actions.act_window",
+            "res_model": "res.partner",
+            "view_mode": "form",
+            "target": "current",
+            "context": {
+                "default_parent_id": self.id,
+                "default_is_company": False,
+                "default_customer_rank": 1,
+            },
+        }
+
+    # Validation et correction des données pour éviter les erreurs d'affichage
+    @api.model
+    def _cron_fix_display_data(self):
+        """Cron pour corriger les données d'affichage défaillantes"""
+        try:
+            # Trouver tous les partenaires avec des pourcentages potentiellement incorrects
+            problematic_partners = self.search(
+                [
+                    "|",
+                    "|",
+                    ("payment_rate", "<", 0),
+                    ("payment_rate", ">", 100),
+                    ("group_collection_rate", "<", 0),
+                    ("group_collection_rate", ">", 100),
+                ]
+            )
+
+            fixed_count = 0
+
+            for partner in problematic_partners:
+                try:
+                    # Forcer le recalcul des statistiques
+                    partner._compute_cotisation_stats()
+                    partner._compute_group_financial_stats()
+                    partner._compute_kanban_displays()
+                    partner._compute_display_fields()
+
+                    # Validation finale
+                    if partner.payment_rate < 0 or partner.payment_rate > 100:
+                        partner.payment_rate = 0.0
+                    if (
+                        partner.group_collection_rate < 0
+                        or partner.group_collection_rate > 100
+                    ):
+                        partner.group_collection_rate = 0.0
+
+                    fixed_count += 1
+
+                except Exception as e:
+                    _logger.error(
+                        f"Erreur lors de la correction pour {partner.name}: {e}"
+                    )
+                    continue
+
+            _logger.info(
+                f"Données d'affichage corrigées pour {fixed_count} partenaires"
+            )
+            return True
+
+        except Exception as e:
+            _logger.error(f"Erreur lors de la correction des données d'affichage: {e}")
+            return False
+
     @api.model
     def safe_format_percentage(self, value):
         """Formate un pourcentage de manière ultra-sécurisée pour les templates"""
         try:
             if value is None or value is False:
                 return "0.0%"
-            
+
             # Conversion sécurisée en float
             numeric_value = float(value)
-            
+
             # Vérification des valeurs aberrantes
             if numeric_value < 0:
                 numeric_value = 0.0
             elif numeric_value > 999:  # Limite raisonnable
                 numeric_value = 999.0
-                
+
             return "%.1f%%" % numeric_value
-            
+
         except (TypeError, ValueError, OverflowError) as e:
             _logger.warning(f"Erreur lors du formatage du pourcentage {value}: {e}")
             return "0.0%"
@@ -277,7 +1412,6 @@ class ResPartnerCotisation(models.Model):
         """Retourne le montant restant de manière sécurisée"""
         return self.safe_format_float(self.remaining_amount)
 
-
     @api.depends("group_activities", "group_activities.create_date")
     def _compute_last_activity_info(self):
         """Calcule la date de la dernière activité"""
@@ -306,99 +1440,6 @@ class ResPartnerCotisation(models.Model):
             else:
                 partner.last_monthly_cotisation_date = False
 
-    # CORRECTION DE LA MÉTHODE DE CALCUL POUR ÉVITER LES ERREURS DE FORMATAGE
-    @api.depends(
-        "cotisation_ids",
-        "cotisation_ids.state",
-        "cotisation_ids.amount_due",
-        "cotisation_ids.amount_paid",
-        "cotisation_ids.active",
-    )
-    def _compute_cotisation_stats(self):
-        """Calcule les statistiques de cotisation avec gestion ultra-sécurisée des valeurs nulles"""
-        for partner in self:
-            if partner.is_company:
-                # Pour les organisations, on ne calcule pas les statistiques personnelles
-                partner.update({
-                    'total_cotisations': 0,
-                    'paid_cotisations': 0,
-                    'pending_cotisations': 0,
-                    'partial_cotisations': 0,
-                    'overdue_cotisations': 0,
-                    'total_amount_due': 0.0,
-                    'total_amount_paid': 0.0,
-                    'remaining_amount': 0.0,
-                    'payment_rate': 0.0,  # Toujours un float, jamais None/False
-                })
-            else:
-                try:
-                    cotisations = partner.cotisation_ids.filtered("active")
-                    
-                    # Calculs de base avec gestion des erreurs
-                    total_cotisations = len(cotisations)
-                    paid_cotisations = len(cotisations.filtered(lambda c: c.state == "paid"))
-                    pending_cotisations = len(cotisations.filtered(lambda c: c.state == "pending"))
-                    partial_cotisations = len(cotisations.filtered(lambda c: c.state == "partial"))
-                    overdue_cotisations = len(cotisations.filtered(lambda c: c.state == "overdue"))
-                    
-                    # Calculs monétaires avec protection contre les valeurs nulles
-                    total_amount_due = 0.0
-                    total_amount_paid = 0.0
-                    
-                    for cotisation in cotisations:
-                        try:
-                            due_amount = float(cotisation.amount_due or 0.0)
-                            paid_amount = float(cotisation.amount_paid or 0.0)
-                            total_amount_due += due_amount
-                            total_amount_paid += paid_amount
-                        except (TypeError, ValueError) as e:
-                            _logger.warning(f"Erreur de conversion pour cotisation {cotisation.id}: {e}")
-                            continue
-                    
-                    remaining_amount = max(0.0, total_amount_due - total_amount_paid)
-                    
-                    # Calcul ultra-sécurisé du taux de paiement - TOUJOURS un float valide
-                    payment_rate = 0.0
-                    if total_amount_due > 0:
-                        try:
-                            payment_rate = (total_amount_paid / total_amount_due) * 100.0
-                            # S'assurer que le taux est dans une plage raisonnable
-                            payment_rate = max(0.0, min(100.0, payment_rate))
-                            # S'assurer que c'est un float valide (pas NaN ou Inf)
-                            if not (payment_rate >= 0 and payment_rate <= 100):
-                                payment_rate = 0.0
-                        except (ZeroDivisionError, TypeError, ValueError, OverflowError) as e:
-                            _logger.warning(f"Erreur de calcul du taux pour {partner.name}: {e}")
-                            payment_rate = 0.0
-                    
-                    # Mise à jour des champs avec validation stricte
-                    partner.update({
-                        'total_cotisations': max(0, total_cotisations),
-                        'paid_cotisations': max(0, paid_cotisations),
-                        'pending_cotisations': max(0, pending_cotisations),
-                        'partial_cotisations': max(0, partial_cotisations),
-                        'overdue_cotisations': max(0, overdue_cotisations),
-                        'total_amount_due': max(0.0, total_amount_due),
-                        'total_amount_paid': max(0.0, total_amount_paid),
-                        'remaining_amount': max(0.0, remaining_amount),
-                        'payment_rate': float(payment_rate),  # Toujours un float valide
-                    })
-                    
-                except Exception as e:
-                    _logger.error(f"Erreur lors du calcul des statistiques pour {partner.name}: {e}")
-                    # Valeurs par défaut ultra-sécurisées en cas d'erreur
-                    partner.update({
-                        'total_cotisations': 0,
-                        'paid_cotisations': 0,
-                        'pending_cotisations': 0,
-                        'partial_cotisations': 0,
-                        'overdue_cotisations': 0,
-                        'total_amount_due': 0.0,
-                        'total_amount_paid': 0.0,
-                        'remaining_amount': 0.0,
-                        'payment_rate': 0.0,  # Toujours un float, jamais None/False
-                    })
-
     @api.depends(
         "cotisation_ids", "cotisation_ids.payment_date", "cotisation_ids.state"
     )
@@ -406,11 +1447,13 @@ class ResPartnerCotisation(models.Model):
         """Calcule les indicateurs de statut de paiement avec gestion ultra-sécurisée"""
         for partner in self:
             if partner.is_company:
-                partner.update({
-                    'has_overdue_payments': False,
-                    'is_good_payer': True,
-                    'days_since_last_payment': 0,  # Toujours un entier valide
-                })
+                partner.update(
+                    {
+                        "has_overdue_payments": False,
+                        "is_good_payer": True,
+                        "days_since_last_payment": 0,  # Toujours un entier valide
+                    }
+                )
             else:
                 try:
                     # Vérifier s'il y a des paiements en retard
@@ -422,9 +1465,9 @@ class ResPartnerCotisation(models.Model):
                     # Déterminer si c'est un bon payeur avec gestion sécurisée
                     payment_rate = float(partner.payment_rate or 0.0)
                     critical_overdue = overdue_cotisations.filtered(
-                        lambda c: getattr(c, 'days_overdue', 0) > 30
+                        lambda c: getattr(c, "days_overdue", 0) > 30
                     )
-                    is_good_payer = (payment_rate >= 80.0 and len(critical_overdue) == 0)
+                    is_good_payer = payment_rate >= 80.0 and len(critical_overdue) == 0
 
                     # Calculer les jours depuis le dernier paiement
                     paid_cotisations = partner.cotisation_ids.filtered(
@@ -439,27 +1482,36 @@ class ResPartnerCotisation(models.Model):
                                 fields.Date.today() - last_payment_date
                             ).days
                             # S'assurer que c'est un entier positif
-                            days_since_last_payment = max(0, int(days_since_last_payment))
+                            days_since_last_payment = max(
+                                0, int(days_since_last_payment)
+                            )
                         except (TypeError, AttributeError, ValueError):
                             days_since_last_payment = 999
                     else:
                         days_since_last_payment = 999  # Aucun paiement
 
-                    partner.update({
-                        'has_overdue_payments': has_overdue_payments,
-                        'is_good_payer': is_good_payer,
-                        'days_since_last_payment': int(days_since_last_payment),  # Toujours un entier
-                    })
-                    
-                except Exception as e:
-                    _logger.error(f"Erreur lors du calcul du statut de paiement pour {partner.name}: {e}")
-                    # Valeurs par défaut ultra-sécurisées
-                    partner.update({
-                        'has_overdue_payments': False,
-                        'is_good_payer': True,
-                        'days_since_last_payment': 999,
-                    })
+                    partner.update(
+                        {
+                            "has_overdue_payments": has_overdue_payments,
+                            "is_good_payer": is_good_payer,
+                            "days_since_last_payment": int(
+                                days_since_last_payment
+                            ),  # Toujours un entier
+                        }
+                    )
 
+                except Exception as e:
+                    _logger.error(
+                        f"Erreur lors du calcul du statut de paiement pour {partner.name}: {e}"
+                    )
+                    # Valeurs par défaut ultra-sécurisées
+                    partner.update(
+                        {
+                            "has_overdue_payments": False,
+                            "is_good_payer": True,
+                            "days_since_last_payment": 999,
+                        }
+                    )
 
     @api.depends("group_activities", "monthly_cotisations")
     def _compute_group_cotisation_counts(self):
@@ -473,102 +1525,37 @@ class ResPartnerCotisation(models.Model):
                     activities_count = len(activities)
                     monthly_cotisations_count = len(monthly_cotisations)
                     active_activities_count = len(
-                        activities.filtered(lambda a: a.state in ["confirmed", "ongoing"])
+                        activities.filtered(
+                            lambda a: a.state in ["confirmed", "ongoing"]
+                        )
                     )
-                    
-                    partner.update({
-                        'activities_count': activities_count,
-                        'monthly_cotisations_count': monthly_cotisations_count,
-                        'active_activities_count': active_activities_count,
-                    })
+
+                    partner.update(
+                        {
+                            "activities_count": activities_count,
+                            "monthly_cotisations_count": monthly_cotisations_count,
+                            "active_activities_count": active_activities_count,
+                        }
+                    )
                 except Exception as e:
-                    _logger.error(f"Erreur lors du calcul des compteurs pour {partner.name}: {e}")
-                    partner.update({
-                        'activities_count': 0,
-                        'monthly_cotisations_count': 0,
-                        'active_activities_count': 0,
-                    })
+                    _logger.error(
+                        f"Erreur lors du calcul des compteurs pour {partner.name}: {e}"
+                    )
+                    partner.update(
+                        {
+                            "activities_count": 0,
+                            "monthly_cotisations_count": 0,
+                            "active_activities_count": 0,
+                        }
+                    )
             else:
-                partner.update({
-                    'activities_count': 0,
-                    'monthly_cotisations_count': 0,
-                    'active_activities_count': 0,
-                })
-
-    @api.depends(
-        "group_activities",
-        "group_activities.total_collected",
-        "group_activities.total_expected",
-        "monthly_cotisations",
-        "monthly_cotisations.total_collected",
-        "monthly_cotisations.total_expected",
-    )
-    def _compute_group_financial_stats(self):
-        """Calcule les statistiques financières pour les groupes avec gestion ultra-sécurisée"""
-        for partner in self:
-            if partner.is_company:
-                try:
-                    activities = partner.group_activities.filtered("active")
-                    monthly_cotisations = partner.monthly_cotisations.filtered("active")
-
-                    # Calculs avec protection contre les valeurs nulles
-                    activities_collected = 0.0
-                    activities_expected = 0.0
-                    
-                    for activity in activities:
-                        try:
-                            activities_collected += float(activity.total_collected or 0.0)
-                            activities_expected += float(activity.total_expected or 0.0)
-                        except (TypeError, ValueError):
-                            continue
-
-                    monthly_collected = 0.0
-                    monthly_expected = 0.0
-                    
-                    for monthly in monthly_cotisations:
-                        try:
-                            monthly_collected += float(monthly.total_collected or 0.0)
-                            monthly_expected += float(monthly.total_expected or 0.0)
-                        except (TypeError, ValueError):
-                            continue
-
-                    # Totaux globaux
-                    group_total_collected = max(0.0, activities_collected + monthly_collected)
-                    group_total_expected = max(0.0, activities_expected + monthly_expected)
-
-                    # Calcul ultra-sécurisé du taux de collecte
-                    group_collection_rate = 0.0
-                    if group_total_expected > 0:
-                        try:
-                            group_collection_rate = (group_total_collected / group_total_expected) * 100.0
-                            # S'assurer que le taux est dans une plage raisonnable
-                            group_collection_rate = max(0.0, min(100.0, group_collection_rate))
-                            # S'assurer que c'est un float valide (pas NaN ou Inf)
-                            if not (group_collection_rate >= 0 and group_collection_rate <= 100):
-                                group_collection_rate = 0.0
-                        except (ZeroDivisionError, TypeError, ValueError, OverflowError):
-                            group_collection_rate = 0.0
-                    
-                    partner.update({
-                        'group_total_collected': float(group_total_collected),
-                        'group_total_expected': float(group_total_expected),
-                        'group_collection_rate': float(group_collection_rate),  # Toujours un float valide
-                    })
-                    
-                except Exception as e:
-                    _logger.error(f"Erreur lors du calcul des statistiques financières pour {partner.name}: {e}")
-                    partner.update({
-                        'group_total_collected': 0.0,
-                        'group_total_expected': 0.0,
-                        'group_collection_rate': 0.0,
-                    })
-            else:
-                partner.update({
-                    'group_total_collected': 0.0,
-                    'group_total_expected': 0.0,
-                    'group_collection_rate': 0.0,
-                })
-
+                partner.update(
+                    {
+                        "activities_count": 0,
+                        "monthly_cotisations_count": 0,
+                        "active_activities_count": 0,
+                    }
+                )
 
     # MÉTHODE POUR PRÉPARER LES DONNÉES DE RAPPORT ULTRA-SÉCURISÉES
     @api.model
@@ -587,45 +1574,72 @@ class ResPartnerCotisation(models.Model):
                         doc._compute_group_financial_stats()
                         doc._compute_group_cotisation_counts()
                         doc._compute_group_members_stats()
-                    
+
                     # Vérification et correction des valeurs critiques
-                    if not isinstance(doc.payment_rate, (int, float)) or doc.payment_rate is None:
+                    if (
+                        not isinstance(doc.payment_rate, (int, float))
+                        or doc.payment_rate is None
+                    ):
                         doc.payment_rate = 0.0
-                    
-                    if not isinstance(doc.group_collection_rate, (int, float)) or doc.group_collection_rate is None:
+
+                    if (
+                        not isinstance(doc.group_collection_rate, (int, float))
+                        or doc.group_collection_rate is None
+                    ):
                         doc.group_collection_rate = 0.0
-                        
-                    if not isinstance(doc.days_since_last_payment, (int, float)) or doc.days_since_last_payment is None:
+
+                    if (
+                        not isinstance(doc.days_since_last_payment, (int, float))
+                        or doc.days_since_last_payment is None
+                    ):
                         doc.days_since_last_payment = 999
-                        
+
                     # S'assurer que tous les champs numériques sont des types appropriés
                     numeric_fields = [
-                        'total_cotisations', 'paid_cotisations', 'pending_cotisations', 
-                        'overdue_cotisations', 'total_amount_due', 'total_amount_paid',
-                        'remaining_amount', 'group_total_collected', 'group_total_expected',
-                        'group_members_count', 'group_active_members_count',
-                        'activities_count', 'monthly_cotisations_count'
+                        "total_cotisations",
+                        "paid_cotisations",
+                        "pending_cotisations",
+                        "overdue_cotisations",
+                        "total_amount_due",
+                        "total_amount_paid",
+                        "remaining_amount",
+                        "group_total_collected",
+                        "group_total_expected",
+                        "group_members_count",
+                        "group_active_members_count",
+                        "activities_count",
+                        "monthly_cotisations_count",
                     ]
-                    
+
                     for field in numeric_fields:
                         value = getattr(doc, field, 0)
                         if value is None or value is False:
-                            setattr(doc, field, 0 if 'count' in field or 'cotisations' in field else 0.0)
-                    
+                            setattr(
+                                doc,
+                                field,
+                                (
+                                    0
+                                    if "count" in field or "cotisations" in field
+                                    else 0.0
+                                ),
+                            )
+
                 except Exception as field_error:
-                    _logger.warning(f"Erreur lors de la correction des champs pour {doc.name}: {field_error}")
+                    _logger.warning(
+                        f"Erreur lors de la correction des champs pour {doc.name}: {field_error}"
+                    )
                     # Appliquer des valeurs par défaut ultra-sécurisées
                     default_values = {
-                        'payment_rate': 0.0,
-                        'group_collection_rate': 0.0,
-                        'total_cotisations': 0,
-                        'paid_cotisations': 0,
-                        'pending_cotisations': 0,
-                        'overdue_cotisations': 0,
-                        'days_since_last_payment': 999,
-                        'total_amount_due': 0.0,
-                        'total_amount_paid': 0.0,
-                        'remaining_amount': 0.0,
+                        "payment_rate": 0.0,
+                        "group_collection_rate": 0.0,
+                        "total_cotisations": 0,
+                        "paid_cotisations": 0,
+                        "pending_cotisations": 0,
+                        "overdue_cotisations": 0,
+                        "days_since_last_payment": 999,
+                        "total_amount_due": 0.0,
+                        "total_amount_paid": 0.0,
+                        "remaining_amount": 0.0,
                     }
                     for field, default_value in default_values.items():
                         setattr(doc, field, default_value)
@@ -647,9 +1661,12 @@ class ResPartnerCotisation(models.Model):
                 "safe_format_currency": self._safe_format_currency,
             }
         except Exception as e:
-            _logger.error(f"Erreur critique lors de la préparation du contexte de rapport: {e}")
+            _logger.error(
+                f"Erreur critique lors de la préparation du contexte de rapport: {e}"
+            )
             # Retourner un contexte minimal plutôt que de faire échouer le rapport
             import datetime
+
             return {
                 "doc_ids": docids,
                 "doc_model": "res.partner",
@@ -670,22 +1687,30 @@ class ResPartnerCotisation(models.Model):
                     members = partner.child_ids.filtered(lambda c: not c.is_company)
                     group_members_count = len(members)
                     group_active_members_count = len(members.filtered("active"))
-                    
-                    partner.update({
-                        'group_members_count': group_members_count,
-                        'group_active_members_count': group_active_members_count,
-                    })
+
+                    partner.update(
+                        {
+                            "group_members_count": group_members_count,
+                            "group_active_members_count": group_active_members_count,
+                        }
+                    )
                 except Exception as e:
-                    _logger.error(f"Erreur lors du calcul des membres pour {partner.name}: {e}")
-                    partner.update({
-                        'group_members_count': 0,
-                        'group_active_members_count': 0,
-                    })
+                    _logger.error(
+                        f"Erreur lors du calcul des membres pour {partner.name}: {e}"
+                    )
+                    partner.update(
+                        {
+                            "group_members_count": 0,
+                            "group_active_members_count": 0,
+                        }
+                    )
             else:
-                partner.update({
-                    'group_members_count': 0,
-                    'group_active_members_count': 0,
-                })
+                partner.update(
+                    {
+                        "group_members_count": 0,
+                        "group_active_members_count": 0,
+                    }
+                )
 
     # MÉTHODES UTILITAIRES SÉCURISÉES POUR LES TEMPLATES
 
@@ -714,24 +1739,24 @@ class ResPartnerCotisation(models.Model):
             # Valider et nettoyer les données des partenaires
             for doc in docs:
                 # Forcer le recalcul des statistiques si nécessaire
-                if not hasattr(doc, 'payment_rate') or doc.payment_rate is None:
+                if not hasattr(doc, "payment_rate") or doc.payment_rate is None:
                     doc._compute_cotisation_stats()
                     doc._compute_payment_status()
                     doc._compute_group_financial_stats()
-                
+
                 # S'assurer que tous les champs numériques ont des valeurs par défaut sécurisées
                 safe_values = {
-                    'payment_rate': float(doc.payment_rate or 0.0),
-                    'group_collection_rate': float(doc.group_collection_rate or 0.0),
-                    'total_cotisations': int(doc.total_cotisations or 0),
-                    'paid_cotisations': int(doc.paid_cotisations or 0),
-                    'pending_cotisations': int(doc.pending_cotisations or 0),
-                    'overdue_cotisations': int(doc.overdue_cotisations or 0),
-                    'days_since_last_payment': int(doc.days_since_last_payment or 999),
-                    'total_amount_due': float(doc.total_amount_due or 0.0),
-                    'total_amount_paid': float(doc.total_amount_paid or 0.0),
+                    "payment_rate": float(doc.payment_rate or 0.0),
+                    "group_collection_rate": float(doc.group_collection_rate or 0.0),
+                    "total_cotisations": int(doc.total_cotisations or 0),
+                    "paid_cotisations": int(doc.paid_cotisations or 0),
+                    "pending_cotisations": int(doc.pending_cotisations or 0),
+                    "overdue_cotisations": int(doc.overdue_cotisations or 0),
+                    "days_since_last_payment": int(doc.days_since_last_payment or 999),
+                    "total_amount_due": float(doc.total_amount_due or 0.0),
+                    "total_amount_paid": float(doc.total_amount_paid or 0.0),
                 }
-                
+
                 # Mettre à jour avec les valeurs sécurisées
                 for field, value in safe_values.items():
                     setattr(doc, field, value)
@@ -749,7 +1774,9 @@ class ResPartnerCotisation(models.Model):
                 # Helpers pour formatage sécurisé
                 "safe_format_rate": lambda rate: self._safe_format_rate(rate),
                 "safe_format_number": lambda num: self._safe_format_number(num),
-                "safe_format_currency": lambda amount, currency: self._safe_format_currency(amount, currency),
+                "safe_format_currency": lambda amount, currency: self._safe_format_currency(
+                    amount, currency
+                ),
             }
         except Exception as e:
             _logger.error(f"Erreur lors de la préparation du contexte de rapport: {e}")
@@ -760,7 +1787,7 @@ class ResPartnerCotisation(models.Model):
         """Formate un montant de manière ultra-sécurisée"""
         try:
             formatted_amount = float(amount or 0.0)
-            if currency and hasattr(currency, 'symbol'):
+            if currency and hasattr(currency, "symbol"):
                 symbol = currency.symbol or currency.name or "€"
                 return f"{formatted_amount:.2f} {symbol}"
             else:
@@ -799,29 +1826,30 @@ class ResPartnerCotisation(models.Model):
     def _apply_safe_defaults(self):
         """Applique des valeurs par défaut ultra-sécurisées"""
         safe_defaults = {
-            'payment_rate': 0.0,
-            'group_collection_rate': 0.0,
-            'days_since_last_payment': 999,
-            'total_cotisations': 0,
-            'paid_cotisations': 0,
-            'pending_cotisations': 0,
-            'overdue_cotisations': 0,
-            'total_amount_due': 0.0,
-            'total_amount_paid': 0.0,
-            'remaining_amount': 0.0,
-            'group_total_collected': 0.0,
-            'group_total_expected': 0.0,
-            'group_members_count': 0,
-            'activities_count': 0,
-            'monthly_cotisations_count': 0,
+            "payment_rate": 0.0,
+            "group_collection_rate": 0.0,
+            "days_since_last_payment": 999,
+            "total_cotisations": 0,
+            "paid_cotisations": 0,
+            "pending_cotisations": 0,
+            "overdue_cotisations": 0,
+            "total_amount_due": 0.0,
+            "total_amount_paid": 0.0,
+            "remaining_amount": 0.0,
+            "group_total_collected": 0.0,
+            "group_total_expected": 0.0,
+            "group_members_count": 0,
+            "activities_count": 0,
+            "monthly_cotisations_count": 0,
         }
-        
+
         for field, default_value in safe_defaults.items():
             try:
                 setattr(self, field, default_value)
             except Exception as e:
-                _logger.error(f"Erreur lors de l'application de la valeur par défaut pour {field}: {e}")
-
+                _logger.error(
+                    f"Erreur lors de l'application de la valeur par défaut pour {field}: {e}"
+                )
 
     def action_generate_member_payment_report_safe(self):
         """Action pour générer le rapport de paiement du membre avec validation ultra-sécurisée"""
@@ -834,15 +1862,17 @@ class ResPartnerCotisation(models.Model):
         # Validation et correction des données avant génération
         try:
             self.validate_report_data_safety()
-            
+
             # Forcer le recalcul des statistiques avec gestion d'erreur
             try:
                 self._compute_cotisation_stats()
                 self._compute_payment_status()
             except Exception as e:
-                _logger.warning(f"Erreur lors du recalcul des statistiques pour {self.name}: {e}")
+                _logger.warning(
+                    f"Erreur lors du recalcul des statistiques pour {self.name}: {e}"
+                )
                 self._apply_safe_defaults()
-            
+
         except Exception as e:
             _logger.warning(f"Erreur lors de la validation pour {self.name}: {e}")
             self._apply_safe_defaults()
@@ -865,18 +1895,20 @@ class ResPartnerCotisation(models.Model):
         """Cron pour corriger les données de rapport de manière préventive"""
         try:
             # Trouver tous les partenaires actifs
-            partners = self.search([('active', '=', True)])
-            
-            _logger.info(f"Début de la correction préventive pour {len(partners)} partenaires")
-            
+            partners = self.search([("active", "=", True)])
+
+            _logger.info(
+                f"Début de la correction préventive pour {len(partners)} partenaires"
+            )
+
             fixed_count = 0
             error_count = 0
-            
+
             # Traiter en lots pour éviter les timeouts
             batch_size = 50
             for i in range(0, len(partners), batch_size):
-                batch = partners[i:i + batch_size]
-                
+                batch = partners[i : i + batch_size]
+
                 for partner in batch:
                     try:
                         # Valider et corriger les données
@@ -884,26 +1916,32 @@ class ResPartnerCotisation(models.Model):
                             fixed_count += 1
                         else:
                             error_count += 1
-                            
+
                     except Exception as e:
-                        _logger.error(f"Erreur lors de la correction pour {partner.name}: {e}")
+                        _logger.error(
+                            f"Erreur lors de la correction pour {partner.name}: {e}"
+                        )
                         error_count += 1
                         # Appliquer des valeurs par défaut même en cas d'erreur
                         try:
                             partner._apply_safe_defaults()
                         except:
                             pass  # Ignore si même les valeurs par défaut échouent
-                
+
                 # Commit intermédiaire
                 try:
                     self.env.cr.commit()
                 except Exception as e:
-                    _logger.error(f"Erreur lors du commit du lot {i//batch_size + 1}: {e}")
+                    _logger.error(
+                        f"Erreur lors du commit du lot {i//batch_size + 1}: {e}"
+                    )
                     self.env.cr.rollback()
-            
-            _logger.info(f"Correction préventive terminée: {fixed_count} succès, {error_count} erreurs")
+
+            _logger.info(
+                f"Correction préventive terminée: {fixed_count} succès, {error_count} erreurs"
+            )
             return True
-            
+
         except Exception as e:
             _logger.error(f"Erreur critique lors de la correction préventive: {e}")
             return False
@@ -914,19 +1952,19 @@ class ResPartnerCotisation(models.Model):
         try:
             due = float(group_due or 0.0)
             paid = float(group_paid or 0.0)
-            
+
             if due <= 0:
                 return "0.0%"
-            
+
             rate = (paid / due) * 100.0
             rate = max(0.0, min(100.0, rate))  # Limiter entre 0 et 100
-            
+
             # Vérifier que le résultat est un nombre valide
             if not (rate >= 0 and rate <= 100):
                 return "0.0%"
-                
+
             return "%.1f%%" % rate
-            
+
         except (TypeError, ValueError, ZeroDivisionError, OverflowError):
             return "0.0%"
 
@@ -934,34 +1972,52 @@ class ResPartnerCotisation(models.Model):
     def validate_report_data_safety(self):
         """Valide et corrige les données avant génération du rapport"""
         self.ensure_one()
-        
+
         corrections_made = []
-        
+
         try:
             # Vérifier et corriger payment_rate
-            if not isinstance(self.payment_rate, (int, float)) or self.payment_rate is None:
+            if (
+                not isinstance(self.payment_rate, (int, float))
+                or self.payment_rate is None
+            ):
                 self.payment_rate = 0.0
                 corrections_made.append("payment_rate corrigé à 0.0")
             elif self.payment_rate < 0 or self.payment_rate > 100:
                 self.payment_rate = max(0.0, min(100.0, self.payment_rate))
                 corrections_made.append(f"payment_rate ajusté à {self.payment_rate}")
-            
+
             # Vérifier et corriger group_collection_rate
-            if not isinstance(self.group_collection_rate, (int, float)) or self.group_collection_rate is None:
+            if (
+                not isinstance(self.group_collection_rate, (int, float))
+                or self.group_collection_rate is None
+            ):
                 self.group_collection_rate = 0.0
                 corrections_made.append("group_collection_rate corrigé à 0.0")
             elif self.group_collection_rate < 0 or self.group_collection_rate > 100:
-                self.group_collection_rate = max(0.0, min(100.0, self.group_collection_rate))
-                corrections_made.append(f"group_collection_rate ajusté à {self.group_collection_rate}")
-            
+                self.group_collection_rate = max(
+                    0.0, min(100.0, self.group_collection_rate)
+                )
+                corrections_made.append(
+                    f"group_collection_rate ajusté à {self.group_collection_rate}"
+                )
+
             # Vérifier et corriger days_since_last_payment
-            if not isinstance(self.days_since_last_payment, (int, float)) or self.days_since_last_payment is None:
+            if (
+                not isinstance(self.days_since_last_payment, (int, float))
+                or self.days_since_last_payment is None
+            ):
                 self.days_since_last_payment = 999
                 corrections_made.append("days_since_last_payment corrigé à 999")
-            
+
             # Vérifier les montants monétaires
-            monetary_fields = ['total_amount_due', 'total_amount_paid', 'remaining_amount', 
-                             'group_total_collected', 'group_total_expected']
+            monetary_fields = [
+                "total_amount_due",
+                "total_amount_paid",
+                "remaining_amount",
+                "group_total_collected",
+                "group_total_expected",
+            ]
             for field in monetary_fields:
                 value = getattr(self, field, 0)
                 if not isinstance(value, (int, float)) or value is None:
@@ -970,10 +2026,16 @@ class ResPartnerCotisation(models.Model):
                 elif value < 0:
                     setattr(self, field, 0.0)
                     corrections_made.append(f"{field} corrigé à 0.0 (était négatif)")
-            
+
             # Vérifier les compteurs
-            count_fields = ['total_cotisations', 'paid_cotisations', 'pending_cotisations', 
-                          'overdue_cotisations', 'group_members_count', 'activities_count']
+            count_fields = [
+                "total_cotisations",
+                "paid_cotisations",
+                "pending_cotisations",
+                "overdue_cotisations",
+                "group_members_count",
+                "activities_count",
+            ]
             for field in count_fields:
                 value = getattr(self, field, 0)
                 if not isinstance(value, (int, float)) or value is None:
@@ -982,14 +2044,18 @@ class ResPartnerCotisation(models.Model):
                 elif value < 0:
                     setattr(self, field, 0)
                     corrections_made.append(f"{field} corrigé à 0 (était négatif)")
-            
+
             if corrections_made:
-                _logger.info(f"Corrections appliquées pour {self.name}: {', '.join(corrections_made)}")
-            
+                _logger.info(
+                    f"Corrections appliquées pour {self.name}: {', '.join(corrections_made)}"
+                )
+
             return True
-            
+
         except Exception as e:
-            _logger.error(f"Erreur lors de la validation des données pour {self.name}: {e}")
+            _logger.error(
+                f"Erreur lors de la validation des données pour {self.name}: {e}"
+            )
             # Appliquer des valeurs par défaut en cas d'erreur critique
             self._apply_safe_defaults()
             return False
@@ -1031,23 +2097,27 @@ class ResPartnerCotisation(models.Model):
         """Cron pour nettoyer et corriger les données de rapport"""
         try:
             # Trouver tous les partenaires avec des données potentiellement corrompues
-            partners_to_fix = self.search([
-                '|', '|', '|',
-                ('payment_rate', '=', False),
-                ('group_collection_rate', '=', False),
-                ('total_cotisations', '=', False),
-                ('total_amount_due', '=', False),
-            ])
-            
+            partners_to_fix = self.search(
+                [
+                    "|",
+                    "|",
+                    "|",
+                    ("payment_rate", "=", False),
+                    ("group_collection_rate", "=", False),
+                    ("total_cotisations", "=", False),
+                    ("total_amount_due", "=", False),
+                ]
+            )
+
             _logger.info(f"Début du nettoyage pour {len(partners_to_fix)} partenaires")
-            
+
             # Traiter en lots pour éviter les timeouts
             batch_size = 50
             fixed_count = 0
-            
+
             for i in range(0, len(partners_to_fix), batch_size):
-                batch = partners_to_fix[i:i + batch_size]
-                
+                batch = partners_to_fix[i : i + batch_size]
+
                 for partner in batch:
                     try:
                         # Forcer le recalcul de toutes les statistiques
@@ -1056,40 +2126,54 @@ class ResPartnerCotisation(models.Model):
                         partner._compute_payment_status()
                         partner._compute_group_cotisation_counts()
                         partner._compute_group_members_stats()
-                        
+
                         # Vérifier que les valeurs sont correctes
-                        if partner.payment_rate is None or partner.payment_rate is False:
+                        if (
+                            partner.payment_rate is None
+                            or partner.payment_rate is False
+                        ):
                             partner.payment_rate = 0.0
-                        if partner.group_collection_rate is None or partner.group_collection_rate is False:
+                        if (
+                            partner.group_collection_rate is None
+                            or partner.group_collection_rate is False
+                        ):
                             partner.group_collection_rate = 0.0
-                            
+
                         fixed_count += 1
-                        
+
                     except Exception as e:
-                        _logger.error(f"Erreur lors du nettoyage pour {partner.name}: {e}")
+                        _logger.error(
+                            f"Erreur lors du nettoyage pour {partner.name}: {e}"
+                        )
                         # Forcer des valeurs par défaut sécurisées
-                        partner.write({
-                            'payment_rate': 0.0,
-                            'group_collection_rate': 0.0,
-                            'total_cotisations': 0,
-                            'paid_cotisations': 0,
-                            'pending_cotisations': 0,
-                            'overdue_cotisations': 0,
-                            'total_amount_due': 0.0,
-                            'total_amount_paid': 0.0,
-                            'remaining_amount': 0.0,
-                        })
-                
+                        partner.write(
+                            {
+                                "payment_rate": 0.0,
+                                "group_collection_rate": 0.0,
+                                "total_cotisations": 0,
+                                "paid_cotisations": 0,
+                                "pending_cotisations": 0,
+                                "overdue_cotisations": 0,
+                                "total_amount_due": 0.0,
+                                "total_amount_paid": 0.0,
+                                "remaining_amount": 0.0,
+                            }
+                        )
+
                 # Commit intermédiaire pour éviter les timeouts
                 try:
                     self.env.cr.commit()
                 except Exception as e:
-                    _logger.error(f"Erreur lors du commit du lot {i//batch_size + 1}: {e}")
+                    _logger.error(
+                        f"Erreur lors du commit du lot {i//batch_size + 1}: {e}"
+                    )
                     self.env.cr.rollback()
-            
-            _logger.info(f"Nettoyage terminé: {fixed_count} partenaires traités avec succès")
+
+            _logger.info(
+                f"Nettoyage terminé: {fixed_count} partenaires traités avec succès"
+            )
             return True
-            
+
         except Exception as e:
             _logger.error(f"Erreur critique lors du nettoyage des données: {e}")
             self.env.cr.rollback()
@@ -1098,28 +2182,28 @@ class ResPartnerCotisation(models.Model):
     def debug_report_data(self):
         """Méthode pour déboguer les données de rapport"""
         self.ensure_one()
-        
+
         debug_info = {
-            'name': self.name,
-            'is_company': self.is_company,
-            'payment_rate': {
-                'value': self.payment_rate,
-                'type': type(self.payment_rate).__name__,
-                'is_none': self.payment_rate is None,
-                'is_false': self.payment_rate is False,
+            "name": self.name,
+            "is_company": self.is_company,
+            "payment_rate": {
+                "value": self.payment_rate,
+                "type": type(self.payment_rate).__name__,
+                "is_none": self.payment_rate is None,
+                "is_false": self.payment_rate is False,
             },
-            'group_collection_rate': {
-                'value': self.group_collection_rate,
-                'type': type(self.group_collection_rate).__name__,
-                'is_none': self.group_collection_rate is None,
-                'is_false': self.group_collection_rate is False,
+            "group_collection_rate": {
+                "value": self.group_collection_rate,
+                "type": type(self.group_collection_rate).__name__,
+                "is_none": self.group_collection_rate is None,
+                "is_false": self.group_collection_rate is False,
             },
-            'total_cotisations': self.total_cotisations,
-            'total_amount_due': self.total_amount_due,
-            'total_amount_paid': self.total_amount_paid,
-            'cotisations_count': len(self.cotisation_ids.filtered('active')),
+            "total_cotisations": self.total_cotisations,
+            "total_amount_due": self.total_amount_due,
+            "total_amount_paid": self.total_amount_paid,
+            "cotisations_count": len(self.cotisation_ids.filtered("active")),
         }
-        
+
         _logger.info(f"Debug info for {self.name}: {debug_info}")
         return debug_info
 
@@ -1861,37 +2945,59 @@ class ResPartnerCotisation(models.Model):
         }
 
     def action_pay_all_outstanding(self):
-        """Action pour payer toutes les cotisations en attente"""
+        """Action pour payer toutes les cotisations en attente - CORRIGÉE"""
         self.ensure_one()
         if self.is_company:
             return {"type": "ir.actions.act_window_close"}
 
-        outstanding_cotisations = self.cotisation_ids.filtered(
-            lambda c: c.state in ["pending", "partial", "overdue"] and c.active
-        )
+        try:
+            # Rechercher les cotisations impayées avec une requête sécurisée
+            outstanding_cotisations = self.env['member.cotisation'].search([
+                ('member_id', '=', self.id),
+                ('state', 'in', ['pending', 'partial', 'overdue']),
+                ('active', '=', True)
+            ])
 
-        if not outstanding_cotisations:
+            if not outstanding_cotisations:
+                return {
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "title": "Information",
+                        "message": "Aucune cotisation en attente de paiement",
+                        "type": "info",
+                    },
+                }
+
+            # Préparer le contexte de manière sécurisée
+            context = {
+                "default_member_id": self.id,
+                "default_cotisation_ids": [(6, 0, outstanding_cotisations.ids)] if outstanding_cotisations.ids else [],
+            }
+
+            return {
+                "name": "Payer toutes les cotisations",
+                "type": "ir.actions.act_window",
+                "res_model": "mass.payment.wizard",
+                "view_mode": "form",
+                "target": "new",
+                "context": context,
+            }
+            
+        except Exception as e:
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.error(f"Erreur lors du paiement en masse pour {self.name}: {e}")
+            
             return {
                 "type": "ir.actions.client",
                 "tag": "display_notification",
                 "params": {
-                    "title": "Information",
-                    "message": "Aucune cotisation en attente de paiement",
-                    "type": "info",
+                    "title": "Erreur", 
+                    "message": f"Impossible d'ouvrir le paiement en masse: {str(e)}",
+                    "type": "danger",
                 },
             }
-
-        return {
-            "name": "Payer toutes les cotisations",
-            "type": "ir.actions.act_window",
-            "res_model": "mass.payment.wizard",
-            "view_mode": "form",
-            "target": "new",
-            "context": {
-                "default_member_id": self.id,
-                "default_cotisation_ids": [(6, 0, outstanding_cotisations.ids)],
-            },
-        }
 
     def action_view_group_activities(self):
         """Action pour voir les activités du groupe"""
@@ -2039,46 +3145,66 @@ class ResPartnerCotisation(models.Model):
         }
 
     def action_send_payment_reminders(self):
-        """Envoie des rappels de paiement aux membres du groupe"""
+        """Envoie des rappels de paiement aux membres du groupe - CORRIGÉE"""
         self.ensure_one()
 
-        if self.is_company:
-            # Pour les groupes: rappels pour toutes les cotisations impayées
-            overdue_cotisations = self.env["member.cotisation"].search(
-                [
+        try:
+            if self.is_company:
+                # Pour les groupes: rappels pour toutes les cotisations impayées
+                overdue_cotisations = self.env["member.cotisation"].search([
                     ("group_id", "=", self.id),
                     ("state", "in", ["pending", "partial", "overdue"]),
                     ("active", "=", True),
-                ]
-            )
-        else:
-            # Pour les membres: rappels pour ses propres cotisations
-            overdue_cotisations = self.cotisation_ids.filtered(
-                lambda c: c.state in ["pending", "partial", "overdue"] and c.active
-            )
+                ])
+            else:
+                # Pour les membres: rappels pour ses propres cotisations
+                overdue_cotisations = self.env["member.cotisation"].search([
+                    ("member_id", "=", self.id),
+                    ("state", "in", ["pending", "partial", "overdue"]),
+                    ("active", "=", True),
+                ])
 
-        if not overdue_cotisations:
+            if not overdue_cotisations:
+                return {
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "title": "Information",
+                        "message": "Aucune cotisation impayée trouvée",
+                        "type": "info",
+                    },
+                }
+
+            # Préparer le contexte de manière sécurisée
+            context = {
+                "default_partner_id": self.id,
+                "default_cotisation_ids": [(6, 0, overdue_cotisations.ids)] if overdue_cotisations.ids else [],
+            }
+
+            return {
+                "name": "Envoyer des rappels de paiement",
+                "type": "ir.actions.act_window",
+                "res_model": "cotisation.reminder.wizard",
+                "view_mode": "form",
+                "target": "new",
+                "context": context,
+            }
+            
+        except Exception as e:
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.error(f"Erreur lors de l'envoi des rappels pour {self.name}: {e}")
+            
             return {
                 "type": "ir.actions.client",
                 "tag": "display_notification",
                 "params": {
-                    "title": "Information",
-                    "message": "Aucune cotisation impayée trouvée",
-                    "type": "info",
+                    "title": "Erreur",
+                    "message": f"Impossible d'ouvrir les rappels: {str(e)}",
+                    "type": "danger",
                 },
             }
 
-        return {
-            "name": "Envoyer des rappels de paiement",
-            "type": "ir.actions.act_window",
-            "res_model": "cotisation.reminder.wizard",
-            "view_mode": "form",
-            "target": "new",
-            "context": {
-                "default_partner_id": self.id,
-                "default_cotisation_ids": [(6, 0, overdue_cotisations.ids)],
-            },
-        }
 
     def action_generate_payment_report(self):
         """Génère un rapport de paiement"""

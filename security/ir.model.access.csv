@@ -28,3 +28,15 @@ access_mass_payment_line_user,mass.payment.line.user,model_mass_payment_line,bas
 access_mass_payment_line_manager,mass.payment.line.manager,model_mass_payment_line,base.group_system,1,1,1,1
 access_mass_payment_line_public,mass.payment.line.public,model_mass_payment_line,base.group_public,1,0,0,0
 access_mass_payment_line_portal,mass.payment.line.portal,model_mass_payment_line,base.group_portal,1,0,0,0
+access_member_payment_plan_user,member.payment.plan.user,model_member_payment_plan,base.group_user,1,1,1,1
+access_member_payment_installment_user,member.payment.installment.user,model_member_payment_installment,base.group_user,1,1,1,1
+access_payment_plan_wizard_user,payment.plan.wizard.user,model_payment_plan_wizard,base.group_user,1,1,1,1
+access_payment_plan_installment_preview_user,payment.plan.installment.preview.user,model_payment_plan_installment_preview,base.group_user,1,1,1,1
+access_quick_payment_wizard_user,quick.payment.wizard.user,model_quick_payment_wizard,base.group_user,1,1,1,1
+access_cotisation_payment_user,cotisation.payment.user,model_cotisation_payment,base.group_user,1,1,1,1
+access_member_payment_plan_manager,member.payment.plan.manager,model_member_payment_plan,base.group_system,1,1,1,1
+access_member_payment_installment_manager,member.payment.installment.manager,model_member_payment_installment,base.group_system,1,1,1,1
+access_cotisation_payment_manager,cotisation.payment.manager,model_cotisation_payment,base.group_system,1,1,1,1
+access_member_payment_plan_portal,member.payment.plan.portal,model_member_payment_plan,base.group_portal,1,0,0,0
+access_member_payment_installment_portal,member.payment.installment.portal,model_member_payment_installment,base.group_portal,1,0,0,0
+access_cotisation_payment_portal,cotisation.payment.portal,model_cotisation_payment,base.group_portal,1,0,0,0

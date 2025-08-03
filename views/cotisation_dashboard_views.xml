@@ -62,7 +62,7 @@
                                         <field name="total_amount_due" widget="monetary"/>
                                         <field name="total_amount_paid" widget="monetary"/>
                                         <field name="total_remaining" widget="monetary"/>
-                                        <field name="global_collection_rate" widget="percentage"/>
+                                        <field name="global_collection_rate" />
                                     </group>
                                 </div>
                                 <div class="col-lg-6">
@@ -115,11 +115,11 @@
                                 <group string="Indicateurs de performance">
                                     <field name="avg_payment_delay"/>
                                     <field name="critical_overdue_count"/>
-                                    <field name="good_payers_rate" widget="percentage"/>
+                                    <field name="good_payers_rate" />
                                 </group>
                                 <group string="Prévisions">
                                     <field name="expected_next_month" widget="monetary"/>
-                                    <field name="forecast_collection_rate" widget="percentage"/>
+                                    <field name="forecast_collection_rate" />
                                 </group>
                             </group>
                             
@@ -235,7 +235,7 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <h3><field name="global_collection_rate" widget="percentage"/></h3>
+                                    <h3><field name="global_collection_rate"/></h3>
                                     <p>Taux de collecte</p>
                                 </div>
                             </div>

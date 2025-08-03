@@ -56,7 +56,7 @@
                         <field name="mark_as_full_payment"/>
                         <field name="send_receipt" 
                                invisible="not member_id or not member_id.email"/>
-                        <field name="payment_completion" readonly="1" widget="percentage" 
+                        <field name="payment_completion" readonly="1"
                                class="text-success fw-bold"
                                invisible="payment_completion == 0"/>
                     </group>

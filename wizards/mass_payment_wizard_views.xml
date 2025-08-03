@@ -60,7 +60,7 @@
                         </button>
                         <button class="oe_stat_button" icon="fa-percent">
                             <div class="o_field_widget o_stat_info">
-                                <span class="o_stat_value"><field name="completion_rate" widget="percentage"/></span>
+                                <span class="o_stat_value"><field name="completion_rate"/></span>
                                 <span class="o_stat_text">Completion</span>
                             </div>
                         </button>
@@ -109,7 +109,7 @@
                                     <field name="payment_amount" widget="monetary"/>
                                     <field name="new_amount_paid" widget="monetary" readonly="1"/>
                                     <field name="will_be_complete" readonly="1"/>
-                                    <field name="payment_percentage" widget="percentage" readonly="1"/>
+                                    <field name="payment_percentage" widget="percentage" readonly="1" digits="[3,1]"/>
                                     <field name="currency_id" invisible="1"/>
                                 </tree>
                             </field>
@@ -176,7 +176,7 @@
                 <field name="payment_amount" widget="monetary"/>
                 <field name="new_amount_paid" widget="monetary" readonly="1"/>
                 <field name="will_be_complete" readonly="1"/>
-                <field name="payment_percentage" widget="percentage" readonly="1"/>
+                <field name="payment_percentage" widget="percentage" readonly="1" digits="[3,1]"/>
                 <field name="currency_id" invisible="1"/>
             </tree>
         </field>

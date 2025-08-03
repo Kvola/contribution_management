@@ -22,7 +22,7 @@
                 <field name="max_participants" optional="hide"/>
                 <field name="total_members"/>
                 <field name="paid_members"/>
-                <field name="completion_rate" widget="percentage"/>
+                <field name="completion_rate" />
                 <field name="state" widget="badge" 
                        decoration-info="state=='draft'" 
                        decoration-success="state=='completed'"
@@ -146,7 +146,7 @@
                                 <group string="Montants">
                                     <field name="total_expected" widget="monetary"/>
                                     <field name="total_collected" widget="monetary"/>
-                                    <field name="completion_rate" widget="percentage"/>
+                                    <field name="completion_rate" widget="percentage" digits="[3,1]"/>
                                 </group>
                             </group>
                             
@@ -163,7 +163,7 @@
                                                  aria-valuemax="100">
                                             </div>
                                         </div>
-                                        <field name="completion_rate" widget="percentage"/>
+                                        <field name="completion_rate" widget="percentage" digits="[3,1]"/>
                                     </div>
                                 </div>
                             </div>
@@ -274,7 +274,7 @@
                                                  aria-valuemax="100"/>
                                         </div>
                                         <small class="text-muted">
-                                            Paiements: <field name="completion_rate" widget="percentage"/>
+                                            Paiements: <field name="completion_rate" widget="percentage" digits="[3,1]"/>
                                         </small>
                                     </t>
                                 </div>

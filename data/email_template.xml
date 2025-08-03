@@ -1,0 +1,75 @@
+<odoo>
+    <!-- Template d'email pour les rappels -->
+    <record id="email_template_payment_reminder" model="mail.template">
+        <field name="name">Rappel de Paiement - Plan d'Échéances</field>
+        <field name="model_id" ref="model_member_payment_plan" />
+        <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted or
+            '') }}</field>
+        <field name="email_to">{{ object.member_id.email_formatted }}</field>
+        <field name="subject">Rappel - Échéance de paiement à venir ({{ object.name }})</field>
+        <field name="body_html" type="html">
+            <div
+                style="margin: 0px; padding: 0px; font-family: 'Lucida Grande', Ubuntu, Arial, Verdana, sans-serif; font-size: 12px; color: rgb(34, 34, 34); background-color: #FFFFFF;">
+                <table border="0" cellpadding="0" cellspacing="0"
+                    style="padding-top: 16px; background-color: #FFFFFF; font-family:'Lucida Grande',Ubuntu,Arial,Verdana,sans-serif; color: rgb(34, 34, 34); width: 100%; border-collapse:separate;">
+                    <tr>
+                        <td align="center">
+                            <table border="0" cellpadding="0" cellspacing="0" width="570"
+                                style="padding: 16px; background-color: #FFFFFF; color: rgb(34, 34, 34); border-collapse:separate;">
+                                <tbody>
+                                    <tr>
+                                        <td align="center" style="min-height: 590px">
+                                            <table border="0" cellpadding="0" cellspacing="0"
+                                                width="570"
+                                                style="min-height: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;">
+                                                <tr>
+                                                    <td valign="top" style="font-size: 13px;">
+                                                        <div>
+                                                            <h3>Bonjour {{ object.member_id.name }},</h3>
+
+                                                            <p>Nous vous rappelons qu'une échéance
+                                                                de votre plan de paiement <strong>{{
+                                                                object.name }}</strong> arrive à
+                                                                échéance prochainement.</p>
+
+                                                            <br />
+                                                            <h4>Détails du plan:</h4>
+                                                            <ul>
+                                                                <li><strong>Montant total:</strong>
+                                                                    {{
+                                                                    format_amount(object.total_amount,
+                                                                    object.currency_id) }}</li>
+                                                                <li><strong>Montant déjà payé:</strong>
+                                                                    {{
+                                                                    format_amount(object.total_paid,
+                                                                    object.currency_id) }}</li>
+                                                                <li><strong>Taux de completion:</strong>
+                                                                    {{
+                                                                    "%.0f"|format(object.completion_rate)
+                                                                    }}%</li>
+                                                                <li><strong>Échéances restantes:</strong>
+                                                                    {{ object.remaining_installments
+                                                                    }}</li>
+                                                            </ul>
+
+                                                            <br />
+                                                            <p>Pour toute question, n'hésitez pas à
+                                                                nous contacter.</p>
+
+                                                            <br />
+                                                            <p>Cordialement,<br /> {{ user.name }}</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </field>
+    </record>
+</odoo>

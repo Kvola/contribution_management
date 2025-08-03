@@ -79,4 +79,32 @@
               parent="menu_contribution_tools" 
               action="action_cotisation_reminder_wizard" 
               sequence="30"/>
+
+    <!-- Menu pour le tableau de bord -->
+    <menuitem id="menu_payments_dashboard" 
+              name="Tableau de bord" 
+              parent="menu_cotisations_dashboard"
+              action="action_payments_dashboard" 
+              sequence="1"/>
+
+    <!-- Menu pour les paiements dans l'application -->
+    <menuitem id="menu_cotisation_payments" 
+              name="Paiements" 
+              parent="menu_cotisations_main"
+              action="action_cotisation_payment" 
+              sequence="30"/>
+
+    <!-- Menu -->
+    <menuitem id="menu_member_payment_plan"
+        name="Plans de Paiement"
+        parent="menu_cotisations_main"
+        action="action_member_payment_plan"
+        sequence="20" />
+
+    <!-- Menu -->
+    <menuitem id="menu_member_payment_installment"
+              name="Échéances"
+              parent="menu_cotisations_main"
+              action="action_member_payment_installment"
+              sequence="21"/>
 </odoo>

@@ -66,5 +66,37 @@
             <field name="active">True</field>
             <field name="nextcall" eval="(DateTime.now() + timedelta(weeks=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
+
+        <!-- Séquence pour les paiements -->
+        <record id="seq_cotisation_payment" model="ir.sequence">
+            <field name="name">Paiements de cotisations</field>
+            <field name="code">cotisation.payment</field>
+            <field name="prefix">PAY-</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Tâche cron pour les rappels automatiques -->
+        <record id="cron_payment_reminders" model="ir.cron">
+            <field name="name">Rappels de Paiement - Plans d'Échéances</field>
+            <field name="model_id" ref="model_member_payment_plan" />
+            <field name="state">code</field>
+            <field name="code">model._cron_send_payment_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+            <field name="priority">5</field>
+        </record>
+
+        <!-- Séquence pour la génération automatique des références -->
+        <record id="seq_member_payment_plan" model="ir.sequence">
+            <field name="name">Plan de Paiement</field>
+            <field name="code">member.payment.plan</field>
+            <field name="prefix">PP/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False" />
+            <field name="use_date_range" eval="True" />
+        </record>
     </data>
 </odoo>

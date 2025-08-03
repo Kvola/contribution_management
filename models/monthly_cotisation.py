@@ -7,7 +7,6 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-
 class MonthlyCotisation(models.Model):
     """Modèle pour gérer les cotisations mensuelles des groupes"""
     _name = "monthly.cotisation"
@@ -153,6 +152,17 @@ class MonthlyCotisation(models.Model):
     active = fields.Boolean(default=True)
     activation_date = fields.Datetime(string="Date d'activation", readonly=True)
     closure_date = fields.Datetime(string="Date de fermeture", readonly=True)
+
+    def action_cancel(self):
+        """Annule la cotisation mensuelle"""
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError("Seules les cotisations en brouillon peuvent être annulées.")
+        
+        self.write({'active': False})
+        self.message_post(body="Cotisation mensuelle annulée", message_type='comment')
+        
+        _logger.info(f"Cotisation mensuelle {self.display_name} annulée")
 
     @api.depends('group_id', 'month', 'year', 'amount')
     def _compute_display_name(self):

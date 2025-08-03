@@ -77,7 +77,7 @@
                                     <field name="exclude_overdue_members"/>
                                 </group>
                                 <group>
-                                    <field name="min_payment_rate" widget="percentage"/>
+                                    <field name="min_payment_rate" />
                                     <field name="eligible_members_count"/>
                                     <label for="eligible_members_count" string="Membres éligibles"/>
                                 </group>

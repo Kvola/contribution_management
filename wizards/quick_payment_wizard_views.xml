@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vue formulaire pour l'assistant de paiement rapide -->
+    <record id="view_quick_payment_wizard_form" model="ir.ui.view">
+        <field name="name">quick.payment.wizard.form</field>
+        <field name="model">quick.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Paiement rapide">
+                <header>
+                    <button name="action_process_payment" string="Enregistrer le paiement"
+                        type="object" class="btn-primary" />
+                    <button name="action_cancel" string="Annuler" type="object"
+                        class="btn-secondary" />
+                </header>
+
+                <sheet>
+                    <!-- En-tête avec informations du membre -->
+                    <div class="oe_title">
+                        <h1>
+                            <field name="member_id" readonly="1" />
+                        </h1>
+                        <div class="o_row">
+                            <span class="badge text-bg-info">
+                                <field name="overdue_count" /> en retard </span>
+                            <span class="badge text-bg-warning">
+                                <field name="pending_count" /> en attente </span>
+                            <span class="badge text-bg-secondary" invisible="partial_count == 0">
+                                <field name="partial_count" /> partielles </span>
+                        </div>
+                    </div>
+
+                    <!-- Résumé financier -->
+                    <group name="financial_summary" col="4">
+                        <field name="currency_id" invisible="1" />
+                        <field name="total_amount_due" widget="monetary" readonly="1"
+                            style="font-size: 1.2em; font-weight: bold;" />
+                        <field name="total_amount_to_pay" widget="monetary" readonly="1"
+                            style="font-size: 1.2em; font-weight: bold; color: #dc3545;" />
+                    </group>
+
+                    <notebook>
+                        <!-- Onglet principal: Options de paiement -->
+                        <page string="Paiement" name="payment_options">
+                            <group>
+                                <group string="Mode de paiement">
+                                    <field name="pay_all" widget="boolean_toggle" />
+                                    <field name="partial_payment" widget="boolean_toggle" />
+                                    <field name="custom_amount" invisible="not partial_payment"
+                                        widget="monetary" required="partial_payment" />
+                                </group>
+
+                                <group string="Détails du paiement">
+                                    <field name="payment_method" required="1" />
+                                    <field name="payment_date" required="1" />
+                                    <field name="payment_reference"
+                                        placeholder="Numéro de transaction, chèque, etc." />
+                                </group>
+                            </group>
+
+                            <group string="Notes">
+                                <field name="notes" nolabel="1"
+                                    placeholder="Commentaires sur le paiement..." />
+                            </group>
+                        </page>
+
+                        <!-- Onglet: Cotisations sélectionnées -->
+                        <page string="Cotisations" name="cotisations_details">
+                            <field name="cotisation_ids" nolabel="1" readonly="1">
+                                <tree decoration-danger="state == 'overdue'"
+                                    decoration-warning="state in ['pending', 'partial']"
+                                    decoration-success="state == 'paid'">
+                                    <field name="display_name" />
+                                    <field name="group_id" optional="show" />
+                                    <field name="activity_id" optional="hide" />
+                                    <field name="monthly_cotisation_id" optional="hide" />
+                                    <field name="amount_due" widget="monetary" />
+                                    <field name="amount_paid" widget="monetary" />
+                                    <field name="remaining_amount" widget="monetary"
+                                        decoration-bf="remaining_amount > 0" />
+                                    <field name="due_date" />
+                                    <field name="days_overdue" invisible="state != 'overdue'" />
+                                    <field name="state" widget="badge"
+                                        decoration-danger="state == 'overdue'"
+                                        decoration-warning="state in ['pending', 'partial']"
+                                        decoration-success="state == 'paid'" />
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <!-- Champ footer avec actions rapides -->
+                <div class="oe_chatter">
+                    <div class="o_form_statusbar">
+                        <button name="action_view_member_cotisations" type="object"
+                            string="Voir toutes les cotisations" class="btn btn-link" />
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour l'assistant de paiement rapide -->
+    <record id="action_quick_payment_wizard" model="ir.actions.act_window">
+        <field name="name">Paiement rapide</field>
+        <field name="res_model">quick.payment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_res_partner" />
+        <field name="binding_view_types">form</field>
+    </record>
+
+    <!-- Vue tree pour les paiements de cotisations -->
+    <record id="view_cotisation_payment_tree" model="ir.ui.view">
+        <field name="name">cotisation.payment.tree</field>
+        <field name="model">cotisation.payment</field>
+        <field name="arch" type="xml">
+            <tree decoration-info="state == 'draft'"
+                decoration-success="state == 'confirmed'"
+                decoration-muted="state == 'cancelled'">
+                <field name="name" />
+                <field name="member_id" />
+                <field name="cotisation_id" />
+                <field name="group_id" optional="hide" />
+                <field name="amount" widget="monetary" />
+                <field name="payment_method" />
+                <field name="payment_date" />
+                <field name="reference" optional="hide" />
+                <field name="state" widget="badge"
+                    decoration-info="state == 'draft'"
+                    decoration-success="state == 'confirmed'"
+                    decoration-muted="state == 'cancelled'" />
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue formulaire pour les paiements de cotisations -->
+    <record id="view_cotisation_payment_form" model="ir.ui.view">
+        <field name="name">cotisation.payment.form</field>
+        <field name="model">cotisation.payment</field>
+        <field name="arch" type="xml">
+            <form string="Paiement de cotisation">
+                <header>
+                    <button name="action_confirm" string="Confirmer" type="object"
+                        class="btn-primary" invisible="state != 'draft'" />
+                    <button name="action_cancel" string="Annuler" type="object"
+                        class="btn-secondary" invisible="state == 'cancelled'" />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed" />
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="state != 'draft'" />
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Informations du paiement">
+                            <field name="member_id" readonly="state != 'draft'" />
+                            <field name="cotisation_id" readonly="state != 'draft'" />
+                            <field name="group_id" readonly="1" />
+                            <field name="currency_id" invisible="1" />
+                        </group>
+
+                        <group string="Détails financiers">
+                            <field name="amount" widget="monetary" readonly="state != 'draft'" />
+                            <field name="payment_method" readonly="state != 'draft'" />
+                            <field name="payment_date" readonly="state != 'draft'" />
+                            <field name="reference" readonly="state != 'draft'" />
+                        </group>
+                    </group>
+
+                    <group string="Notes" invisible="not notes and state != 'draft'">
+                        <field name="notes" nolabel="1" readonly="state != 'draft'" />
+                    </group>
+                </sheet>
+
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" />
+                    <field name="activity_ids" />
+                    <field name="message_ids" />
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue kanban pour les paiements -->
+    <record id="view_cotisation_payment_kanban" model="ir.ui.view">
+        <field name="name">cotisation.payment.kanban</field>
+        <field name="model">cotisation.payment</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name" />
+                <field name="member_id" />
+                <field name="amount" />
+                <field name="payment_method" />
+                <field name="payment_date" />
+                <field name="state" />
+                <field name="currency_id" />
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name" />
+                                        </strong>
+                                        <div class="o_kanban_record_subtitle">
+                                            <field name="member_id" />
+                                        </div>
+                                    </div>
+                                    <div class="o_kanban_record_top_right">
+                                        <span class="badge badge-pill"
+                                            t-attf-class="#{record.state.raw_value == 'confirmed' ? 'badge-success' : (record.state.raw_value == 'draft' ? 'badge-info' : 'badge-secondary')}">
+                                            <field name="state" />
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="o_kanban_record_body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>
+                                                <field name="amount" widget="monetary" />
+                                            </strong>
+                                        </div>
+                                        <div class="col-6 text-right">
+                                            <field name="payment_method" />
+                                        </div>
+                                    </div>
+                                    <div class="text-muted">
+                                        <i class="fa fa-calendar" />
+                                        <field name="payment_date" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Action pour les paiements de cotisations -->
+    <record id="action_cotisation_payment" model="ir.actions.act_window">
+        <field name="name">Paiements de cotisations</field>
+        <field name="res_model">cotisation.payment</field>
+        <field name="view_mode">tree,kanban,form,pivot,graph</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucun paiement enregistré
+            </p>
+            <p>
+                Les paiements de cotisations apparaîtront ici une fois enregistrés.
+            </p>
+        </field>
+    </record>
+
+    <!-- Vue de recherche pour les paiements -->
+    <record id="view_cotisation_payment_search" model="ir.ui.view">
+        <field name="name">cotisation.payment.search</field>
+        <field name="model">cotisation.payment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" />
+                <field name="member_id" />
+                <field name="cotisation_id" />
+                <field name="group_id" />
+                <field name="payment_method" />
+                <field name="reference" />
+
+                <filter string="Brouillons" name="draft" domain="[('state', '=', 'draft')]" />
+                <filter string="Confirmés" name="confirmed" domain="[('state', '=', 'confirmed')]" />
+                <filter string="Annulés" name="cancelled" domain="[('state', '=', 'cancelled')]" />
+
+                <separator />
+                <filter string="Ce mois" name="this_month"
+                    domain="[('payment_date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')),
+                                ('payment_date', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]" />
+                <filter string="Cette année" name="this_year"
+                    domain="[('payment_date', '&gt;=', (context_today() - relativedelta(month=1, day=1)).strftime('%Y-%m-%d'))]" />
+
+                <separator />
+                <filter string="Espèces" name="cash" domain="[('payment_method', '=', 'cash')]" />
+                <filter string="Virement" name="transfer"
+                    domain="[('payment_method', '=', 'bank_transfer')]" />
+                <filter string="Carte" name="card" domain="[('payment_method', '=', 'card')]" />
+
+                <group expand="0" string="Grouper par">
+                    <filter string="État" name="group_state" context="{'group_by': 'state'}" />
+                    <filter string="Membre" name="group_member" context="{'group_by': 'member_id'}" />
+                    <filter string="Groupe" name="group_group" context="{'group_by': 'group_id'}" />
+                    <filter string="Méthode de paiement" name="group_method"
+                        context="{'group_by': 'payment_method'}" />
+                    <filter string="Date de paiement" name="group_date"
+                        context="{'group_by': 'payment_date'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Graphique pour les paiements -->
+    <record id="view_cotisation_payment_graph" model="ir.ui.view">
+        <field name="name">cotisation.payment.graph</field>
+        <field name="model">cotisation.payment</field>
+        <field name="arch" type="xml">
+            <graph string="Analyse des paiements" type="bar">
+                <field name="payment_date" type="row" interval="month" />
+                <field name="amount" type="measure" />
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vue pivot pour les paiements -->
+    <record id="view_cotisation_payment_pivot" model="ir.ui.view">
+        <field name="name">cotisation.payment.pivot</field>
+        <field name="model">cotisation.payment</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des paiements">
+                <field name="payment_date" type="row" interval="month" />
+                <field name="payment_method" type="col" />
+                <field name="amount" type="measure" />
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Assistant pour plan de paiement -->
+    <record id="view_payment_plan_wizard_form" model="ir.ui.view">
+        <field name="name">payment.plan.wizard.form</field>
+        <field name="model">payment.plan.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Créer un plan de paiement">
+                <header>
+                    <button name="action_create_plan" string="Créer le plan"
+                        type="object" class="btn-primary" />
+                    <button name="action_cancel" string="Annuler" type="object"
+                        class="btn-secondary" />
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Plan de paiement</h1>
+                        <h2>
+                            <field name="member_id" readonly="1" />
+                        </h2>
+                    </div>
+
+                    <group>
+                        <group string="Paramètres du plan">
+                            <field name="total_amount" widget="monetary" readonly="1" />
+                            <field name="number_of_installments" required="1" />
+                            <field name="installment_amount" widget="monetary" readonly="1" />
+                            <field name="start_date" required="1" />
+                            <field name="frequency" required="1" />
+                        </group>
+
+                        <group string="Options">
+                            <field name="include_fees" />
+                            <field name="fee_amount" widget="monetary" invisible="not include_fees" />
+                            <field name="auto_reminder" />
+                            <field name="reminder_days" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Cotisations concernées">
+                            <field name="cotisation_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="display_name" />
+                                    <field name="due_date" />
+                                    <field name="remaining_amount" widget="monetary" />
+                                    <field name="days_overdue" />
+                                    <field name="state" />
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Calendrier des versements">
+                            <field name="installment_preview_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="sequence" />
+                                    <field name="due_date" />
+                                    <field name="amount" widget="monetary" />
+                                    <field name="description" />
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!-- Action pour l'assistant de plan de paiement -->
+    <record id="action_payment_plan_wizard" model="ir.actions.act_window">
+        <field name="name">Plan de paiement</field>
+        <field name="res_model">payment.plan.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_res_partner" />
+        <field name="binding_view_types">form</field>
+    </record>
+
+    <!-- Vue pour l'historique des paiements d'un membre -->
+    <record id="view_member_payments_tree" model="ir.ui.view">
+        <field name="name">member.payments.tree</field>
+        <field name="model">cotisation.payment</field>
+        <field name="inherit_id" ref="view_cotisation_payment_tree" />
+        <field name="arch" type="xml">
+            <!-- Personnaliser pour le contexte membre -->
+            <xpath expr="//field[@name='member_id']" position="attributes">
+                <attribute name="invisible">context.get('hide_member', False)</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Tableau de bord des paiements -->
+    <!-- Tableau de bord des paiements -->
+    <record id="view_payments_dashboard" model="ir.ui.view">
+        <field name="name">payments.dashboard</field>
+        <field name="model">cotisation.payment</field>
+        <field name="arch" type="xml">
+            <form string="Tableau de bord des paiements" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Tableau de bord des paiements</h1>
+                    </div>
+
+                    <!-- KPIs principaux -->
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-success mb-3">
+                                <div class="card-header">Paiements confirmés</div>
+                                <div class="card-body">
+                                    <h4 class="card-title" id="confirmed_payments_count">0</h4>
+                                    <p class="card-text">Ce mois</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-info mb-3">
+                                <div class="card-header">Montant total</div>
+                                <div class="card-body">
+                                    <h4 class="card-title" id="total_amount">0 €</h4>
+                                    <p class="card-text">Ce mois</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-warning mb-3">
+                                <div class="card-header">En attente</div>
+                                <div class="card-body">
+                                    <h4 class="card-title" id="pending_payments_count">0</h4>
+                                    <p class="card-text">À traiter</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-primary mb-3">
+                                <div class="card-header">Taux de réussite</div>
+                                <div class="card-body">
+                                    <h4 class="card-title" id="success_rate">0%</h4>
+                                    <p class="card-text">Général</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Graphiques -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Évolution mensuelle</div>
+                                <div class="card-body">
+                                    <canvas id="monthly_chart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Répartition par méthode</div>
+                                <div class="card-body">
+                                    <canvas id="methods_chart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions rapides -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">Actions rapides</div>
+                                <div class="card-body">
+                                    <div class="btn-group" role="group">
+                                        <button name="action_new_payment" string="Nouveau paiement"
+                                            type="object" class="btn btn-primary" />
+                                        <button name="action_view_all_payments"
+                                            string="Voir tous les paiements"
+                                            type="object" class="btn btn-info" />
+                                        <button name="action_payment_reminders"
+                                            string="Rappels de paiement"
+                                            type="object" class="btn btn-warning" />
+                                        <button name="action_export_report"
+                                            string="Exporter rapport"
+                                            type="object" class="btn btn-success" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour le tableau de bord -->
+    <record id="action_payments_dashboard" model="ir.actions.act_window">
+        <field name="name">Tableau de bord des paiements</field>
+        <field name="res_model">cotisation.payment</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_payments_dashboard" />
+        <field name="target">current</field>
+    </record>
+</odoo>
