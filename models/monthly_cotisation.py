@@ -528,7 +528,7 @@ class MonthlyCotisation(models.Model):
             'target': 'new',
             'context': {
                 'default_monthly_cotisation_id': self.id,
-                'default_cotisation_ids': [(6, 0, unpaid_cotisations.ids)]
+                'default_cotisation_ids': unpaid_cotisations.ids  # Correction ici
             }
         }
     
