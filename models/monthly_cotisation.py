@@ -4,6 +4,8 @@ from odoo import models, fields, api
 from odoo.exceptions import ValidationError, UserError
 import calendar
 import logging
+from odoo.osv import expression
+from dateutil.relativedelta import relativedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -13,7 +15,7 @@ class MonthlyCotisation(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = "Cotisation mensuelle de groupe"
     _rec_name = "display_name"
-    _order = "year desc, month desc"
+    _order = "year desc, month desc, create_date desc"
     _check_company_auto = True
 
     display_name = fields.Char(
@@ -44,6 +46,13 @@ class MonthlyCotisation(models.Model):
         required=True,
         default=lambda self: fields.Date.today().year,
         index=True,
+        tracking=True
+    )
+    
+    # Nouveau champ pour identifier les cotisations multiples
+    cotisation_name = fields.Char(
+        string="Nom de la cotisation",
+        help="Nom pour différencier plusieurs cotisations du même mois (ex: Cotisation principale, Cotisation spéciale, etc.)",
         tracking=True
     )
     
@@ -152,6 +161,50 @@ class MonthlyCotisation(models.Model):
     active = fields.Boolean(default=True)
     activation_date = fields.Datetime(string="Date d'activation", readonly=True)
     closure_date = fields.Datetime(string="Date de fermeture", readonly=True)
+    
+    # Nouveaux champs pour les cotisations multiples
+    is_primary = fields.Boolean(
+        string="Cotisation principale",
+        default=True,
+        help="Indique si c'est la cotisation principale du mois"
+    )
+    
+    sequence = fields.Integer(
+        string="Séquence",
+        default=10,
+        help="Ordre d'affichage des cotisations du même mois"
+    )
+
+    # Ajoutez cette méthode dans la classe MonthlyCotisation
+
+    @api.model
+    def search(self, domain, offset=0, limit=None, order=None, count=False):
+        """Override search pour gérer les filtres de mois courant/précédent"""
+        if self.env.context.get('search_current_month'):
+            today = fields.Date.today()
+            current_month = str(today.month)
+            current_year = today.year
+            domain = expression.AND([domain, [
+                ('month', '=', current_month),
+                ('year', '=', current_year)
+            ]])
+        
+        if self.env.context.get('search_last_month'):
+            today = fields.Date.today()
+            first_day_current = today.replace(day=1)
+            last_month_date = first_day_current - relativedelta(months=1)
+            last_month = str(last_month_date.month)
+            last_year = last_month_date.year
+            domain = expression.AND([domain, [
+                ('month', '=', last_month),
+                ('year', '=', last_year)
+            ]])
+        
+        # Handle the count parameter properly
+        if count:
+            return super().search_count(domain)
+        else:
+            return super().search(domain, offset=offset, limit=limit, order=order)
 
     def action_cancel(self):
         """Annule la cotisation mensuelle"""
@@ -164,7 +217,7 @@ class MonthlyCotisation(models.Model):
         
         _logger.info(f"Cotisation mensuelle {self.display_name} annulée")
 
-    @api.depends('group_id', 'month', 'year', 'amount')
+    @api.depends('group_id', 'month', 'year', 'amount', 'cotisation_name')
     def _compute_display_name(self):
         """Calcule le nom d'affichage"""
         month_names = {
@@ -175,7 +228,14 @@ class MonthlyCotisation(models.Model):
         for record in self:
             if record.group_id and record.month and record.year:
                 month_name = month_names.get(record.month, record.month)
-                record.display_name = f"{record.group_id.name} - {month_name} {record.year} - {str(record.amount)}"
+                base_name = f"{record.group_id.name} - {month_name} {record.year}"
+                
+                # Ajouter le nom de la cotisation si spécifié
+                if record.cotisation_name:
+                    base_name += f" ({record.cotisation_name})"
+                
+                # Ajouter le montant
+                record.display_name = f"{base_name} - {str(record.amount)}"
             else:
                 record.display_name = "Cotisation mensuelle"
     
@@ -231,25 +291,8 @@ class MonthlyCotisation(models.Model):
             else:
                 monthly.completion_rate = 0.0
 
-    @api.constrains('group_id', 'month', 'year', 'amount')
-    def _check_unique_monthly(self):
-        """Vérifie qu'il n'y a qu'une seule cotisation mensuelle par groupe/mois/année"""
-        for record in self:
-            domain = [
-                ('group_id', '=', record.group_id.id),
-                ('month', '=', record.month),
-                ('year', '=', record.year),
-                ('id', '!=', record.id),
-                ('amount', '=', record.amount),
-                ('active', '=', True)
-            ]
-            existing = self.search(domain, limit=1)
-            if existing:
-                month_name = dict(self._fields['month'].selection)[record.month]
-                raise ValidationError(
-                    f"Une cotisation mensuelle existe déjà pour {record.group_id.name} "
-                    f"en {month_name} {record.year}"
-                )
+    # SUPPRESSION DE LA CONTRAINTE D'UNICITÉ - Permet plusieurs cotisations par mois
+    # L'ancienne contrainte _check_unique_monthly a été supprimée
     
     @api.constrains('amount')
     def _check_amount_positive(self):
@@ -272,6 +315,48 @@ class MonthlyCotisation(models.Model):
         for record in self:
             if record.due_day and (record.due_day < 1 or record.due_day > 31):
                 raise ValidationError("Le jour limite doit être entre 1 et 31.")
+    
+    @api.constrains('cotisation_name', 'group_id', 'month', 'year')
+    def _check_cotisation_name_unique(self):
+        """Vérifie que le nom de cotisation est unique par groupe/mois/année"""
+        for record in self:
+            if record.cotisation_name:
+                domain = [
+                    ('group_id', '=', record.group_id.id),
+                    ('month', '=', record.month),
+                    ('year', '=', record.year),
+                    ('cotisation_name', '=', record.cotisation_name),
+                    ('id', '!=', record.id),
+                    ('active', '=', True)
+                ]
+                existing = self.search(domain, limit=1)
+                if existing:
+                    month_name = dict(self._fields['month'].selection)[record.month]
+                    raise ValidationError(
+                        f"Une cotisation avec le nom '{record.cotisation_name}' existe déjà "
+                        f"pour {record.group_id.name} en {month_name} {record.year}"
+                    )
+    
+    @api.constrains('is_primary', 'group_id', 'month', 'year')
+    def _check_single_primary(self):
+        """Vérifie qu'il n'y a qu'une seule cotisation principale par groupe/mois/année"""
+        for record in self:
+            if record.is_primary:
+                domain = [
+                    ('group_id', '=', record.group_id.id),
+                    ('month', '=', record.month),
+                    ('year', '=', record.year),
+                    ('is_primary', '=', True),
+                    ('id', '!=', record.id),
+                    ('active', '=', True)
+                ]
+                existing = self.search(domain, limit=1)
+                if existing:
+                    month_name = dict(self._fields['month'].selection)[record.month]
+                    raise ValidationError(
+                        f"Une cotisation principale existe déjà pour {record.group_id.name} "
+                        f"en {month_name} {record.year}"
+                    )
     
     @api.constrains('state')
     def _check_state_transitions(self):
@@ -304,6 +389,11 @@ class MonthlyCotisation(models.Model):
         cotisations_data = []
         month_name = dict(self._fields['month'].selection)[self.month]
         
+        # Construire la description avec le nom de la cotisation si spécifié
+        description = f"Cotisation mensuelle - {month_name} {self.year}"
+        if self.cotisation_name:
+            description += f" ({self.cotisation_name})"
+        
         for member in members:
             cotisations_data.append({
                 'member_id': member.id,
@@ -313,7 +403,7 @@ class MonthlyCotisation(models.Model):
                 'due_date': self.due_date,
                 'currency_id': self.currency_id.id,
                 'company_id': self.company_id.id,
-                'description': f"Cotisation mensuelle - {month_name} {self.year}"
+                'description': description
             })
         
         # Création en lot pour optimiser les performances
@@ -361,14 +451,14 @@ class MonthlyCotisation(models.Model):
             message_type='comment'
         )
         
-        _logger.info(f"Cotisation mensuelle {self.display_name} remise en brouillon")
+        _logger.info(f"Cotisation mensuelle {self.display_name} fermée")
         
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Information',
-                'message': 'Cotisation remise en brouillon',
+                'message': 'Cotisation fermée',
                 'type': 'info',
             }
         }
@@ -454,6 +544,28 @@ class MonthlyCotisation(models.Model):
             }
         }
     
+    def action_view_month_cotisations(self):
+        """Action pour voir toutes les cotisations du même mois pour le groupe"""
+        self.ensure_one()
+        return {
+            'name': f'Toutes les cotisations - {dict(self._fields["month"].selection)[self.month]} {self.year}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'monthly.cotisation',
+            'view_mode': 'tree,form',
+            'domain': [
+                ('group_id', '=', self.group_id.id),
+                ('month', '=', self.month),
+                ('year', '=', self.year),
+                ('active', '=', True)
+            ],
+            'context': {
+                'default_group_id': self.group_id.id,
+                'default_month': self.month,
+                'default_year': self.year,
+                'default_is_primary': False
+            }
+        }
+    
     def action_duplicate(self):
         """Duplique la cotisation pour un autre mois"""
         self.ensure_one()
@@ -466,30 +578,54 @@ class MonthlyCotisation(models.Model):
             next_month = 1
             next_year += 1
         
-        # Vérifier qu'il n'existe pas déjà une cotisation pour ce mois
-        existing = self.search([
-            ('group_id', '=', self.group_id.id),
-            ('month', '=', str(next_month)),
-            ('year', '=', next_year),
-            ('amount', '=', self.amount),
-            ('active', '=', True)
-        ])
-        
-        if existing:
-            month_name = dict(self._fields['month'].selection)[str(next_month)]
-            raise UserError(f"Une cotisation existe déjà pour {month_name} {next_year}")
-        
-        # Créer la copie
+        # Créer la copie (plus de vérification d'unicité stricte)
         new_cotisation = self.copy({
             'month': str(next_month),
             'year': next_year,
             'state': 'draft',
             'activation_date': False,
             'closure_date': False,
+            'cotisation_name': self.cotisation_name,  # Conserver le nom
+            'is_primary': self.is_primary  # Conserver le statut principal
         })
         
         return {
             'name': 'Cotisation mensuelle dupliquée',
+            'type': 'ir.actions.act_window',
+            'res_model': 'monthly.cotisation',
+            'res_id': new_cotisation.id,
+            'view_mode': 'form',
+            'target': 'current'
+        }
+    
+    def action_duplicate_current_month(self):
+        """Duplique la cotisation pour le même mois (nouvelle cotisation)"""
+        self.ensure_one()
+        
+        # Trouver un nom automatique pour la nouvelle cotisation
+        existing_count = self.search_count([
+            ('group_id', '=', self.group_id.id),
+            ('month', '=', self.month),
+            ('year', '=', self.year),
+            ('active', '=', True)
+        ])
+        
+        new_name = f"Cotisation {existing_count + 1}"
+        if self.cotisation_name:
+            new_name = f"{self.cotisation_name} - Copie"
+        
+        # Créer la copie pour le même mois
+        new_cotisation = self.copy({
+            'state': 'draft',
+            'activation_date': False,
+            'closure_date': False,
+            'cotisation_name': new_name,
+            'is_primary': False,  # Les copies ne sont jamais principales
+            'sequence': self.sequence + 10
+        })
+        
+        return {
+            'name': 'Nouvelle cotisation créée',
             'type': 'ir.actions.act_window',
             'res_model': 'monthly.cotisation',
             'res_id': new_cotisation.id,
@@ -528,7 +664,7 @@ class MonthlyCotisation(models.Model):
             'target': 'new',
             'context': {
                 'default_monthly_cotisation_id': self.id,
-                'default_cotisation_ids': unpaid_cotisations.ids  # Correction ici
+                'default_cotisation_ids': unpaid_cotisations.ids
             }
         }
     
@@ -689,17 +825,6 @@ class MonthlyCotisation(models.Model):
                     'default_attachment_ids': [(6, 0, [attachment.id])]
                 }
             }
-            print(f"Cotisation mensuelle {self.display_name} fermée")
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Information',
-                'message': 'Cotisation mensuelle fermée',
-                'type': 'info',
-            }
-        }
     
     def action_reopen(self):
         """Réouvre une cotisation fermée"""
@@ -757,3 +882,166 @@ class MonthlyCotisation(models.Model):
         )
 
         _logger.info(f"Cotisation mensuelle {self.display_name} remise en brouillon")
+    
+    @api.model
+    def create_wizard_multiple_cotisations(self):
+        """Ouvre un assistant pour créer plusieurs cotisations en une fois"""
+        return {
+            'name': 'Créer plusieurs cotisations',
+            'type': 'ir.actions.act_window',
+            'res_model': 'multiple.cotisation.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_year': fields.Date.today().year,
+                'default_month': str(fields.Date.today().month)
+            }
+        }
+    
+    def action_consolidate_month(self):
+        """Consolide toutes les cotisations du mois en une seule vue"""
+        self.ensure_one()
+        
+        # Rechercher toutes les cotisations du même groupe/mois/année
+        month_cotisations = self.search([
+            ('group_id', '=', self.group_id.id),
+            ('month', '=', self.month),
+            ('year', '=', self.year),
+            ('active', '=', True)
+        ])
+        
+        if len(month_cotisations) <= 1:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Information',
+                    'message': 'Aucune autre cotisation trouvée pour ce mois',
+                    'type': 'info',
+                }
+            }
+        
+        # Calculer les totaux consolidés
+        total_expected = sum(month_cotisations.mapped('total_expected'))
+        total_collected = sum(month_cotisations.mapped('total_collected'))
+        total_members = sum(month_cotisations.mapped('total_members'))
+        
+        month_name = dict(self._fields['month'].selection)[self.month]
+        
+        return {
+            'name': f'Consolidation - {self.group_id.name} - {month_name} {self.year}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'monthly.cotisation',
+            'view_mode': 'tree,form',
+            'domain': [('id', 'in', month_cotisations.ids)],
+            'context': {
+                'consolidation_mode': True,
+                'total_expected': total_expected,
+                'total_collected': total_collected,
+                'total_members': total_members,
+                'completion_rate': (total_collected / total_expected * 100) if total_expected > 0 else 0
+            }
+        }
+    
+    def action_merge_cotisations(self):
+        """Fusionne plusieurs cotisations du même mois en une seule"""
+        # Cette action sera appelée depuis une vue liste avec plusieurs cotisations sélectionnées
+        return {
+            'name': 'Fusionner les cotisations',
+            'type': 'ir.actions.act_window',
+            'res_model': 'merge.cotisation.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_ids': self.env.context.get('active_ids', []),
+                'active_model': self._name
+            }
+        }
+    
+    @api.model
+    def get_cotisations_summary(self, group_id, month, year):
+        """Retourne un résumé de toutes les cotisations d'un groupe pour un mois donné"""
+        cotisations = self.search([
+            ('group_id', '=', group_id),
+            ('month', '=', month),
+            ('year', '=', year),
+            ('active', '=', True)
+        ])
+        
+        if not cotisations:
+            return {}
+        
+        summary = {
+            'cotisations_count': len(cotisations),
+            'total_expected': sum(cotisations.mapped('total_expected')),
+            'total_collected': sum(cotisations.mapped('total_collected')),
+            'total_members': sum(cotisations.mapped('total_members')),
+            'paid_members': sum(cotisations.mapped('paid_members')),
+            'unpaid_members': sum(cotisations.mapped('unpaid_members')),
+            'partial_members': sum(cotisations.mapped('partial_members')),
+            'overdue_members': sum(cotisations.mapped('overdue_members')),
+            'cotisations_details': []
+        }
+        
+        for cotisation in cotisations.sorted('sequence'):
+            summary['cotisations_details'].append({
+                'id': cotisation.id,
+                'name': cotisation.cotisation_name or 'Principale',
+                'amount': cotisation.amount,
+                'is_primary': cotisation.is_primary,
+                'state': cotisation.state,
+                'completion_rate': cotisation.completion_rate,
+                'total_expected': cotisation.total_expected,
+                'total_collected': cotisation.total_collected,
+                'members_count': cotisation.total_members
+            })
+        
+        # Calcul du taux de completion global
+        if summary['total_expected'] > 0:
+            summary['global_completion_rate'] = (summary['total_collected'] / summary['total_expected']) * 100
+        else:
+            summary['global_completion_rate'] = 0.0
+        
+        return summary
+    
+    def action_set_primary(self):
+        """Définit cette cotisation comme principale pour le mois"""
+        self.ensure_one()
+        
+        if self.is_primary:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Information',
+                    'message': 'Cette cotisation est déjà définie comme principale',
+                    'type': 'info',
+                }
+            }
+        
+        # Retirer le statut principal des autres cotisations du même mois
+        other_cotisations = self.search([
+            ('group_id', '=', self.group_id.id),
+            ('month', '=', self.month),
+            ('year', '=', self.year),
+            ('id', '!=', self.id),
+            ('active', '=', True)
+        ])
+        
+        other_cotisations.write({'is_primary': False})
+        self.write({'is_primary': True, 'sequence': 1})
+        
+        self.message_post(
+            body=f"Cotisation définie comme principale pour {dict(self._fields['month'].selection)[self.month]} {self.year}",
+            message_type='comment'
+        )
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Succès',
+                'message': 'Cotisation définie comme principale',
+                'type': 'success',
+            }
+        }

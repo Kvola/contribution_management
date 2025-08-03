@@ -105,6 +105,7 @@ Sécurité et contrôles :
         'wizards/bulk_report_wizard_views.xml',
         'wizards/quick_payment_wizard_views.xml',
         'data/email_template.xml',
+        'wizards/merge_cotisation_wizard_views.xml',
         'views/menu_views.xml',
     ],
     "assets": {

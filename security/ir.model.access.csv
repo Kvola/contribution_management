@@ -40,3 +40,11 @@ access_cotisation_payment_manager,cotisation.payment.manager,model_cotisation_pa
 access_member_payment_plan_portal,member.payment.plan.portal,model_member_payment_plan,base.group_portal,1,0,0,0
 access_member_payment_installment_portal,member.payment.installment.portal,model_member_payment_installment,base.group_portal,1,0,0,0
 access_cotisation_payment_portal,cotisation.payment.portal,model_cotisation_payment,base.group_portal,1,0,0,0
+access_merge_cotisation_wizard,merge.cotisation.wizard,model_merge_cotisation_wizard,base.group_user,1,1,1,1
+access_merge_cotisation_wizard_manager,merge.cotisation.wizard.manager,model_merge_cotisation_wizard,base.group_system,1,1,1,1
+access_merge_cotisation_wizard_public,merge.cotisation.wizard.public,model_merge_cotisation_wizard,base.group_public,1,0,0,0
+access_merge_cotisation_wizard_portal,merge.cotisation.wizard.portal,model_merge_cotisation_wizard,base.group_portal,1,0,0,0
+access_merge_preview_wizard_user,merge.preview.wizard.user,model_merge_preview_wizard,base.group_user,1,1,1,1
+access_merge_preview_wizard_manager,merge.preview.wizard.manager,model_merge_preview_wizard,base.group_system,1,1,1,1
+access_merge_preview_wizard_public,merge.preview.wizard.public,model_merge_preview_wizard,base.group_public,1,0,0,0
+access_merge_preview_wizard_portal,merge.preview.wizard.portal,model_merge_preview_wizard,base.group_portal,1,0,0,0

@@ -1,110 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ================= MENUS ================= -->
-    
-    <!-- Menu principal des cotisations -->
-    <menuitem id="menu_cotisations_main" 
-              name="Cotisations" 
-              sequence="20"/>
-    
-    <!-- Sous-menus -->
-    <menuitem id="menu_group_activities" 
-              name="Activités de groupe" 
-              parent="menu_cotisations_main"
-              action="action_group_activity" 
-              sequence="10"/>
-    
-    <menuitem id="menu_monthly_cotisations" 
-              name="Cotisations mensuelles" 
-              parent="menu_cotisations_main"
-              action="action_monthly_cotisation" 
-              sequence="20"/>
-    
-    <menuitem id="menu_member_cotisations" 
-              name="Toutes les cotisations" 
-              parent="menu_cotisations_main"
-              action="action_member_cotisation" 
-              sequence="30"/>
+    <!-- ================= CONFIGURATION GLOBALE ================= -->
 
-    <!-- <menuitem id="menu_cotisations_reports" 
-              name="Rapports" 
-              parent="menu_cotisations_main"
-              sequence="40"/> -->
-    <!-- Menu pour l'historique -->
-    <!-- <menuitem id="menu_report_logs" 
-              name="Historique" 
-              parent="menu_cotisations_reports" 
-              action="action_report_generation_logs"
-              sequence="30"/> -->
+    <!-- ================= MENU PRINCIPAL ================= -->
 
-    <!-- Menu dashboard -->
-    <!-- <menuitem id="menu_reports_dashboard" 
-              name="Dashboard" 
-              parent="menu_cotisations_reports" 
-              action="action_reports_dashboard"
-              sequence="5"/> -->
-
-    <!-- Menu statistiques -->
-    <!-- <menuitem id="menu_report_statistics" 
-              name="Statistiques" 
-              parent="menu_cotisations_reports" 
-              action="action_report_statistics"
-              sequence="40"/> -->
-
-    <!-- ============================================ -->
-    <!-- MENUS ET ACTIONS SUPPLÉMENTAIRES -->
-    <!-- ============================================ -->
-    
-    <!-- Menu principal pour les outils de gestion -->
-    <menuitem id="menu_contribution_tools" 
-              name="Outils de gestion" 
-              parent="menu_cotisations_main" 
-              sequence="90"/>
-    
-    <!-- Sous-menus pour les assistants -->
-    <menuitem id="menu_cotisations_dashboard" 
-              name="Tableau de bord" 
-              parent="menu_contribution_tools" 
-              action="action_cotisations_dashboard" 
-              sequence="10"/>
-    
-    <menuitem id="menu_mass_payment" 
-              name="Paiement en masse" 
-              parent="menu_contribution_tools" 
-              action="action_mass_payment_wizard" 
-              sequence="20"/>
-    
-    <menuitem id="menu_mass_reminders" 
-              name="Rappels en masse" 
-              parent="menu_contribution_tools" 
-              action="action_cotisation_reminder_wizard" 
-              sequence="30"/>
-
-    <!-- Menu pour le tableau de bord -->
-    <menuitem id="menu_payments_dashboard" 
-              name="Tableau de bord" 
-              parent="menu_cotisations_dashboard"
-              action="action_payments_dashboard" 
-              sequence="1"/>
-
-    <!-- Menu pour les paiements dans l'application -->
-    <menuitem id="menu_cotisation_payments" 
-              name="Paiements" 
-              parent="menu_cotisations_main"
-              action="action_cotisation_payment" 
-              sequence="30"/>
-
-    <!-- Menu -->
-    <menuitem id="menu_member_payment_plan"
-        name="Plans de Paiement"
-        parent="menu_cotisations_main"
-        action="action_member_payment_plan"
+    <menuitem id="menu_cotisations_main"
+        name="Cotisations"
         sequence="20" />
 
-    <!-- Menu -->
+    <!-- ================= MENUS DE GESTION ================= -->
+
+    <!-- Groupe: Gestion des cotisations -->
+    <menuitem id="menu_cotisations_management"
+        name="Gestion des cotisations"
+        parent="menu_cotisations_main"
+        sequence="10" />
+
+    <menuitem id="menu_group_activities"
+        name="Activités de groupe"
+        parent="menu_cotisations_management"
+        action="action_group_activity"
+        sequence="10" />
+
+    <menuitem id="menu_monthly_cotisations"
+        name="Cotisations mensuelles"
+        parent="menu_cotisations_management"
+        action="action_monthly_cotisation"
+        sequence="20" />
+
+    <menuitem id="menu_monthly_cotisation_primary_only"
+        name="Cotisations principales"
+        parent="menu_cotisations_management"
+        action="action_monthly_cotisation_primary"
+        sequence="30" />
+
+    <menuitem id="menu_monthly_cotisation_multiple"
+        name="Cotisations multiples"
+        parent="menu_cotisations_management"
+        action="action_monthly_cotisation_multiple_month"
+        sequence="40" />
+
+    <menuitem id="menu_member_cotisations"
+        name="Toutes les cotisations"
+        parent="menu_cotisations_management"
+        action="action_member_cotisation"
+        sequence="50" />
+
+    <!-- ================= MENUS DE PAIEMENT ================= -->
+
+    <!-- Groupe: Paiements et plans -->
+    <menuitem id="menu_payments_management"
+        name="Paiements et plans"
+        parent="menu_cotisations_main"
+        sequence="20" />
+
+    <menuitem id="menu_member_payment_plan"
+        name="Plans de paiement"
+        parent="menu_payments_management"
+        action="action_member_payment_plan"
+        sequence="10" />
+
     <menuitem id="menu_member_payment_installment"
-              name="Échéances"
-              parent="menu_cotisations_main"
-              action="action_member_payment_installment"
-              sequence="21"/>
+        name="Échéances"
+        parent="menu_payments_management"
+        action="action_member_payment_installment"
+        sequence="20" />
+
+    <menuitem id="menu_cotisation_payments"
+        name="Paiements"
+        parent="menu_payments_management"
+        action="action_cotisation_payment"
+        sequence="30" />
+
+    <!-- ================= TABLEAUX DE BORD ================= -->
+
+    <!-- Groupe: Tableaux de bord -->
+    <menuitem id="menu_dashboards"
+        name="Tableaux de bord"
+        parent="menu_cotisations_main"
+        sequence="30" />
+
+    <menuitem id="menu_cotisations_dashboard"
+        name="Vue d'ensemble"
+        parent="menu_dashboards"
+        action="action_cotisations_dashboard"
+        sequence="10" />
+
+    <menuitem id="menu_monthly_cotisation_dashboard"
+        name="Paiements mensuels"
+        parent="menu_dashboards"
+        action="action_monthly_cotisation_payment_dashboard"
+        sequence="20" />
+
+    <menuitem id="menu_payments_dashboard"
+        name="Analyse détaillée"
+        parent="menu_dashboards"
+        action="action_payments_dashboard"
+        sequence="30" />
+
+    <!-- ================= OUTILS ET ASSISTANTS ================= -->
+
+    <!-- Groupe: Outils de gestion -->
+    <menuitem id="menu_management_tools"
+        name="Outils et assistants"
+        parent="menu_cotisations_main"
+        sequence="40" />
+
+    <menuitem id="menu_mass_payment"
+        name="Paiement en masse"
+        parent="menu_management_tools"
+        action="action_mass_payment_wizard"
+        sequence="10" />
+
+    <menuitem id="menu_mass_reminders"
+        name="Rappels automatiques"
+        parent="menu_management_tools"
+        action="action_cotisation_reminder_wizard"
+        sequence="20" />
+
+    <!-- Menu item pour l'assistant de fusion (optionnel, accessible via action contextuelle) -->
+    <menuitem id="menu_merge_cotisation_wizard"
+              name="Assistant de fusion"
+              parent="menu_management_tools"
+              action="action_merge_cotisation_wizard"
+              sequence="20"
+              groups="base.group_no_one"/>
 </odoo>

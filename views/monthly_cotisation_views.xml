@@ -11,6 +11,8 @@
                 decoration-warning="state=='active'">
                 <field name="display_name"/>
                 <field name="group_id"/>
+                <field name="cotisation_name"/>
+                <field name="is_primary" widget="boolean_toggle"/>
                 <field name="month"/>
                 <field name="year"/>
                 <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -18,7 +20,6 @@
                 <field name="due_date"/>
                 <field name="total_members"/>
                 <field name="paid_members"/>
-                <!-- Correction du champ completion_rate -->
                 <field name="completion_rate" widget="float" options="{'precision': 1}"/>
                 <field name="state" widget="badge" 
                     decoration-info="state=='draft'" 
@@ -36,6 +37,10 @@
                         class="btn-link" icon="fa-eye" 
                         invisible="state == 'draft'" 
                         title="Voir les cotisations des membres"/>
+                <button name="action_set_primary" string="Définir comme principale" type="object" 
+                        class="btn-info" icon="fa-star" 
+                        invisible="is_primary or state == 'draft'" 
+                        title="Définir comme cotisation principale"/>
             </tree>
         </field>
     </record>
@@ -59,9 +64,14 @@
                     <button name="action_reset_to_draft" string="Remettre en brouillon" type="object" 
                             invisible="state == 'draft'"
                             confirm="Attention : Cette action supprimera toutes les cotisations individuelles sans paiement. Continuer ?"/>
-                    <button name="action_duplicate" string="Dupliquer" type="object" 
+                    <button name="action_duplicate" string="Dupliquer (mois suivant)" type="object" 
                             class="btn-secondary"/>
-                    <button name="action_print_monthly_report" string="Imprimer le rapport mensuel" type="object" 
+                    <button name="action_duplicate_current_month" string="Dupliquer (même mois)" type="object" 
+                            class="btn-secondary"/>
+                    <button name="action_print_monthly_report" string="Imprimer le rapport" type="object" 
+                            class="btn-secondary" 
+                            invisible="state == 'draft'"/>
+                    <button name="action_send_report_by_email" string="Envoyer par email" type="object" 
                             class="btn-secondary" 
                             invisible="state == 'draft'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
@@ -87,6 +97,28 @@
                                 <span class="o_stat_text">Rappels</span>
                             </div>
                         </button>
+                        <button name="action_view_month_cotisations" type="object" 
+                                class="oe_stat_button" icon="fa-calendar">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Voir toutes</span>
+                                <span class="o_stat_text">du mois</span>
+                            </div>
+                        </button>
+                        <button name="action_consolidate_month" type="object" 
+                                class="oe_stat_button" icon="fa-compress">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Consolider</span>
+                                <span class="o_stat_text">le mois</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <div class="row" invisible="not is_primary">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fa fa-star"/> Cette cotisation est définie comme <strong>principale</strong> pour ce mois.
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="oe_title">
@@ -99,6 +131,10 @@
                         <group string="Informations générales">
                             <field name="group_id" options="{'no_create': True, 'no_edit': True}" 
                                    readonly="state != 'draft'"/>
+                            <field name="cotisation_name" placeholder="ex: Cotisation principale, Cotisation spéciale..." 
+                                   readonly="state != 'draft'"/>
+                            <field name="is_primary" readonly="state != 'draft'"/>
+                            <field name="sequence" readonly="state != 'draft'" groups="base.group_system"/>
                             <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" 
                                    readonly="state != 'draft'"/>
                             <field name="currency_id" options="{'no_create': True, 'no_edit': True}" 
@@ -121,7 +157,7 @@
                     </group>
                     
                     <notebook>
-                        <page string="Statistiques" invisible="state == 'draft'">
+                        <page name="statistiques" string="Statistiques" invisible="state == 'draft'">
                             <group>
                                 <group string="Membres">
                                     <field name="members_count" string="Membres concernés"/>
@@ -134,7 +170,7 @@
                                 <group string="Montants">
                                     <field name="total_expected" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="total_collected" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="completion_rate" />
+                                    <field name="completion_rate" widget="float" options="{'precision': 1}"/>
                                 </group>
                             </group>
                             
@@ -172,6 +208,24 @@
                             </field>
                         </page>
 
+                        <page string="Actions avancées">
+                            <group>
+                                <group string="Gestion multiple">
+                                    <button name="action_set_primary" string="Définir comme principale" type="object" 
+                                            class="btn-info" invisible="is_primary"
+                                            confirm="Définir cette cotisation comme principale pour ce mois ?"/>
+                                    <button name="action_merge_cotisations" string="Fusionner avec d'autres" type="object" 
+                                            class="btn-warning" invisible="state == 'draft'"/>
+                                </group>
+                                <group string="Rapports et communication">
+                                    <button name="action_print_report" string="Imprimer rapport PDF" type="object" 
+                                            class="btn-secondary" invisible="state == 'draft'"/>
+                                    <button name="action_send_report_by_email" string="Envoyer rapport par email" type="object" 
+                                            class="btn-secondary" invisible="state == 'draft'"/>
+                                </group>
+                            </group>
+                        </page>
+
                         <page string="Configuration avancée" groups="base.group_system">
                             <group>
                                 <field name="active"/>
@@ -197,6 +251,8 @@
             <kanban default_group_by="state" class="o_kanban_small_column" quick_create="false">
                 <field name="display_name"/>
                 <field name="group_id"/>
+                <field name="cotisation_name"/>
+                <field name="is_primary"/>
                 <field name="amount"/>
                 <field name="currency_id"/>
                 <field name="completion_rate"/>
@@ -211,10 +267,18 @@
                         <div class="oe_kanban_card oe_kanban_global_click">
                             <div class="o_kanban_content">
                                 <div class="o_kanban_record_title">
-                                    <strong><field name="display_name"/></strong>
+                                    <strong>
+                                        <field name="display_name"/>
+                                        <t t-if="record.is_primary.raw_value">
+                                            <i class="fa fa-star text-warning" title="Cotisation principale"/>
+                                        </t>
+                                    </strong>
                                 </div>
                                 <div class="o_kanban_record_subtitle">
                                     <i class="fa fa-users"/> <field name="group_id"/>
+                                    <t t-if="record.cotisation_name.raw_value">
+                                        - <field name="cotisation_name"/>
+                                    </t>
                                 </div>
                                 <div class="o_kanban_record_body">
                                     <div class="row">
@@ -263,6 +327,7 @@
         <field name="arch" type="xml">
             <search>
                 <field name="group_id"/>
+                <field name="cotisation_name"/>
                 <field name="year"/>
                 <field name="month"/>
                 <field name="display_name" string="Nom" filter_domain="[('display_name', 'ilike', self)]"/>
@@ -271,12 +336,15 @@
                 <filter name="active" string="Actives" domain="[('state', '=', 'active')]"/>
                 <filter name="closed" string="Fermées" domain="[('state', '=', 'closed')]"/>
                 <separator/>
+                <filter name="primary" string="Principales" domain="[('is_primary', '=', True)]"/>
+                <filter name="secondary" string="Secondaires" domain="[('is_primary', '=', False)]"/>
+                <separator/>
                 <filter name="current_year" string="Année courante" 
                         domain="[('year', '=', context_today().year)]"/>
                 <filter name="current_month" string="Mois courant" 
-                        domain="[('month', '=', str(context_today().month)), ('year', '=', context_today().year)]"/>
+                        domain="[('year', '=', context_today().year)]"/>
                 <filter name="last_month" string="Mois dernier" 
-                        domain="[('month', '=', str((context_today() - relativedelta(months=1)).month)), ('year', '=', (context_today() - relativedelta(months=1)).year)]"/>
+                        domain="[('year', '&gt;=', context_today().year - 1)]"/>
                 <separator/>
                 <filter name="overdue" string="En retard" 
                         domain="[('due_date', '&lt;', context_today()), ('state', '=', 'active')]"/>
@@ -293,6 +361,7 @@
                     <filter name="group_by_state" string="Statut" context="{'group_by': 'state'}"/>
                     <filter name="group_by_month" string="Mois" context="{'group_by': 'month'}"/>
                     <filter name="group_by_due_date" string="Date d'échéance" context="{'group_by': 'due_date'}"/>
+                    <filter name="group_by_is_primary" string="Type (Principale/Secondaire)" context="{'group_by': 'is_primary'}"/>
                 </group>
             </search>
         </field>
@@ -306,6 +375,8 @@
             <calendar string="Cotisations mensuelles" date_start="due_date" color="group_id" mode="month">
                 <field name="display_name"/>
                 <field name="group_id"/>
+                <field name="cotisation_name"/>
+                <field name="is_primary"/>
                 <field name="amount"/>
                 <field name="completion_rate"/>
                 <field name="state"/>
@@ -322,6 +393,7 @@
         <field name="arch" type="xml">
             <pivot string="Analyse des cotisations mensuelles" disable_linking="True">
                 <field name="group_id" type="row"/>
+                <field name="is_primary" type="row"/>
                 <field name="year" type="col"/>
                 <field name="month" type="col"/>
                 <field name="total_collected" type="measure"/>
@@ -355,14 +427,22 @@
             <activity string="Cotisations mensuelles">
                 <field name="display_name"/>
                 <field name="group_id"/>
+                <field name="cotisation_name"/>
+                <field name="is_primary"/>
                 <field name="state"/>
                 <templates>
                     <div t-name="activity-box">
                         <img t-att-src="activity_image('monthly.cotisation', 'image_128', record.id.raw_value)" 
                              role="img" t-att-title="record.id.value" t-att-alt="record.id.value"/>
                         <div>
-                            <strong><field name="display_name"/></strong>
+                            <strong>
+                                <field name="display_name"/>
+                                <t t-if="record.is_primary.raw_value">
+                                    <i class="fa fa-star text-warning"/>
+                                </t>
+                            </strong>
                             <div><field name="group_id"/></div>
+                            <div t-if="record.cotisation_name.raw_value"><field name="cotisation_name"/></div>
                             <div><field name="state" widget="badge"/></div>
                         </div>
                     </div>
@@ -387,7 +467,8 @@
             </p>
             <p>
                 Les cotisations mensuelles permettent de collecter régulièrement 
-                des fonds auprès des membres des groupes.
+                des fonds auprès des membres des groupes. Vous pouvez désormais créer
+                plusieurs cotisations par mois pour un même groupe.
             </p>
             <p>
                 Pour commencer :
@@ -395,6 +476,7 @@
             <ol>
                 <li>Cliquez sur "Nouveau" pour créer une cotisation</li>
                 <li>Sélectionnez le groupe et définissez le montant</li>
+                <li>Ajoutez un nom spécifique si vous avez plusieurs cotisations pour le même mois</li>
                 <li>Activez la cotisation pour générer les cotisations individuelles</li>
                 <li>Suivez les paiements et envoyez des rappels si nécessaire</li>
             </ol>
@@ -409,6 +491,18 @@
         <field name="domain">[('state', '=', 'active')]</field>
         <field name="context">{
             'search_default_current_year': 1
+        }</field>
+    </record>
+
+    <!-- Action pour les cotisations principales -->
+    <record id="action_monthly_cotisation_primary" model="ir.actions.act_window">
+        <field name="name">Cotisations principales</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('is_primary', '=', True)]</field>
+        <field name="context">{
+            'search_default_current_year': 1,
+            'search_default_active': 1
         }</field>
     </record>
 
@@ -429,5 +523,368 @@
             'search_default_current_year': 1,
             'group_by': 'state'
         }</field>
+    </record>
+
+    <!-- Action pour créer plusieurs cotisations -->
+    <record id="action_create_multiple_cotisations" model="ir.actions.server">
+        <field name="name">Créer plusieurs cotisations</field>
+        <field name="model_id" ref="model_monthly_cotisation"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.create_wizard_multiple_cotisations()
+        </field>
+    </record>
+
+    <!-- Action pour fusionner les cotisations -->
+    <record id="action_merge_selected_cotisations" model="ir.actions.server">
+        <field name="name">Fusionner les cotisations sélectionnées</field>
+        <field name="model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    action = records[0].action_merge_cotisations()
+        </field>
+    </record>
+
+    <!-- ================= VUES SPÉCIALISÉES ET RAPPORTS ================= -->
+
+    <!-- Vue simplifiée pour sélection rapide -->
+    <record id="view_monthly_cotisation_tree_simple" model="ir.ui.view">
+        <field name="name">monthly.cotisation.tree.simple</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="display_name"/>
+                <field name="group_id"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="state" widget="badge"/>
+                <field name="is_primary" widget="boolean_toggle"/>
+                <field name="completion_rate" widget="progressbar"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue consolidée pour plusieurs cotisations du même mois -->
+    <record id="view_monthly_cotisation_consolidated" model="ir.ui.view">
+        <field name="name">monthly.cotisation.consolidated</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="arch" type="xml">
+            <tree decoration-info="is_primary" editable="top" delete="false">
+                <field name="sequence" widget="handle"/>
+                <field name="cotisation_name"/>
+                <field name="is_primary" widget="boolean_toggle"/>
+                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="total_members"/>
+                <field name="total_collected" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="total_expected" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="completion_rate" widget="progressbar"/>
+                <field name="state" widget="badge"/>
+                <button name="action_view_cotisations" string="Détails" type="object" 
+                        icon="fa-eye" class="btn-link"/>
+                <button name="action_set_primary" string="Principal" type="object" 
+                        icon="fa-star" class="btn-info" invisible="is_primary"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue pour le suivi des paiements (Dashboard) -->
+    <record id="view_monthly_cotisation_payment_dashboard" model="ir.ui.view">
+        <field name="name">monthly.cotisation.payment.dashboard</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard" create="false">
+                <field name="display_name"/>
+                <field name="group_id"/>
+                <field name="cotisation_name"/>
+                <field name="is_primary"/>
+                <field name="state"/>
+                <field name="completion_rate"/>
+                <field name="total_collected"/>
+                <field name="total_expected"/>
+                <field name="paid_members"/>
+                <field name="total_members"/>
+                <field name="overdue_members"/>
+                <field name="due_date"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click o_kanban_dashboard">
+                            <div class="o_kanban_content">
+                                <div class="o_kanban_primary_left">
+                                    <div class="o_primary">
+                                        <span t-if="record.is_primary.raw_value" class="badge badge-warning">
+                                            <i class="fa fa-star"/> Principale
+                                        </span>
+                                        <span t-else="" class="badge badge-secondary">Secondaire</span>
+                                    </div>
+                                    <div class="o_kanban_record_title">
+                                        <field name="display_name"/>
+                                    </div>
+                                    <div class="o_kanban_record_subtitle">
+                                        <field name="group_id"/>
+                                        <span t-if="record.cotisation_name.raw_value">
+                                            - <field name="cotisation_name"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_primary_right">
+                                    <div class="row">
+                                        <div class="col-6 o_kanban_primary_bottom">
+                                            <button name="action_view_cotisations" type="object" 
+                                                    class="btn btn-primary btn-sm">
+                                                Voir détails
+                                            </button>
+                                        </div>
+                                        <div class="col-6 text-right">
+                                            <field name="state" widget="label_selection" 
+                                                   options="{'classes': {'draft': 'secondary', 'active': 'warning', 'closed': 'success'}}"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_kanban_card_manage_pane">
+                                <div class="o_kanban_card_manage_section o_kanban_manage_reports">
+                                    <div class="o_kanban_manage_title">
+                                        <span>Rapports</span>
+                                    </div>
+                                    <div>
+                                        <a name="action_print_report" type="object">Imprimer</a>
+                                    </div>
+                                    <div>
+                                        <a name="action_send_report_by_email" type="object">Envoyer par email</a>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_card_manage_section o_kanban_manage_new">
+                                    <div class="o_kanban_manage_title">
+                                        <span>Actions</span>
+                                    </div>
+                                    <div>
+                                        <a name="action_send_reminders" type="object" 
+                                           t-if="record.state.raw_value == 'active'">Envoyer rappels</a>
+                                    </div>
+                                    <div>
+                                        <a name="action_duplicate_current_month" type="object">Dupliquer</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_kanban_card_content">
+                                <div class="row">
+                                    <div class="col-4 o_kanban_primary_left">
+                                        <button name="action_view_unpaid_cotisations" type="object" 
+                                                class="btn btn-primary btn-lg btn-block o_dashboard_action" 
+                                                t-if="record.overdue_members.raw_value > 0">
+                                            <span class="o_value"><t t-esc="record.overdue_members.value"/></span>
+                                            <span class="o_label">En retard</span>
+                                        </button>
+                                        <button name="action_view_cotisations" type="object" 
+                                                class="btn btn-secondary btn-lg btn-block o_dashboard_action" 
+                                                t-else="">
+                                            <span class="o_value"><t t-esc="record.paid_members.value"/>/<t t-esc="record.total_members.value"/></span>
+                                            <span class="o_label">Payé</span>
+                                        </button>
+                                    </div>
+                                    <div class="col-8">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <field name="completion_rate" widget="progressbar"/>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-6 text-center">
+                                                <div class="o_kanban_gauge">
+                                                    <field name="total_collected" widget="monetary"/>
+                                                    <div class="o_gauge_label">Collecté</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 text-center">
+                                                <div class="o_kanban_gauge">
+                                                    <field name="total_expected" widget="monetary"/>
+                                                    <div class="o_gauge_label">Attendu</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-12 text-center">
+                                                <span class="text-muted">
+                                                    Échéance: <field name="due_date"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ================= ACTIONS SPÉCIALISÉES ================= -->
+
+    <!-- Action pour vue consolidée d'un mois -->
+    <record id="action_monthly_cotisation_consolidated_view" model="ir.actions.act_window">
+        <field name="name">Vue consolidée du mois</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_monthly_cotisation_consolidated"/>
+        <field name="target">current</field>
+    </record>
+
+    <!-- Action pour dashboard de paiements -->
+    <record id="action_monthly_cotisation_payment_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard des paiements</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">kanban,pivot,graph</field>
+        <field name="view_id" ref="view_monthly_cotisation_payment_dashboard"/>
+        <field name="domain">[('state', '!=', 'draft')]</field>
+        <field name="context">{
+            'search_default_current_year': 1
+        }</field>
+    </record>
+
+    <!-- Action pour cotisations multiples du même mois -->
+    <record id="action_monthly_cotisation_multiple_month" model="ir.actions.act_window">
+        <field name="name">Cotisations multiples</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_monthly_cotisation_consolidated"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Gérez plusieurs cotisations pour le même mois !
+            </p>
+            <p>
+                Cette vue vous permet de voir et gérer toutes les cotisations 
+                d'un groupe pour un mois donné. Vous pouvez :
+            </p>
+            <ul>
+                <li>Réorganiser l'ordre d'affichage</li>
+                <li>Définir quelle cotisation est principale</li>
+                <li>Comparer les performances</li>
+                <li>Accéder rapidement aux détails</li>
+            </ul>
+        </field>
+    </record>
+
+    <!-- ================= ACTIONS CONTEXTUELLES ================= -->
+
+    <!-- Action pour annuler les cotisations sélectionnées -->
+    <record id="action_cancel_selected_cotisations" model="ir.actions.server">
+        <field name="name">Annuler les cotisations sélectionnées</field>
+        <field name="model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">
+for record in records:
+    if record.state == 'draft':
+        record.action_cancel()
+        </field>
+    </record>
+
+    <!-- Action pour activer plusieurs cotisations -->
+    <record id="action_activate_selected_cotisations" model="ir.actions.server">
+        <field name="name">Activer les cotisations sélectionnées</field>
+        <field name="model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">
+for record in records:
+    if record.state == 'draft':
+        try:
+            record.action_activate()
+        except Exception as e:
+            raise UserError(f"Erreur lors de l'activation de {record.display_name}: {str(e)}")
+        </field>
+    </record>
+
+    <!-- Action pour dupliquer vers le mois suivant -->
+    <record id="action_duplicate_to_next_month" model="ir.actions.server">
+        <field name="name">Dupliquer vers le mois suivant</field>
+        <field name="model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">
+for record in records:
+    record.action_duplicate()
+        </field>
+    </record>
+
+    <!-- ================= VUES DE CONFIGURATION ================= -->
+
+    <!-- Vue pour la configuration des séquences -->
+    <record id="view_monthly_cotisation_sequence_config" model="ir.ui.view">
+        <field name="name">monthly.cotisation.sequence.config</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom" create="false" delete="false">
+                <field name="sequence" widget="handle"/>
+                <field name="group_id" readonly="1"/>
+                <field name="month" readonly="1"/>
+                <field name="year" readonly="1"/>
+                <field name="cotisation_name"/>
+                <field name="is_primary" widget="boolean_toggle"/>
+                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge" readonly="1"/>
+                <button name="action_set_primary" string="Définir comme principale" type="object" 
+                        icon="fa-star" class="btn-warning" invisible="is_primary"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action pour configurer les séquences -->
+    <record id="action_configure_cotisation_sequences" model="ir.actions.act_window">
+        <field name="name">Configurer l'ordre des cotisations</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_monthly_cotisation_sequence_config"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Organisez vos cotisations !
+            </p>
+            <p>
+                Utilisez cette vue pour définir l'ordre d'affichage 
+                de vos cotisations multiples et désigner les cotisations principales.
+            </p>
+        </field>
+    </record>
+
+    <!-- ================= INTÉGRATIONS ET LIENS ================= -->
+
+    <!-- Lien vers les cotisations depuis les groupes (res.partner) -->
+    <record id="action_group_monthly_cotisations" model="ir.actions.act_window">
+        <field name="name">Cotisations mensuelles du groupe</field>
+        <field name="res_model">monthly.cotisation</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('group_id', '=', active_id)]</field>
+        <field name="context">{
+            'default_group_id': active_id,
+            'search_default_current_year': 1
+        }</field>
+    </record>
+
+    <!-- Bouton intelligent sur les groupes pour voir leurs cotisations -->
+    <record id="view_partner_form_cotisation_button" model="ir.ui.view">
+        <field name="name">res.partner.form.cotisation.button</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="%(action_group_monthly_cotisations)d" type="action" 
+                        class="oe_stat_button" icon="fa-money"
+                        invisible="not is_company or not active">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Cotisations</span>
+                        <span class="o_stat_text">Mensuelles</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
     </record>
 </odoo>

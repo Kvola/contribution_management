@@ -7,3 +7,4 @@ from . import mass_payment_wizard
 from . import bulk_report_wizard
 from . import payment_plan_wizard
 from . import quick_payment_wizard
+from . import merge_cotisation_wizard

@@ -2,69 +2,70 @@
 <odoo>
     <data>
         <!-- ================= TÂCHES CRON ================= -->
-        
+
         <!-- Cron pour marquer les cotisations en retard -->
         <record id="cron_update_overdue_cotisations" model="ir.cron">
             <field name="name">Mise à jour des cotisations en retard</field>
-            <field name="model_id" ref="model_member_cotisation"/>
+            <field name="model_id" ref="model_member_cotisation" />
             <field name="state">code</field>
             <field name="code">model._cron_update_overdue_cotisations()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
             <field name="active">True</field>
-            <field name="user_id" ref="base.user_root"/>
+            <field name="user_id" ref="base.user_root" />
         </record>
 
         <!-- Cron pour mettre à jour les statuts des activités -->
         <record id="cron_update_activity_states" model="ir.cron">
             <field name="name">Mise à jour des statuts d'activités</field>
-            <field name="model_id" ref="model_group_activity"/>
+            <field name="model_id" ref="model_group_activity" />
             <field name="state">code</field>
             <field name="code">model._cron_update_activity_states()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">hours</field>
             <field name="numbercall">-1</field>
             <field name="active">True</field>
-            <field name="user_id" ref="base.user_root"/>
+            <field name="user_id" ref="base.user_root" />
         </record>
 
         <!-- Cron pour fermer automatiquement les cotisations mensuelles expirées -->
         <record id="cron_auto_close_expired_monthly" model="ir.cron">
             <field name="name">Fermeture automatique des cotisations expirées</field>
-            <field name="model_id" ref="model_monthly_cotisation"/>
+            <field name="model_id" ref="model_monthly_cotisation" />
             <field name="state">code</field>
             <field name="code">model._cron_auto_close_expired()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
             <field name="active">True</field>
-            <field name="user_id" ref="base.user_root"/>
+            <field name="user_id" ref="base.user_root" />
         </record>
 
         <!-- Cron pour mettre à jour les statuts de paiement des partenaires -->
         <record id="cron_update_payment_status" model="ir.cron">
             <field name="name">Mise à jour des statuts de paiement</field>
-            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="model_id" ref="base.model_res_partner" />
             <field name="state">code</field>
             <field name="code">model._cron_update_payment_status()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
             <field name="active">True</field>
-            <field name="user_id" ref="base.user_root"/>
+            <field name="user_id" ref="base.user_root" />
         </record>
         <!-- Cron pour nettoyer les anciens logs de génération de rapports -->
         <record id="cron_cleanup_report_logs" model="ir.cron">
             <field name="name">Nettoyage logs rapports</field>
-            <field name="model_id" ref="model_report_generation_log"/>
+            <field name="model_id" ref="model_report_generation_log" />
             <field name="state">code</field>
             <field name="code">model.cleanup_old_logs(days=90)</field>
             <field name="interval_number">1</field>
             <field name="interval_type">weeks</field>
             <field name="numbercall">-1</field>
             <field name="active">True</field>
-            <field name="nextcall" eval="(DateTime.now() + timedelta(weeks=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="nextcall"
+                eval="(DateTime.now() + timedelta(weeks=1)).strftime('%Y-%m-%d %H:%M:%S')" />
         </record>
 
         <!-- Séquence pour les paiements -->
@@ -73,7 +74,7 @@
             <field name="code">cotisation.payment</field>
             <field name="prefix">PAY-</field>
             <field name="padding">5</field>
-            <field name="company_id" eval="False"/>
+            <field name="company_id" eval="False" />
         </record>
 
         <!-- Tâche cron pour les rappels automatiques -->
@@ -97,6 +98,34 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False" />
             <field name="use_date_range" eval="True" />
+        </record>
+
+
+        <!-- ================= CRON ET AUTOMATISATIONS ================= -->
+
+        <!-- Tâche cron pour fermer automatiquement les cotisations expirées -->
+        <record id="cron_auto_close_expired_cotisations" model="ir.cron">
+            <field name="name">Fermer automatiquement les cotisations expirées</field>
+            <field name="model_id" ref="model_monthly_cotisation" />
+            <field name="state">code</field>
+            <field name="code">model._cron_auto_close_expired()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+            <field name="doall">False</field>
+        </record>
+
+        <!-- ================= DONNÉES DE DÉMONSTRATION ================= -->
+
+        <!-- Séquence pour les cotisations multiples -->
+        <record id="sequence_multiple_cotisation" model="ir.sequence">
+            <field name="name">Séquence cotisations multiples</field>
+            <field name="code">monthly.cotisation.multiple</field>
+            <field name="prefix">COT-</field>
+            <field name="suffix">-%(year)s</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False" />
         </record>
     </data>
 </odoo>

@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vue formulaire pour l'assistant de fusion -->
+    <record id="view_merge_cotisation_wizard_form" model="ir.ui.view">
+        <field name="name">merge.cotisation.wizard.form</field>
+        <field name="model">merge.cotisation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Fusionner les cotisations mensuelles">
+                <header>
+                    <button name="action_preview_merge" 
+                            string="Prévisualiser" 
+                            type="object" 
+                            class="btn-secondary"
+                            invisible="not can_merge"/>
+                    <button name="action_merge" 
+                            string="Fusionner" 
+                            type="object" 
+                            class="btn-primary"
+                            invisible="not can_merge"/>
+                    <button name="action_cancel" 
+                            string="Annuler" 
+                            type="object" 
+                            class="btn-secondary"/>
+                </header>
+
+                <sheet>
+                    <!-- Alerte d'erreurs -->
+                    <div class="alert alert-danger" 
+                         invisible="not validation_errors">
+                        <h4>Erreurs de validation :</h4>
+                        <field name="validation_errors" readonly="1"/>
+                    </div>
+
+                    <!-- Informations générales -->
+                    <group name="info_generale" string="Informations générales">
+                        <group>
+                            <field name="group_id" readonly="1"/>
+                            <field name="month" readonly="1"/>
+                            <field name="year" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="total_cotisations" readonly="1"/>
+                            <field name="total_members_affected" readonly="1"/>
+                            <field name="can_merge" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Statistiques financières -->
+                    <group name="stats_financieres" string="Statistiques financières">
+                        <group>
+                            <field name="total_expected_amount" readonly="1"/>
+                            <field name="total_collected_amount" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Configuration de la fusion -->
+                    <group name="config_fusion" string="Configuration de la fusion">
+                        <field name="merge_strategy" widget="radio"/>
+                        
+                        <!-- Cotisation de destination -->
+                        <field name="target_cotisation_id" 
+                               invisible="merge_strategy == 'create_new'"
+                               required="merge_strategy != 'create_new'"
+                               domain="[('id', 'in', cotisation_ids)]"/>
+                        
+                        <!-- Paramètres pour nouvelle cotisation -->
+                        <group invisible="merge_strategy != 'create_new'">
+                            <field name="new_cotisation_name" 
+                                   required="merge_strategy == 'create_new'"/>
+                            <field name="new_amount" 
+                                   required="merge_strategy == 'create_new'"/>
+                        </group>
+                    </group>
+
+                    <!-- Options de fusion -->
+                    <group name="options_fusion" string="Options de fusion">
+                        <field name="merge_member_cotisations"/>
+                        <field name="preserve_payments" 
+                               invisible="not merge_member_cotisations"/>
+                        <field name="delete_source_cotisations"/>
+                    </group>
+
+                    <!-- Liste des cotisations à fusionner -->
+                    <notebook>
+                        <page string="Cotisations à fusionner" name="cotisations">
+                            <field name="cotisation_ids" readonly="1">
+                                <tree decoration-info="is_primary" 
+                                      decoration-muted="state == 'draft'"
+                                      decoration-success="state == 'active'"
+                                      decoration-danger="state == 'closed'">
+                                    <field name="cotisation_name"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="state"/>
+                                    <field name="is_primary"/>
+                                    <field name="total_members"/>
+                                    <field name="total_expected" sum="Total attendu"/>
+                                    <field name="total_collected" sum="Total collecté"/>
+                                    <field name="completion_rate" widget="percentage"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="Détails techniques" name="details" 
+                              invisible="not validation_errors">
+                            <group>
+                                <field name="validation_errors" readonly="1" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue formulaire pour la prévisualisation -->
+    <record id="view_merge_preview_wizard_form" model="ir.ui.view">
+        <field name="name">merge.preview.wizard.form</field>
+        <field name="model">merge.preview.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Prévisualisation de la fusion">
+                <header>
+                    <button name="action_confirm_merge" 
+                            string="Confirmer la fusion" 
+                            type="object" 
+                            class="btn-primary"/>
+                    <button name="action_back_to_merge" 
+                            string="Retour" 
+                            type="object" 
+                            class="btn-secondary"/>
+                </header>
+
+                <sheet>
+                    <div class="alert alert-info">
+                        <h4>Prévisualisation de la fusion</h4>
+                        <p>Vérifiez les informations ci-dessous avant de confirmer la fusion.</p>
+                    </div>
+
+                    <group>
+                        <field name="preview_text" 
+                               readonly="1" 
+                               nolabel="1" 
+                               widget="text"
+                               options="{'style': 'font-family: monospace; white-space: pre-wrap;'}"/>
+                        <field name="merge_wizard_id" invisible="1"/>
+                    </group>
+
+                    <div class="alert alert-warning mt-3">
+                        <strong>Attention :</strong> Cette opération ne peut pas être annulée une fois confirmée.
+                        Assurez-vous que les informations sont correctes.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour l'assistant de fusion -->
+    <record id="action_merge_cotisation_wizard" model="ir.actions.act_window">
+        <field name="name">Fusionner les cotisations</field>
+        <field name="res_model">merge.cotisation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+    <!-- Action pour la prévisualisation -->
+    <record id="action_merge_preview_wizard" model="ir.actions.act_window">
+        <field name="name">Prévisualisation de fusion</field>
+        <field name="res_model">merge.preview.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Amélioration de la vue liste des cotisations mensuelles pour inclure l'action de fusion -->
+    <record id="view_monthly_cotisation_tree_enhanced" model="ir.ui.view">
+        <field name="name">monthly.cotisation.tree.enhanced</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="inherit_id" ref="contribution_management.view_monthly_cotisation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="multi_edit">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue formulaire améliorée avec section fusion -->
+    <record id="view_monthly_cotisation_form_merge_section" model="ir.ui.view">
+        <field name="name">monthly.cotisation.form.merge.section</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="inherit_id" ref="contribution_management.view_monthly_cotisation_form"/>
+        <field name="arch" type="xml">
+            <!-- Ajouter des boutons dans le header pour les actions de fusion -->
+            <xpath expr="//header" position="inside">
+                <button name="action_view_month_cotisations" 
+                        string="Voir toutes les cotisations du mois" 
+                        type="object" 
+                        class="btn-secondary"
+                        invisible="state == 'draft'"/>
+                <button name="action_merge_cotisations" 
+                        string="Fusionner" 
+                        type="object" 
+                        class="btn-secondary"
+                        invisible="state in ['draft', 'closed']"/>
+            </xpath>
+
+            <!-- Ajouter une section d'informations sur les cotisations multiples -->
+            <xpath expr="//page[@name='statistiques']" position="after">
+                <page string="Cotisations du mois" name="month_cotisations">
+                    <group>
+                        <button name="action_view_month_cotisations" 
+                                string="Voir toutes les cotisations de ce mois" 
+                                type="object" 
+                                class="btn-primary"/>
+                        <button name="action_consolidate_month" 
+                                string="Consolidation du mois" 
+                                type="object" 
+                                class="btn-secondary"/>
+                    </group>
+                    
+                    <group string="Actions sur les cotisations multiples">
+                        <button name="action_duplicate_current_month" 
+                                string="Créer une cotisation supplémentaire" 
+                                type="object" 
+                                class="btn-secondary"
+                                invisible="state != 'draft'"/>
+                        <button name="action_set_primary" 
+                                string="Définir comme principale" 
+                                type="object" 
+                                class="btn-secondary"
+                                invisible="is_primary or state == 'closed'"/>
+                    </group>
+
+                    <separator string="Informations"/>
+                    <group>
+                        <field name="is_primary" readonly="1"/>
+                        <field name="sequence" readonly="1"/>
+                        <field name="cotisation_name" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue Kanban pour les assistants (optionnel) -->
+    <record id="view_merge_cotisation_wizard_kanban" model="ir.ui.view">
+        <field name="name">merge.cotisation.wizard.kanban</field>
+        <field name="model">merge.cotisation.wizard</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="total_cotisations"/>
+                <field name="total_expected_amount"/>
+                <field name="can_merge"/>
+                <field name="merge_strategy"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <strong>Fusion de <t t-esc="record.total_cotisations.value"/> cotisations</strong>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        Montant total: <t t-esc="record.total_expected_amount.value"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        Stratégie: <t t-esc="record.merge_strategy.value"/>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <span t-if="record.can_merge.raw_value" 
+                                              class="badge badge-success">Prêt à fusionner</span>
+                                        <span t-if="!record.can_merge.raw_value" 
+                                              class="badge badge-danger">Erreurs détectées</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vue recherche pour l'assistant de fusion -->
+    <record id="view_merge_cotisation_wizard_search" model="ir.ui.view">
+        <field name="name">merge.cotisation.wizard.search</field>
+        <field name="model">merge.cotisation.wizard</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher assistants de fusion">
+                <field name="group_id"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="merge_strategy"/>
+                <field name="can_merge"/>
+                
+                <filter name="can_merge" 
+                        string="Prêt à fusionner" 
+                        domain="[('can_merge', '=', True)]"/>
+                <filter name="has_errors" 
+                        string="Avec erreurs" 
+                        domain="[('can_merge', '=', False)]"/>
+                
+                <separator/>
+                <filter name="current_year" 
+                        string="Année courante" 
+                        domain="[('year', '=', context_today().year)]"/>
+                
+                <group expand="0" string="Grouper par">
+                    <filter name="group_by_group" 
+                            string="Groupe" 
+                            context="{'group_by': 'group_id'}"/>
+                    <filter name="group_by_month" 
+                            string="Mois" 
+                            context="{'group_by': 'month'}"/>
+                    <filter name="group_by_strategy" 
+                            string="Stratégie" 
+                            context="{'group_by': 'merge_strategy'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Assistant contextuel depuis la vue liste -->
+    <record id="action_merge_selected_cotisations" model="ir.actions.server">
+        <field name="name">Fusionner les cotisations sélectionnées</field>
+        <field name="model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_model_id" ref="model_monthly_cotisation"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+# Vérifier qu'au moins 2 cotisations sont sélectionnées
+if len(records) &lt; 2:
+    raise UserError("Veuillez sélectionner au moins 2 cotisations à fusionner.")
+
+# Vérifier que toutes les cotisations sont du même groupe/mois/année
+groups = records.mapped('group_id')
+months = records.mapped('month') 
+years = records.mapped('year')
+
+if len(set(groups.ids)) > 1:
+    raise UserError("Toutes les cotisations sélectionnées doivent appartenir au même groupe.")
+
+if len(set(months)) > 1:
+    raise UserError("Toutes les cotisations sélectionnées doivent être du même mois.")
+
+if len(set(years)) > 1:
+    raise UserError("Toutes les cotisations sélectionnées doivent être de la même année.")
+
+# Ouvrir l'assistant de fusion
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Fusionner les cotisations sélectionnées',
+    'res_model': 'merge.cotisation.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'context': {
+        'default_cotisation_ids': [(6, 0, records.ids)],
+    }
+}
+        </field>
+    </record>
+
+    <!-- Actions contextuelles dans la vue formulaire -->
+    <record id="view_monthly_cotisation_form_actions" model="ir.ui.view">
+        <field name="name">monthly.cotisation.form.actions</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="inherit_id" ref="contribution_management.view_monthly_cotisation_form"/>
+        <field name="arch" type="xml">
+            <!-- Smart buttons -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_month_cotisations" 
+                        type="object" 
+                        class="oe_stat_button" 
+                        icon="fa-calendar"
+                        invisible="state == 'draft'">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Cotisations</span>
+                        <span class="o_stat_text">du mois</span>
+                    </div>
+                </button>
+                
+                <button name="action_consolidate_month" 
+                        type="object" 
+                        class="oe_stat_button" 
+                        icon="fa-compress"
+                        invisible="state == 'draft'">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Consolidation</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Statut badges pour les cotisations -->
+    <record id="view_monthly_cotisation_tree_status" model="ir.ui.view">
+        <field name="name">monthly.cotisation.tree.status</field>
+        <field name="model">monthly.cotisation</field>
+        <field name="inherit_id" ref="contribution_management.view_monthly_cotisation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="is_primary" widget="boolean_toggle" 
+                       optional="show" string="Principale"/>
+                <field name="cotisation_name" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
