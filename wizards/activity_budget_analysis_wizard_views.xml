@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vue pour ActivityBudgetAnalysisWizard -->
+    <record id="view_activity_budget_analysis_wizard_form" model="ir.ui.view">
+        <field name="name">activity.budget.analysis.wizard.form</field>
+        <field name="model">activity.budget.analysis.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Analyse Budgétaire">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="activity_id" readonly="1" />
+                        </h1>
+                    </div>
+                    <field name="analysis_type" widget="radio" />
+                    <field name="include_forecast" />
+                    <field name="show_by_category" />
+                    <field name="show_trends" />
+                    <field name="export_format" widget="radio" />
+                </sheet>
+
+                <footer>
+                    <button name="action_generate_analysis"
+                        string="Générer l'analyse"
+                        type="object"
+                        class="btn-primary" />
+                    <button string="Annuler" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue pour ActivityFinancialReportWizard -->
+    <record id="view_activity_financial_report_wizard_form" model="ir.ui.view">
+        <field name="name">activity.financial.report.wizard.form</field>
+        <field name="model">activity.financial.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rapport Financier">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="activity_id" readonly="1" />
+                        </h1>
+                        <h3>Rapport Financier Détaillé</h3>
+                    </div>
+
+                    <group>
+                        <group string="Recettes">
+                            <field name="total_expected" widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="total_collected" widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="collection_rate" />
+                        </group>
+                        <group string="Dépenses">
+                            <field name="total_expenses" widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="budget_amount" widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="budget_remaining" widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="budget_usage_rate" />
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Résultats">
+                            <field name="net_result" widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="profitability_rate" />
+                        </group>
+                        <group string="Participants">
+                            <field name="current_participants" />
+                            <field name="break_even_participants" />
+                        </group>
+                    </group>
+
+                    <group string="Répartition des dépenses">
+                        <field name="expense_breakdown" widget="text" nolabel="1" />
+                    </group>
+
+                    <group string="Recommandations">
+                        <field name="recommendations" widget="html" nolabel="1" />
+                    </group>
+
+                    <field name="currency_id" column_invisible="1" />
+                </sheet>
+
+                <footer>
+                    <button name="action_generate_report"
+                        string="Actualiser"
+                        type="object"
+                        class="btn-primary" />
+                    <button name="action_export_excel"
+                        string="Exporter Excel"
+                        type="object"
+                        class="btn-secondary" />
+                    <button string="Fermer" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue pour ExpenseRejectionWizard -->
+    <record id="view_expense_rejection_wizard_form" model="ir.ui.view">
+        <field name="name">expense.rejection.wizard.form</field>
+        <field name="model">expense.rejection.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rejeter une dépense">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Rejet de dépense</h1>
+                        <h3>Veuillez indiquer le motif du rejet</h3>
+                    </div>
+
+                    <group>
+                        <group string="Informations sur la dépense">
+                            <field name="expense_name" readonly="1" />
+                            <field name="expense_amount" widget="monetary"
+                                options="{'currency_field': 'expense_currency_id'}" />
+                            <field name="expense_date" readonly="1" />
+                            <field name="expense_employee" readonly="1" />
+                        </group>
+                    </group>
+
+                    <group string="Motif du rejet">
+                        <field name="rejection_reason" widget="text"
+                            placeholder="Expliquez pourquoi cette dépense est rejetée..."
+                            nolabel="1" required="1" />
+                    </group>
+
+                    <field name="expense_id" column_invisible="1" />
+                    <field name="expense_currency_id" column_invisible="1" />
+                </sheet>
+
+                <footer>
+                    <button name="action_reject_expense"
+                        string="Rejeter la dépense"
+                        type="object"
+                        class="btn-primary"
+                        data-hotkey="v"
+                        confirm="Êtes-vous sûr de vouloir rejeter cette dépense ?" />
+                    <button string="Annuler" class="btn-secondary" special="cancel" data-hotkey="z" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue pour ActivityBudgetReportDisplay -->
+    <record id="view_activity_budget_report_display_form" model="ir.ui.view">
+        <field name="name">activity.budget.report.display.form</field>
+        <field name="model">activity.budget.report.display</field>
+        <field name="arch" type="xml">
+            <form string="Rapport d'Analyse Budgétaire">
+                <sheet>
+                    <!-- <div class="oe_title">
+                        <h1>
+                            <field name="activity_id" readonly="1" />
+                        </h1>
+                        <h3>
+                            <field name="analysis_type" readonly="1" />
+                        </h3>
+                    </div> -->
+
+                    <group>
+                        <field name="report_html" widget="html" nolabel="1" />
+                    </group>
+
+                    <field name="report_data" invisible="1" />
+                </sheet>
+
+                <footer>
+                    <button string="Fermer" class="btn-primary" special="cancel" data-hotkey="q" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue pour ActivityFinancialAnalysis -->
+    <record id="view_activity_financial_analysis_form" model="ir.ui.view">
+        <field name="name">activity.financial.analysis.form</field>
+        <field name="model">activity.financial.analysis</field>
+        <field name="arch" type="xml">
+            <form string="Analyse Financière Comparative">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Analyse Financière Comparative</h1>
+                        <h3>Comparez les performances de plusieurs activités</h3>
+                    </div>
+
+                    <group>
+                        <group string="Sélection des activités">
+                            <field name="activity_ids" widget="many2many_tags"
+                                placeholder="Sélectionnez les activités à analyser..." required="1" />
+                        </group>
+                        <group string="Période (optionnel)">
+                            <field name="date_from" />
+                            <field name="date_to" />
+                        </group>
+                    </group>
+
+                    <group string="Résultat de l'analyse" invisible="not analysis_result">
+                        <field name="analysis_result" widget="html" nolabel="1" />
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button name="action_generate_comparative_analysis"
+                        string="Générer l'analyse"
+                        type="object"
+                        class="btn-primary"
+                        data-hotkey="v"
+                        invisible="not activity_ids" />
+                    <button string="Fermer" class="btn-secondary" special="cancel" data-hotkey="z" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue liste pour ActivityFinancialAnalysis -->
+    <record id="view_activity_financial_analysis_tree" model="ir.ui.view">
+        <field name="name">activity.financial.analysis.tree</field>
+        <field name="model">activity.financial.analysis</field>
+        <field name="arch" type="xml">
+            <tree string="Analyses Financières" multi_edit="1">
+                <field name="create_date" />
+                <field name="activity_ids" widget="many2many_tags" />
+                <field name="date_from" optional="show" />
+                <field name="date_to" optional="show" />
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue kanban pour ActivityFinancialAnalysis -->
+    <record id="view_activity_financial_analysis_kanban" model="ir.ui.view">
+        <field name="name">activity.financial.analysis.kanban</field>
+        <field name="model">activity.financial.analysis</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="activity_ids" />
+                <field name="create_date" />
+                <field name="date_from" />
+                <field name="date_to" />
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <i class="fa fa-line-chart fa-2x" />
+                            </div>
+                            <div class="oe_kanban_details">
+                                <div class="o_kanban_record_title">
+                                    <strong>Analyse Comparative</strong>
+                                </div>
+                                <div class="o_kanban_record_subtitle">
+                                    <field name="activity_ids" widget="many2many_tags" />
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="create_date" widget="relative" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Actions pour les wizards -->
+    <record id="action_activity_budget_analysis_wizard" model="ir.actions.act_window">
+        <field name="name">Analyse Budgétaire</field>
+        <field name="res_model">activity.budget.analysis.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_activity_id': active_id}</field>
+    </record>
+
+    <record id="action_activity_financial_report_wizard" model="ir.actions.act_window">
+        <field name="name">Rapport Financier</field>
+        <field name="res_model">activity.financial.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_activity_id': active_id}</field>
+    </record>
+
+    <record id="action_expense_rejection_wizard" model="ir.actions.act_window">
+        <field name="name">Rejeter une dépense</field>
+        <field name="res_model">expense.rejection.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_expense_id': active_id}</field>
+    </record>
+
+    <record id="action_activity_financial_analysis" model="ir.actions.act_window">
+        <field name="name">Analyses Financières Comparatives</field>
+        <field name="res_model">activity.financial.analysis</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre première analyse financière comparative !
+            </p>
+            <p>
+                Comparez les performances financières de plusieurs activités pour identifier les
+                tendances et optimiser la gestion.
+            </p>
+        </field>
+    </record>
+
+    <!-- Actions contextuelles pour les boutons sur les activités -->
+    <record id="action_button_budget_analysis" model="ir.actions.server">
+        <field name="name">Analyse Budgétaire</field>
+        <field name="model_id" ref="model_group_activity" />
+        <field name="binding_model_id" ref="model_group_activity" />
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+            'name': 'Analyse Budgétaire',
+            'type': 'ir.actions.act_window',
+            'res_model': 'activity.budget.analysis.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_activity_id': record.id}
+            }
+        </field>
+    </record>
+
+    <record id="action_button_financial_report" model="ir.actions.server">
+        <field name="name">Rapport Financier</field>
+        <field name="model_id" ref="model_group_activity" />
+        <field name="binding_model_id" ref="model_group_activity" />
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+            'name': 'Rapport Financier',
+            'type': 'ir.actions.act_window',
+            'res_model': 'activity.financial.report.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_activity_id': record.id}
+            }
+        </field>
+    </record>
+
+    <record id="action_button_reject_expense" model="ir.actions.server">
+    <field name="name">Rejeter</field>
+    <field name="model_id" ref="model_activity_expense"/>
+    <field name="binding_model_id" ref="model_activity_expense"/>
+    <field name="binding_view_types">form,tree</field>
+    <field name="state">code</field>
+    <field name="code">
+if record.state == 'submitted':
+    action = {
+        'name': 'Rejeter la dépense',
+        'type': 'ir.actions.act_window',
+        'res_model': 'expense.rejection.wizard',
+        'view_mode': 'form',
+        'target': 'new',
+        'context': {'default_expense_id': record.id}
+    }
+else:
+    raise UserError("Seules les dépenses soumises peuvent être rejetées.")
+    </field>
+</record>
+
+
+    <!-- Vue search pour ActivityFinancialAnalysis -->
+    <record id="view_activity_financial_analysis_search" model="ir.ui.view">
+        <field name="name">activity.financial.analysis.search</field>
+        <field name="model">activity.financial.analysis</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher Analyses Financières">
+                <field name="activity_ids" string="Activités" />
+                <field name="date_from" string="Date début" />
+                <field name="date_to" string="Date fin" />
+
+                <filter string="Cette semaine" name="this_week"
+                    domain="[('create_date', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]" />
+                <filter string="Ce mois" name="this_month"
+                    domain="[('create_date', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]" />
+
+                <separator />
+                <filter string="Avec période définie" name="with_period"
+                    domain="[('date_from', '!=', False), ('date_to', '!=', False)]" />
+
+                <group expand="0" string="Grouper par">
+                    <filter string="Date de création" name="group_create_date"
+                        context="{'group_by': 'create_date:month'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vue graphique pour les analyses -->
+    <record id="view_activity_financial_graph" model="ir.ui.view">
+        <field name="name">activity.financial.graph</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <graph string="Analyse Financière" type="bar" sample="1">
+                <field name="name" type="row" />
+                <field name="total_collected" type="measure" />
+                <field name="total_expenses" type="measure" />
+                <field name="net_result" type="measure" />
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vue pivot pour les analyses -->
+    <record id="view_activity_financial_pivot" model="ir.ui.view">
+        <field name="name">activity.financial.pivot</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse Financière" sample="1">
+                <field name="group_id" type="row" />
+                <field name="state" type="col" />
+                <field name="total_collected" type="measure" />
+                <field name="total_expenses" type="measure" />
+                <field name="net_result" type="measure" />
+                <field name="participant_count" type="measure" />
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Tableau de bord pour analyses financières -->
+    <!-- <record id="view_activity_financial_dashboard" model="ir.ui.view">
+        <field name="name">activity.financial.dashboard</field>
+        <field name="model">activity.financial.analysis</field>
+        <field name="arch" type="xml">
+            <dashboard>
+                <view type="graph" ref="view_activity_financial_graph"/>
+                <view type="pivot" ref="view_activity_financial_pivot"/>
+            </dashboard>
+        </field>
+    </record> -->
+
+    <!-- Menus -->
+    <menuitem id="menu_activity_financial_analysis"
+        name="Analyses Financières"
+        parent="base.menu_management"
+        action="action_activity_financial_analysis"
+        sequence="15" />
+
+</odoo>

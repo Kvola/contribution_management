@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ================= VUES POUR LES ACTIVITÉS DE GROUPE ================= -->
+    <!-- ================= VUES POUR LES ACTIVITÉS DE GROUPE (MISES À JOUR) ================= -->
     
-    <!-- Vue Tree des activités -->
+    <!-- Vue Tree des activités (mise à jour avec dépenses) -->
     <record id="view_group_activity_tree" model="ir.ui.view">
         <field name="name">group.activity.tree</field>
         <field name="model">group.activity</field>
         <field name="arch" type="xml">
             <tree decoration-info="state=='draft'" decoration-success="state=='completed'" 
                   decoration-warning="state=='ongoing'" decoration-muted="state=='cancelled'"
+                  decoration-danger="is_over_budget"
                   sample="1">
                 <field name="name"/>
                 <field name="group_id"/>
@@ -22,7 +23,12 @@
                 <field name="max_participants" optional="hide"/>
                 <field name="total_members"/>
                 <field name="paid_members"/>
-                <field name="completion_rate" />
+                <field name="completion_rate"/>
+                <!-- Nouveaux champs financiers -->
+                <field name="budget_amount" widget="monetary" optional="hide"/>
+                <field name="total_expenses" widget="monetary" optional="hide"/>
+                <field name="net_result" widget="monetary" optional="hide"/>
+                <field name="is_over_budget" column_invisible="1"/>
                 <field name="state" widget="badge" 
                        decoration-info="state=='draft'" 
                        decoration-success="state=='completed'"
@@ -33,7 +39,7 @@
         </field>
     </record>
 
-    <!-- Vue Form des activités -->
+    <!-- Vue Form des activités (mise à jour complète) -->
     <record id="view_group_activity_form" model="ir.ui.view">
         <field name="name">group.activity.form</field>
         <field name="model">group.activity</field>
@@ -46,8 +52,8 @@
                     <button name="action_force_confirm" string="Forcer la confirmation" type="object" 
                             invisible="state != 'draft'" groups="base.group_system"
                             confirm="Forcer la confirmation même si la date est passée ?"/>
-                    <button name="action_start_activity" string="Démarrer" type="object" 
-                            class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <!-- <button name="action_start_activity" string="Démarrer" type="object" 
+                            class="oe_highlight" invisible="state != 'confirmed'"/> -->
                     <button name="action_force_start" string="Forcer le démarrage" type="object" 
                             invisible="state != 'confirmed'" groups="base.group_system"/>
                     <button name="action_complete" string="Terminer" type="object" 
@@ -62,9 +68,15 @@
                             icon="fa-copy"/>
                     <button name="action_send_reminders" string="Envoyer rappels" type="object" 
                             invisible="state not in ['confirmed', 'ongoing']" icon="fa-envelope"/>
+                    <!-- Nouveaux boutons pour les dépenses -->
+                    <button name="action_check_budget_status" string="Vérifier budget" type="object" 
+                            invisible="not budget_amount" icon="fa-calculator"/>
+                    <button name="action_financial_report" string="Rapport financier" type="object" 
+                            invisible="state == 'draft'" icon="fa-bar-chart"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,ongoing,completed"/>
                     <field name="is_full" invisible="1"/>
                     <field name="has_minimum_participants" invisible="1"/>
+                    <field name="is_over_budget" invisible="1"/>
                 </header>
                 
                 <sheet>
@@ -84,12 +96,17 @@
                                 invisible="state == 'draft' or unpaid_members == 0">
                             <field name="unpaid_members" widget="statinfo" string="Impayé"/>
                         </button>
+                        <!-- Nouveaux boutons pour les dépenses -->
+                        <button name="action_view_expenses" type="object" 
+                                class="oe_stat_button" icon="fa-credit-card">
+                            <field name="expense_count" widget="statinfo" string="Dépenses"/>
+                        </button>
                         <button name="action_add_participants" string="Ajouter participants" type="object" 
                                 class="oe_stat_button" icon="fa-user-plus"
                                 invisible="state not in ['confirmed', 'ongoing']"/>
                     </div>
                     
-                    <!-- Alertes de statut -->
+                    <!-- Alertes de statut (mises à jour) -->
                     <div class="alert alert-info" role="alert" invisible="state != 'draft'">
                         <p><i class="fa fa-info-circle"/> Cette activité est en brouillon. Confirmez-la pour générer les cotisations.</p>
                     </div>
@@ -99,6 +116,11 @@
                     <div class="alert alert-danger" role="alert" invisible="has_minimum_participants or min_participants == 0">
                         <p><i class="fa fa-exclamation-triangle"/> Nombre minimum de participants non atteint 
                            (<field name="participant_count"/>/<field name="min_participants"/>)</p>
+                    </div>
+                    <!-- Nouvelle alerte pour le budget -->
+                    <div class="alert alert-danger" role="alert" invisible="not is_over_budget">
+                        <p><i class="fa fa-exclamation-triangle"/> <strong>Dépassement de budget !</strong> 
+                           Dépenses: <field name="total_expenses" widget="monetary"/> / Budget: <field name="budget_amount" widget="monetary"/></p>
                     </div>
                     
                     <group>
@@ -113,6 +135,8 @@
                             <field name="date_start" required="1"/>
                             <field name="date_end"/>
                             <field name="duration_hours" invisible="not date_end"/>
+                            <!-- Nouveau champ budget -->
+                            <field name="budget_amount" widget="monetary"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="active" invisible="1"/>
                         </group>
@@ -146,11 +170,26 @@
                                 <group string="Montants">
                                     <field name="total_expected" widget="monetary"/>
                                     <field name="total_collected" widget="monetary"/>
-                                    <field name="completion_rate" widget="percentage" digits="[3,1]"/>
+                                    <field name="completion_rate" />
                                 </group>
                             </group>
                             
-                            <!-- Graphique de progression simplifié sans directives OWL -->
+                            <!-- Nouvelle section financière -->
+                            <group string="Analyse financière" invisible="not budget_amount and not total_expenses">
+                                <group string="Budget et dépenses">
+                                    <field name="budget_amount" widget="monetary"/>
+                                    <field name="total_expenses" widget="monetary"/>
+                                    <field name="budget_remaining" widget="monetary"/>
+                                    <field name="budget_used_percentage" />
+                                </group>
+                                <group string="Rentabilité">
+                                    <field name="net_result" widget="monetary"/>
+                                    <field name="profitability_rate" />
+                                    <field name="break_even_participants"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Graphique de progression des paiements -->
                             <div class="row" invisible="completion_rate == 0">
                                 <div class="col-12">
                                     <h4>Progression des paiements</h4>
@@ -163,7 +202,7 @@
                                                  aria-valuemax="100">
                                             </div>
                                         </div>
-                                        <field name="completion_rate" widget="percentage" digits="[3,1]"/>
+                                        <field name="completion_rate" />
                                     </div>
                                 </div>
                             </div>
@@ -186,8 +225,38 @@
                                     <button name="action_record_payment" string="Paiement" type="object" 
                                             icon="fa-money" invisible="state in ['paid', 'cancelled']"
                                             context="{'default_amount': remaining_amount}"/>
-                                    <!-- <button name="action_send_reminder" string="Rappel" type="object" 
-                                            icon="fa-envelope" invisible="state in ['paid', 'cancelled']"/> -->
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <!-- Nouvelle page pour les dépenses -->
+                        <page string="Dépenses" name="expenses">
+                            <div class="oe_button_box" name="expense_button_box">
+                                <button name="action_add_expense" string="Nouvelle dépense" type="object" 
+                                        class="btn-primary" icon="fa-plus"/>
+                                <button name="action_view_budget_analysis" string="Analyse budgétaire" type="object" 
+                                        invisible="not budget_amount" icon="fa-pie-chart"/>
+                            </div>
+                            
+                            <field name="expense_ids" context="{'default_activity_id': active_id}">
+                                <tree decoration-success="state=='paid'" decoration-info="state=='approved'"
+                                      decoration-warning="state=='submitted'" decoration-danger="state=='rejected'"
+                                      decoration-muted="state=='draft'">
+                                    <field name="date"/>
+                                    <field name="name"/>
+                                    <field name="category_id"/>
+                                    <field name="partner_id"/>
+                                    <field name="amount" widget="monetary"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="employee_id"/>
+                                    <field name="state" widget="badge"/>
+                                    <button name="action_submit" string="Soumettre" type="object" 
+                                            icon="fa-send" invisible="state != 'draft'"/>
+                                    <button name="action_approve" string="Approuver" type="object" 
+                                            icon="fa-check" invisible="state != 'submitted'"
+                                            groups="base.group_system"/>
+                                    <button name="action_mark_paid" string="Marquer payé" type="object" 
+                                            icon="fa-money" invisible="state != 'approved'"/>
                                 </tree>
                             </field>
                         </page>
@@ -212,7 +281,7 @@
         </field>
     </record>
 
-    <!-- Vue Kanban des activités -->
+    <!-- Vue Kanban des activités (mise à jour) -->
     <record id="view_group_activity_kanban" model="ir.ui.view">
         <field name="name">group.activity.kanban</field>
         <field name="model">group.activity</field>
@@ -229,6 +298,11 @@
                 <field name="max_participants"/>
                 <field name="is_full"/>
                 <field name="location"/>
+                <!-- Nouveaux champs -->
+                <field name="budget_amount"/>
+                <field name="total_expenses"/>
+                <field name="is_over_budget"/>
+                <field name="net_result"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_card oe_kanban_global_click">
@@ -239,6 +313,9 @@
                                             <field name="name"/>
                                             <t t-if="record.is_full.raw_value">
                                                 <span class="badge badge-warning ms-2">Complet</span>
+                                            </t>
+                                            <t t-if="record.is_over_budget.raw_value">
+                                                <span class="badge badge-danger ms-2">⚠ Budget</span>
                                             </t>
                                         </strong><br/>
                                         <small class="o_kanban_record_subtitle text-muted">
@@ -265,6 +342,25 @@
                                         </div>
                                     </div>
                                     
+                                    <!-- Informations financières -->
+                                    <t t-if="record.budget_amount.raw_value or record.total_expenses.raw_value">
+                                        <div class="row mt-1">
+                                            <div class="col-12">
+                                                <small class="text-muted">
+                                                    <t t-if="record.budget_amount.raw_value">
+                                                        Budget: <field name="budget_amount" widget="monetary"/>
+                                                    </t>
+                                                    <t t-if="record.total_expenses.raw_value">
+                                                        <br/>Dépenses: <field name="total_expenses" widget="monetary"/>
+                                                    </t>
+                                                    <t t-if="record.net_result.raw_value and record.state.raw_value != 'draft'">
+                                                        <br/>Résultat: <field name="net_result" widget="monetary"/>
+                                                    </t>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </t>
+                                    
                                     <t t-if="record.completion_rate.raw_value and record.state.raw_value != 'draft'">
                                         <div class="progress mt-2" style="height: 8px;">
                                             <div class="progress-bar" role="progressbar" 
@@ -274,7 +370,7 @@
                                                  aria-valuemax="100"/>
                                         </div>
                                         <small class="text-muted">
-                                            Paiements: <field name="completion_rate" widget="percentage" digits="[3,1]"/>
+                                            Paiements: <field name="completion_rate" />
                                         </small>
                                     </t>
                                 </div>
@@ -286,25 +382,7 @@
         </field>
     </record>
 
-    <!-- Vue Calendar des activités -->
-    <record id="view_group_activity_calendar" model="ir.ui.view">
-        <field name="name">group.activity.calendar</field>
-        <field name="model">group.activity</field>
-        <field name="arch" type="xml">
-            <calendar date_start="date_start" date_stop="date_end" string="Activités" 
-                      mode="month" color="group_id" quick_create="0"
-                      event_open_popup="1" event_limit="5">
-                <field name="name"/>
-                <field name="group_id"/>
-                <field name="state"/>
-                <field name="location"/>
-                <field name="cotisation_amount"/>
-                <field name="participant_count"/>
-            </calendar>
-        </field>
-    </record>
-
-    <!-- Vue Pivot pour les statistiques -->
+    <!-- Vue Pivot mise à jour -->
     <record id="view_group_activity_pivot" model="ir.ui.view">
         <field name="name">group.activity.pivot</field>
         <field name="model">group.activity</field>
@@ -314,24 +392,14 @@
                 <field name="date_start" interval="month" type="col"/>
                 <field name="cotisation_amount" type="measure"/>
                 <field name="total_collected" type="measure"/>
+                <field name="total_expenses" type="measure"/>
+                <field name="net_result" type="measure"/>
                 <field name="participant_count" type="measure"/>
             </pivot>
         </field>
     </record>
 
-    <!-- Vue Graph pour les statistiques -->
-    <record id="view_group_activity_graph" model="ir.ui.view">
-        <field name="name">group.activity.graph</field>
-        <field name="model">group.activity</field>
-        <field name="arch" type="xml">
-            <graph string="Évolution des activités" sample="1">
-                <field name="date_start" interval="month"/>
-                <field name="total_collected" type="measure"/>
-            </graph>
-        </field>
-    </record>
-
-    <!-- Filtres pour les activités -->
+    <!-- Filtres mis à jour -->
     <record id="view_group_activity_search" model="ir.ui.view">
         <field name="name">group.activity.search</field>
         <field name="model">group.activity</field>
@@ -352,6 +420,12 @@
                 <filter name="has_spots" string="Places disponibles" domain="[('is_full', '=', False), ('max_participants', '>', 0)]"/>
                 <filter name="minimum_reached" string="Minimum atteint" domain="[('has_minimum_participants', '=', True)]"/>
                 <separator/>
+                <!-- Nouveaux filtres financiers -->
+                <filter name="with_budget" string="Avec budget" domain="[('budget_amount', '>', 0)]"/>
+                <filter name="over_budget" string="Dépassement budget" domain="[('is_over_budget', '=', True)]"/>
+                <filter name="profitable" string="Rentables" domain="[('net_result', '>', 0)]"/>
+                <filter name="has_expenses" string="Avec dépenses" domain="[('expense_count', '>', 0)]"/>
+                <separator/>
                 <filter name="active" string="Actives" domain="[('active', '=', True)]"/>
                 <filter name="archived" string="Archivées" domain="[('active', '=', False)]"/>
                 <separator/>
@@ -364,9 +438,6 @@
                 <filter name="this_month" string="Ce mois" 
                         domain="[('date_start', '&gt;=', context_today().strftime('%%Y-%%m-01')),
                                  ('date_start', '&lt;', ((context_today().replace(day=1) + datetime.timedelta(days=32)).replace(day=1)).strftime('%%Y-%%m-%%d'))]"/>
-                <filter name="next_month" string="Mois prochain" 
-                        domain="[('date_start', '&gt;=', ((context_today().replace(day=1) + datetime.timedelta(days=32)).replace(day=1)).strftime('%%Y-%%m-%%d')),
-                                 ('date_start', '&lt;', ((context_today().replace(day=1) + datetime.timedelta(days=62)).replace(day=1)).strftime('%%Y-%%m-%%d'))]"/>
                 <separator/>
                 <filter name="unpaid_cotisations" string="Cotisations impayées" 
                         domain="[('unpaid_members', '&gt;', 0)]"/>
@@ -389,7 +460,484 @@
         </field>
     </record>
 
-    <!-- Action principale des activités -->
+    <!-- ================= VUES POUR LES DÉPENSES D'ACTIVITÉ ================= -->
+    
+    <!-- Vue Tree des dépenses -->
+    <record id="view_activity_expense_tree" model="ir.ui.view">
+        <field name="name">activity.expense.tree</field>
+        <field name="model">activity.expense</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="state=='paid'" decoration-info="state=='approved'"
+                  decoration-warning="state=='submitted'" decoration-danger="state=='rejected'"
+                  decoration-muted="state=='draft'" sample="1">
+                <field name="date"/>
+                <field name="name"/>
+                <field name="activity_id"/>
+                <field name="category_id"/>
+                <field name="partner_id"/>
+                <field name="employee_id"/>
+                <field name="amount" widget="monetary"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="payment_method"/>
+                <field name="reference" optional="hide"/>
+                <field name="state" widget="badge"/>
+                <field name="approver_id" optional="hide"/>
+                <field name="approval_date" optional="hide"/>
+                <button name="action_submit" string="Soumettre" type="object" 
+                        icon="fa-send" invisible="state != 'draft'"/>
+                <button name="action_approve" string="Approuver" type="object" 
+                        icon="fa-check" invisible="state != 'submitted'"
+                        groups="base.group_system"/>
+                <button name="action_reject" string="Rejeter" type="object" 
+                        icon="fa-times" invisible="state != 'submitted'"
+                        groups="base.group_system"/>
+                <button name="action_mark_paid" string="Payé" type="object" 
+                        icon="fa-money" invisible="state != 'approved'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Form des dépenses -->
+    <record id="view_activity_expense_form" model="ir.ui.view">
+        <field name="name">activity.expense.form</field>
+        <field name="model">activity.expense</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Soumettre" type="object" 
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approuver" type="object" 
+                            class="oe_highlight" invisible="state != 'submitted'"
+                            groups="base.group_system"/>
+                    <button name="action_reject" string="Rejeter" type="object" 
+                            invisible="state != 'submitted'" groups="base.group_system"/>
+                    <button name="action_mark_paid" string="Marquer comme payé" type="object" 
+                            class="oe_highlight" invisible="state != 'approved'"/>
+                    <button name="action_reset_to_draft" string="Remettre en brouillon" type="object" 
+                            invisible="state in ['paid']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,paid"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Description de la dépense..."/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="activity_id" options="{'no_create': True}"/>
+                            <field name="date"/>
+                            <field name="amount" widget="monetary"/>
+                            <field name="currency_id"/>
+                            <field name="category_id"/>
+                        </group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="employee_id"/>
+                            <field name="payment_method"/>
+                            <field name="reference"/>
+                            <field name="is_reimbursable"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Approbation" invisible="state == 'draft'">
+                        <group>
+                            <field name="approver_id" readonly="1"/>
+                            <field name="approval_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="rejection_reason" invisible="state != 'rejected'"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Justificatifs">
+                        <field name="receipt_attachment_ids" widget="many2many_binary" string="Fichiers"/>
+                    </group>
+                    
+                    <field name="notes" placeholder="Notes et commentaires additionnels..."/>
+                </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue Kanban des dépenses -->
+    <record id="view_activity_expense_kanban" model="ir.ui.view">
+        <field name="name">activity.expense.kanban</field>
+        <field name="model">activity.expense</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column" sample="1">
+                <field name="name"/>
+                <field name="activity_id"/>
+                <field name="date"/>
+                <field name="amount"/>
+                <field name="currency_id"/>
+                <field name="category_id"/>
+                <field name="state"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong><br/>
+                                        <small class="o_kanban_record_subtitle text-muted">
+                                            <i class="fa fa-calendar"/> <field name="date"/>
+                                            <t t-if="record.category_id.raw_value">
+                                                • <field name="category_id"/>
+                                            </t>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <strong class="text-primary">
+                                                <field name="amount" widget="monetary"/>
+                                            </strong>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-1">
+                                        <div class="col-12">
+                                            <small class="text-muted">
+                                                <i class="fa fa-building"/> <field name="activity_id"/>
+                                                <t t-if="record.partner_id.raw_value">
+                                                    <br/><i class="fa fa-user"/> <field name="partner_id"/>
+                                                </t>
+                                                <t t-if="record.employee_id.raw_value">
+                                                    <br/><i class="fa fa-user-circle"/> <field name="employee_id"/>
+                                                </t>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vue Search des dépenses -->
+    <record id="view_activity_expense_search" model="ir.ui.view">
+        <field name="name">activity.expense.search</field>
+        <field name="model">activity.expense</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Description"/>
+                <field name="activity_id" string="Activité"/>
+                <field name="category_id" string="Catégorie"/>
+                <field name="partner_id" string="Fournisseur"/>
+                <field name="employee_id" string="Responsable"/>
+                <field name="reference" string="Référence"/>
+                <separator/>
+                <filter name="draft" string="Brouillon" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Soumises" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Approuvées" domain="[('state', '=', 'approved')]"/>
+                <filter name="paid" string="Payées" domain="[('state', '=', 'paid')]"/>
+                <filter name="rejected" string="Rejetées" domain="[('state', '=', 'rejected')]"/>
+                <separator/>
+                <filter name="reimbursable" string="Remboursables" domain="[('is_reimbursable', '=', True)]"/>
+                <filter name="my_expenses" string="Mes dépenses" domain="[('employee_id.user_ids', 'in', [uid])]"/>
+                <filter name="to_approve" string="À approuver" domain="[('state', '=', 'submitted')]" groups="base.group_system"/>
+                <separator/>
+                <filter name="this_month" string="Ce mois" 
+                        domain="[('date', '&gt;=', context_today().strftime('%%Y-%%m-01')),
+                                 ('date', '&lt;', ((context_today().replace(day=1) + datetime.timedelta(days=32)).replace(day=1)).strftime('%%Y-%%m-%%d'))]"/>
+                <filter name="last_month" string="Mois dernier" 
+                        domain="[('date', '&gt;=', ((context_today().replace(day=1) - datetime.timedelta(days=1)).replace(day=1)).strftime('%%Y-%%m-%%d')),
+                                 ('date', '&lt;', context_today().strftime('%%Y-%%m-01'))]"/>
+                <separator/>
+                <filter name="filter_date" date="date" string="Date"/>
+                <group expand="0" string="Grouper par">
+                    <filter name="group_by_activity" string="Activité" context="{'group_by': 'activity_id'}"/>
+                    <filter name="group_by_category" string="Catégorie" context="{'group_by': 'category_id'}"/>
+                    <filter name="group_by_state" string="Statut" context="{'group_by': 'state'}"/>
+                    <filter name="group_by_employee" string="Responsable" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_by_month" string="Mois" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ================= VUES POUR LES CATÉGORIES DE DÉPENSES ================= -->
+    
+    <!-- Vue Tree des catégories -->
+    <record id="view_expense_category_tree" model="ir.ui.view">
+        <field name="name">expense.category.tree</field>
+        <field name="model">expense.category</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom" default_order="sequence,name">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="default_budget_percentage" />
+                <field name="description"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Form des catégories -->
+    <record id="view_expense_category_form" model="ir.ui.view">
+        <field name="name">expense.category.form</field>
+        <field name="model">expense.category</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button" options="{'terminology': 'archive'}"/>
+                        </button>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="default_budget_percentage" />
+                            <field name="color" widget="color"/>
+                        </group>
+                    </group>
+                    
+                    <field name="description" placeholder="Description de la catégorie..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================= ACTIONS POUR LES DÉPENSES ================= -->
+    
+    <!-- Action principale des dépenses -->
+    <record id="action_activity_expense" model="ir.actions.act_window">
+        <field name="name">Dépenses d'activités</field>
+        <field name="res_model">activity.expense</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_activity_expense_search"/>
+        <field name="context">{
+            'search_default_draft': 1,
+            'search_default_submitted': 1,
+            'search_default_approved': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Ajoutez votre première dépense d'activité !
+            </p>
+            <p>
+                Enregistrez et suivez toutes les dépenses liées aux activités de groupe.
+                Les dépenses passent par un workflow d'approbation avant d'être comptabilisées.
+            </p>
+            <p>
+                <strong>Workflow :</strong><br/>
+                1. Créez la dépense en brouillon<br/>
+                2. Soumettez pour approbation<br/>
+                3. Approuvez et marquez comme payée
+            </p>
+        </field>
+    </record>
+
+    <!-- Action pour les dépenses à approuver -->
+    <record id="action_expenses_to_approve" model="ir.actions.act_window">
+        <field name="name">Dépenses à approuver</field>
+        <field name="res_model">activity.expense</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('state', '=', 'submitted')]</field>
+        <field name="context">{'search_default_submitted': 1}</field>
+    </record>
+
+    <!-- Action pour mes dépenses -->
+    <record id="action_my_expenses" model="ir.actions.act_window">
+        <field name="name">Mes dépenses</field>
+        <field name="res_model">activity.expense</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('employee_id.user_ids', 'in', [uid])]</field>
+        <field name="context">{'search_default_my_expenses': 1}</field>
+    </record>
+
+    <!-- Action pour les catégories -->
+    <record id="action_expense_category" model="ir.actions.act_window">
+        <field name="name">Catégories de dépenses</field>
+        <field name="res_model">expense.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre première catégorie de dépense !
+            </p>
+            <p>
+                Organisez vos dépenses par catégories (transport, restauration, matériel, etc.)
+                pour faciliter le suivi et l'analyse budgétaire.
+            </p>
+        </field>
+    </record>
+
+    <!-- ================= WIZARDS ET VUES SPÉCIALISÉES ================= -->
+    
+    <!-- Vue pour le wizard d'analyse budgétaire -->
+    <record id="view_activity_budget_analysis_wizard" model="ir.ui.view">
+        <field name="name">activity.budget.analysis.wizard.form</field>
+        <field name="model">activity.budget.analysis.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_generate_analysis" string="Générer l'analyse" type="object" class="oe_highlight"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="activity_id" readonly="1"/>
+                        <field name="analysis_type"/>
+                        <field name="include_forecast" invisible="analysis_type != 'detailed'"/>
+                    </group>
+                    
+                    <group string="Options d'affichage">
+                        <field name="show_by_category"/>
+                        <field name="show_trends"/>
+                        <field name="export_format"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue pour le wizard de rapport financier -->
+    <record id="view_activity_financial_report_wizard" model="ir.ui.view">
+        <field name="name">activity.financial.report.wizard.form</field>
+        <field name="model">activity.financial.report.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_generate_report" string="Générer le rapport" type="object" class="oe_highlight"/>
+                    <button name="action_export_excel" string="Exporter Excel" type="object"/>
+                    <button string="Fermer" class="btn-secondary" special="cancel"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="activity_id" readonly="1"/>
+                    </group>
+                    
+                    <!-- Résumé financier -->
+                    <group string="Résumé financier">
+                        <group>
+                            <label for="total_expected" string="Recettes attendues"/>
+                            <div>
+                                <field name="total_expected" widget="monetary" class="oe_inline"/>
+                                <field name="currency_id" invisible="1"/>
+                            </div>
+                            <label for="total_collected" string="Recettes collectées"/>
+                            <div>
+                                <field name="total_collected" widget="monetary" class="oe_inline"/>
+                                <field name="collection_rate" class="oe_inline ml16"/>
+                            </div>
+                        </group>
+                        <group>
+                            <label for="total_expenses" string="Dépenses totales"/>
+                            <div>
+                                <field name="total_expenses" widget="monetary" class="oe_inline"/>
+                                <field name="budget_usage_rate" class="oe_inline ml16" invisible="not budget_amount"/>
+                            </div>
+                            <label for="net_result" string="Résultat net"/>
+                            <div>
+                                <field name="net_result" widget="monetary" class="oe_inline"/>
+                                <field name="profitability_rate" class="oe_inline ml16"/>
+                            </div>
+                        </group>
+                    </group>
+                    
+                    <!-- Indicateurs de performance -->
+                    <group string="Indicateurs de performance">
+                        <group>
+                            <field name="break_even_participants"/>
+                            <field name="current_participants"/>
+                        </group>
+                        <group>
+                            <field name="budget_amount" widget="monetary" invisible="not budget_amount"/>
+                            <field name="budget_remaining" widget="monetary" invisible="not budget_amount"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Répartition des dépenses par catégorie -->
+                    <group string="Répartition des dépenses" invisible="not expense_breakdown">
+                        <field name="expense_breakdown" widget="text" readonly="1"/>
+                    </group>
+                    
+                    <!-- Recommandations -->
+                    <group string="Recommandations" invisible="not recommendations">
+                        <field name="recommendations" widget="html" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue pour le wizard de rejet de dépense -->
+    <record id="view_expense_rejection_wizard" model="ir.ui.view">
+        <field name="name">expense.rejection.wizard.form</field>
+        <field name="model">expense.rejection.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_reject_expense" string="Confirmer le rejet" type="object" class="oe_highlight"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="expense_id" readonly="1"/>
+                        <field name="rejection_reason" required="1" placeholder="Veuillez préciser le motif du rejet..."/>
+                    </group>
+                    
+                    <group string="Détails de la dépense">
+                        <group>
+                            <field name="expense_name" readonly="1"/>
+                            <field name="expense_amount" widget="monetary" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="expense_date" readonly="1"/>
+                            <field name="expense_employee" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================= TABLEAUX DE BORD ET RAPPORTS ================= -->
+    
+    <!-- Vue dashboard pour les activités -->
+    <!-- <record id="view_group_activity_dashboard" model="ir.ui.view">
+        <field name="name">group.activity.dashboard</field>
+        <field name="model">group.activity</field>
+        <field name="arch" type="xml">
+            <dashboard>
+                <view type="graph" ref="view_group_activity_graph"/>
+                <view type="pivot" ref="view_group_activity_pivot"/>
+                <group expand="1" string="Filtres">
+                    <filter name="this_year" string="Cette année"
+                            domain="[('date_start', '&gt;=', context_today().strftime('%%Y-01-01')),
+                                     ('date_start', '&lt;', (context_today().replace(year=context_today().year+1, month=1, day=1)).strftime('%%Y-%%m-%%d'))]"/>
+                    <filter name="completed" string="Terminées" domain="[('state', '=', 'completed')]"/>
+                    <filter name="profitable" string="Rentables" domain="[('net_result', '>', 0)]"/>
+                </group>
+            </dashboard>
+        </field>
+    </record> -->
+
+    <!-- Actions mises à jour avec nouveaux contextes -->
     <record id="action_group_activity" model="ir.actions.act_window">
         <field name="name">Activités de groupe</field>
         <field name="res_model">group.activity</field>
@@ -406,60 +954,30 @@
                 Créez votre première activité de groupe !
             </p>
             <p>
-                Les activités permettent d'organiser des événements avec cotisations 
-                et de suivre les paiements des membres automatiquement.
+                Les activités permettent d'organiser des événements avec cotisations et dépenses,
+                et de suivre la rentabilité automatiquement.
             </p>
             <p>
-                <strong>Étapes :</strong><br/>
-                1. Créez l'activité en brouillon<br/>
-                2. Confirmez pour générer les cotisations<br/>
-                3. Suivez les paiements et relancez si nécessaire
+                <strong>Nouvelles fonctionnalités :</strong><br/>
+                • Gestion du budget et des dépenses<br/>
+                • Suivi de la rentabilité en temps réel<br/>
+                • Workflow d'approbation des dépenses<br/>
+                • Rapports financiers détaillés
             </p>
         </field>
     </record>
 
-    <!-- Action pour les activités à venir -->
-    <record id="action_upcoming_activities" model="ir.actions.act_window">
-        <field name="name">Activités à venir</field>
+    <!-- Action pour le tableau de bord financier -->
+    <record id="action_activity_financial_dashboard" model="ir.actions.act_window">
+        <field name="name">Tableau de bord financier</field>
         <field name="res_model">group.activity</field>
-        <field name="view_mode">kanban,tree,calendar,form</field>
-        <field name="domain">[('date_start', '&gt;=', context_today()), ('state', 'in', ['confirmed', 'ongoing'])]</field>
-        <field name="context">{'search_default_this_month': 1}</field>
-    </record>
-
-    <!-- Action pour les activités en cours -->
-    <record id="action_ongoing_activities" model="ir.actions.act_window">
-        <field name="name">Activités en cours</field>
-        <field name="res_model">group.activity</field>
-        <field name="view_mode">kanban,tree,form</field>
-        <field name="domain">[('state', '=', 'ongoing')]</field>
-    </record>
-
-    <!-- Action pour voir les cotisations d'une activité -->
-    <record id="action_activity_cotisations" model="ir.actions.act_window">
-        <field name="name">Cotisations de l'activité</field>
-        <field name="res_model">member.cotisation</field>
-        <field name="view_mode">tree,kanban,form</field>
-        <field name="domain">[('activity_id', '=', active_id)]</field>
+        <field name="view_mode">pivot,graph,tree</field>
+        <field name="domain">[('state', '!=', 'draft')]</field>
         <field name="context">{
-            'default_activity_id': active_id,
-            'default_cotisation_type': 'activity',
-            'search_default_group_by_state': 1
+            'search_default_this_year': 1,
+            'group_by': ['date_start:month'],
+            'pivot_measures': ['total_collected', 'total_expenses', 'net_result']
         }</field>
-    </record>
-
-    <!-- Vue simplifiée pour sélection rapide -->
-    <record id="view_group_activity_tree_select" model="ir.ui.view">
-        <field name="name">group.activity.tree.select</field>
-        <field name="model">group.activity</field>
-        <field name="arch" type="xml">
-            <tree>
-                <field name="name"/>
-                <field name="group_id"/>
-                <field name="date_start"/>
-                <field name="state" widget="badge"/>
-            </tree>
-        </field>
     </record>
 
 </odoo>

@@ -16,11 +16,11 @@
         parent="menu_cotisations_main"
         sequence="10" />
 
-    <menuitem id="menu_group_activities"
+    <!-- <menuitem id="menu_group_activities"
         name="Activités de groupe"
         parent="menu_cotisations_management"
         action="action_group_activity"
-        sequence="10" />
+        sequence="10" /> -->
 
     <menuitem id="menu_monthly_cotisations"
         name="Cotisations mensuelles"
@@ -125,4 +125,73 @@
               action="action_merge_cotisation_wizard"
               sequence="20"
               groups="base.group_no_one"/>
+
+    <!-- ================= MENUS ================= -->
+    
+    <!-- Menu principal des activités (mis à jour) -->
+    <menuitem id="menu_group_activities_root" 
+              name="Activités des groupes" 
+              parent="menu_cotisations_main"
+              sequence="10"/>
+    
+    <menuitem id="menu_group_activities" 
+              name="Activités" 
+              parent="menu_group_activities_root" 
+              action="action_group_activity" 
+              sequence="10"/>
+    
+    <!-- <menuitem id="menu_upcoming_activities" 
+              name="À venir" 
+              parent="menu_group_activities_root" 
+              action="action_upcoming_activities" 
+              sequence="20"/>
+    
+    <menuitem id="menu_ongoing_activities" 
+              name="En cours" 
+              parent="menu_group_activities_root" 
+              action="action_ongoing_activities" 
+              sequence="30"/> -->
+    
+    <!-- Nouveau sous-menu pour les dépenses -->
+    <!-- <menuitem id="menu_activity_expenses_root" 
+              name="Dépenses des activités" 
+              parent="menu_cotisations_main" 
+              sequence="40"/> -->
+    
+    <menuitem id="menu_activity_expenses" 
+              name="Toutes les dépenses" 
+              parent="menu_group_activities_root" 
+              action="action_activity_expense" 
+              sequence="10"/>
+    
+    <menuitem id="menu_expenses_to_approve" 
+              name="À approuver" 
+              parent="menu_group_activities_root" 
+              action="action_expenses_to_approve" 
+              sequence="20"
+              groups="base.group_system"/>
+    
+    <menuitem id="menu_my_expenses" 
+              name="Mes dépenses" 
+              parent="menu_group_activities_root" 
+              action="action_my_expenses" 
+              sequence="30"/>
+    
+    <menuitem id="menu_financial_dashboard" 
+              name="Tableau de bord financier" 
+              parent="menu_dashboards"
+              action="action_activity_financial_dashboard" 
+              sequence="10"/>
+    
+    <!-- Menu configuration -->
+    <menuitem id="menu_activity_config" 
+              name="Configuration" 
+              parent="menu_cotisations_main"  
+              sequence="90"/>
+    
+    <menuitem id="menu_expense_categories" 
+              name="Catégories de dépenses" 
+              parent="menu_activity_config" 
+              action="action_expense_category" 
+              sequence="10"/>
 </odoo>

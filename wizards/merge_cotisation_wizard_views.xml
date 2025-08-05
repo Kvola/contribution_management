@@ -96,7 +96,7 @@
                                     <field name="total_members"/>
                                     <field name="total_expected" sum="Total attendu"/>
                                     <field name="total_collected" sum="Total collecté"/>
-                                    <field name="completion_rate" widget="percentage"/>
+                                    <field name="completion_rate" />
                                 </tree>
                             </field>
                         </page>

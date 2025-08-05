@@ -106,6 +106,7 @@ Sécurité et contrôles :
         'wizards/quick_payment_wizard_views.xml',
         'data/email_template.xml',
         'wizards/merge_cotisation_wizard_views.xml',
+        'wizards/activity_budget_analysis_wizard_views.xml',
         'views/menu_views.xml',
     ],
     "assets": {

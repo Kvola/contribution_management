@@ -48,3 +48,17 @@ access_merge_preview_wizard_user,merge.preview.wizard.user,model_merge_preview_w
 access_merge_preview_wizard_manager,merge.preview.wizard.manager,model_merge_preview_wizard,base.group_system,1,1,1,1
 access_merge_preview_wizard_public,merge.preview.wizard.public,model_merge_preview_wizard,base.group_public,1,0,0,0
 access_merge_preview_wizard_portal,merge.preview.wizard.portal,model_merge_preview_wizard,base.group_portal,1,0,0,0
+access_group_activity_user,group.activity.user,model_group_activity,base.group_user,1,1,1,1
+access_activity_expense_user,activity.expense.user,model_activity_expense,base.group_user,1,1,1,1
+access_expense_category_user,expense.category.user,model_expense_category,base.group_user,1,1,1,1
+access_activity_budget_analysis_wizard_user,activity.budget.analysis.wizard.user,model_activity_budget_analysis_wizard,base.group_user,1,1,1,1
+access_activity_financial_report_wizard_user,activity.financial.report.wizard.user,model_activity_financial_report_wizard,base.group_user,1,1,1,1
+access_expense_rejection_wizard_user,expense.rejection.wizard.user,model_expense_rejection_wizard,base.group_user,1,1,1,1
+access_activity_budget_report_display_user,activity.budget.report.display.user,model_activity_budget_report_display,base.group_user,1,1,1,1
+access_activity_financial_analysis_user,activity.financial.analysis.user,model_activity_financial_analysis,base.group_user,1,1,1,1
+access_group_activity_manager,group.activity.manager,model_group_activity,base.group_system,1,1,1,1
+access_activity_expense_manager,activity.expense.manager,model_activity_expense,base.group_system,1,1,1,1
+access_expense_category_manager,expense.category.manager,model_expense_category,base.group_system,1,1,1,1
+access_group_activity_portal,group.activity.portal,model_group_activity,base.group_portal,1,0,0,0
+access_activity_expense_portal,activity.expense.portal,model_activity_expense,base.group_portal,1,0,0,0
+access_group_activity_public,group.activity.public,model_group_activity,base.group_public,1,0,0,0

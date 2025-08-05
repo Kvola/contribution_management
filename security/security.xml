@@ -441,4 +441,124 @@
         <field name="perm_create" eval="0"/>
         <field name="perm_unlink" eval="1"/>
     </record>
+
+    <!-- Règles pour group.activity -->
+    <record id="group_activity_rule_user" model="ir.rule">
+        <field name="name">Activités de groupe: accès utilisateur</field>
+        <field name="model_id" ref="model_group_activity"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour activity.expense -->
+    <!-- <record id="activity_expense_rule_user" model="ir.rule">
+        <field name="name">Dépenses d'activité: accès utilisateur</field>
+        <field name="model_id" ref="model_activity_expense"/>
+        <field name="domain_force">[
+            '|',
+            ('employee_id.user_ids', 'in', [user.id]),
+            ('activity_id.group_id.manager_ids', 'in', [user.id])
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record> -->
+
+    <!-- Règles pour expense.category -->
+    <record id="expense_category_rule_user" model="ir.rule">
+        <field name="name">Catégories de dépenses: accès utilisateur</field>
+        <field name="model_id" ref="model_expense_category"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour les wizards -->
+    <record id="activity_budget_analysis_wizard_rule_global" model="ir.rule">
+        <field name="name">Wizard d'analyse budgétaire: accès global</field>
+        <field name="model_id" ref="model_activity_budget_analysis_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="activity_financial_report_wizard_rule_global" model="ir.rule">
+        <field name="name">Wizard de rapport financier: accès global</field>
+        <field name="model_id" ref="model_activity_financial_report_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="expense_rejection_wizard_rule_global" model="ir.rule">
+        <field name="name">Wizard de rejet de dépense: accès global</field>
+        <field name="model_id" ref="model_expense_rejection_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles pour les rapports -->
+    <record id="activity_budget_report_display_rule_global" model="ir.rule">
+        <field name="name">Affichage rapport budgétaire: accès global</field>
+        <field name="model_id" ref="model_activity_budget_report_display"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="activity_financial_analysis_rule_global" model="ir.rule">
+        <field name="name">Analyse financière: accès global</field>
+        <field name="model_id" ref="model_activity_financial_analysis"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règles de sécurité supplémentaires -->
+    <record id="group_activity_rule_completed_readonly" model="ir.rule">
+        <field name="name">Activités terminées: lecture seule</field>
+        <field name="model_id" ref="model_group_activity"/>
+        <field name="domain_force">[('state', '!=', 'completed')]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="0"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="activity_expense_rule_paid_readonly" model="ir.rule">
+        <field name="name">Dépenses payées: lecture seule</field>
+        <field name="model_id" ref="model_activity_expense"/>
+        <field name="domain_force">[('state', '!=', 'paid')]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="0"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
 </odoo>
