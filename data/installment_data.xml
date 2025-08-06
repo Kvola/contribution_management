@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Séquence pour les paiements de cotisations -->
+        <record id="seq_cotisation_payment" model="ir.sequence">
+            <field name="name">Paiement Cotisation</field>
+            <field name="code">cotisation.payment</field>
+            <field name="prefix">PAY-COT-</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Données par défaut pour les méthodes d'allocation -->
+        <record id="allocation_method_auto" model="ir.config_parameter">
+            <field name="key">contribution_management.default_allocation_method</field>
+            <field name="value">auto</field>
+        </record>
+
+        <record id="auto_allocate_default" model="ir.config_parameter">
+            <field name="key">contribution_management.default_auto_allocate</field>
+            <field name="value">True</field>
+        </record>
+
+        <!-- Configuration des notifications -->
+        <record id="allocation_notification_template" model="mail.template">
+            <field name="name">Notification allocation échéance-cotisation</field>
+            <field name="model_id" ref="model_member_payment_installment"/>
+            <field name="subject">Paiement échéance ${object.name} - Répartition effectuée</field>
+            <field name="body_html" type="html">
+                <div>
+                    <h3>Paiement d'échéance traité</h3>
+                    <p>Bonjour,</p>
+                    
+                    <p>Le paiement de l'échéance <strong>${object.name}</strong> a été traité et réparti sur vos cotisations :</p>
+                    
+                    <table border="1" style="border-collapse: collapse; width: 100%;">
+                        <tr style="background-color: #f0f0f0;">
+                            <th style="padding: 8px;">Échéance</th>
+                            <th style="padding: 8px;">Montant payé</th>
+                            <th style="padding: 8px;">Date</th>
+                            <th style="padding: 8px;">Statut</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;">${object.name}</td>
+                            <td style="padding: 8px;">${object.amount_paid} ${object.currency_id.symbol}</td>
+                            <td style="padding: 8px;">${object.payment_date}</td>
+                            <td style="padding: 8px;">${object.state}</td>
+                        </tr>
+                    </table>
+                    
+                    % if object.cotisation_ids:
+                    <h4>Cotisations impactées :</h4>
+                    <table border="1" style="border-collapse: collapse; width: 100%;">
+                        <tr style="background-color: #f0f0f0;">
+                            <th style="padding: 8px;">Cotisation</th>
+                            <th style="padding: 8px;">État</th>
+                            <th style="padding: 8px;">Date échéance</th>
+                        </tr>
+                        % for cotisation in object.cotisation_ids:
+                        <tr>
+                            <td style="padding: 8px;">${cotisation.name}</td>
+                            <td style="padding: 8px;">
+                                % if cotisation.state == 'paid':
+                                <span style="color: green;">✓ Payée</span>
+                                % elif cotisation.state == 'partial':
+                                <span style="color: orange;">◐ Partielle</span>
+                                % else:
+                                <span style="color: red;">⊗ En attente</span>
+                                % endif
+                            </td>
+                            <td style="padding: 8px;">${cotisation.due_date}</td>
+                        </tr>
+                        % endfor
+                    </table>
+                    % endif
+                    
+                    % if object.allocation_details:
+                    <h4>Détails de la répartition :</h4>
+                    <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">
+${object.allocation_details}
+                    </pre>
+                    % endif
+                    
+                    <p>Cordialement,<br/>L'équipe de gestion</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="False"/>
+            <field name="lang">${object.member_id.lang}</field>
+        </record>
+
+        <!-- Actions automatiques -->
+        
+        <!-- Action automatique : Envoyer notification lors de l'allocation -->
+        <record id="action_allocation_notification" model="ir.actions.server">
+            <field name="name">Envoyer notification allocation</field>
+            <field name="model_id" ref="model_member_payment_installment"/>
+            <field name="state">code</field>
+            <field name="code">
+# Envoyer notification si allocation effectuée
+if record.allocation_details and record.cotisation_ids:
+    template = env.ref('contribution_management.allocation_notification_template')
+    if template and record.member_id.email:
+        template.send_mail(record.id, force_send=True)
+            </field>
+        </record>
+
+        <!-- Automated Action Record -->
+        <!-- Alternative: Using ir.actions.server instead -->
+        <record id="server_action_allocation_notification" model="ir.actions.server">
+            <field name="name">Notification après allocation échéance</field>
+            <field name="model_id" ref="model_member_payment_installment"/>
+            <field name="state">code</field>
+            <field name="code">
+        action = env.ref('contribution_management.action_allocation_notification')
+            </field>
+        </record>
+
+        <!-- Solution minimaliste - Automated Action basique -->
+        <record id="rule_allocation_notification" model="base.automation">
+            <field name="name">Notification après allocation échéance</field>
+            <field name="model_id" ref="model_member_payment_installment"/>
+            <field name="trigger">on_write</field>
+            <field name="filter_domain">[('state', '=', 'paid'), ('cotisation_count', '>', 0)]</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Vues par défaut pour les nouveaux utilisateurs -->
+        <record id="default_installment_allocation_preferences" model="ir.config_parameter">
+            <field name="key">contribution_management.installment_preferences</field>
+            <field name="value">{"allocation_method": "auto", "auto_allocate": true, "priority_overdue": true}</field>
+        </record>
+
+    </data>
+</odoo>

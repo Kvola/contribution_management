@@ -561,4 +561,150 @@
         <field name="perm_create" eval="0"/>
         <field name="perm_unlink" eval="1"/>
     </record>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        <!-- Groupes de sécurité spécifiques -->
+        <!-- <record id="group_installment_allocation_manager" model="res.groups">
+            <field name="name">Gestionnaire allocation échéances</field>
+            <field name="category_id" ref="base.module_category_accounting_and_finance"/>
+            <field name="implied_ids" eval="[(4, ref('contribution_management.group_member_manager'))]"/>
+        </record>
+
+        <record id="group_installment_allocation_user" model="res.groups">
+            <field name="name">Utilisateur allocation échéances</field>
+            <field name="category_id" ref="base.module_category_accounting_and_finance"/>
+            <field name="implied_ids" eval="[(4, ref('contribution_management.group_member_user'))]"/>
+        </record> -->
+
+        <!-- Règles de sécurité pour les modèles -->
+        
+        <!-- Accès aux liens échéances-cotisations -->
+        <!-- <record id="access_installment_allocation_wizard_manager" model="ir.model.access">
+            <field name="name">Installment Allocation Wizard Manager</field>
+            <field name="model_id" ref="model_installment_allocation_wizard"/>
+            <field name="group_id" ref="group_installment_allocation_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- <record id="access_installment_allocation_wizard_user" model="ir.model.access">
+            <field name="name">Installment Allocation Wizard User</field>
+            <field name="model_id" ref="model_installment_allocation_wizard"/>
+            <field name="group_id" ref="group_installment_allocation_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record> -->
+
+        <!-- Accès aux wizards de répartition manuelle -->
+        <!-- <record id="access_manual_allocation_wizard_manager" model="ir.model.access">
+            <field name="name">Manual Allocation Wizard Manager</field>
+            <field name="model_id" ref="model_manual_allocation_wizard"/>
+            <field name="group_id" ref="group_installment_allocation_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- <record id="access_manual_allocation_line_manager" model="ir.model.access">
+            <field name="name">Manual Allocation Line Manager</field>
+            <field name="model_id" ref="model_manual_allocation_line"/>
+            <field name="group_id" ref="group_installment_allocation_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- Accès aux wizards de configuration en lot -->
+        <!-- <record id="access_batch_cotisation_link_wizard_manager" model="ir.model.access">
+            <field name="name">Batch Cotisation Link Wizard Manager</field>
+            <field name="model_id" ref="model_batch_cotisation_link_wizard"/>
+            <field name="group_id" ref="group_installment_allocation_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- Accès aux aperçus d'impact -->
+        <!-- <record id="access_cotisation_impact_preview_manager" model="ir.model.access">
+            <field name="name">Cotisation Impact Preview Manager</field>
+            <field name="model_id" ref="model_cotisation_impact_preview_wizard"/>
+            <field name="group_id" ref="group_installment_allocation_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="access_cotisation_impact_line_manager" model="ir.model.access">
+            <field name="name">Cotisation Impact Line Manager</field>
+            <field name="model_id" ref="model_cotisation_impact_line"/>
+            <field name="group_id" ref="group_installment_allocation_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- Configuration globale membre -->
+        <!-- <record id="access_member_allocation_config_manager" model="ir.model.access">
+            <field name="name">Member Allocation Config Manager</field>
+            <field name="model_id" ref="model_member_allocation_config_wizard"/>
+            <field name="group_id" ref="group_installment_allocation_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record> -->
+
+        <!-- Règles de domaine pour la sécurité des données -->
+        
+        <!-- Les utilisateurs ne voient que les données de leurs membres assignés -->
+        <!-- <record id="rule_installment_allocation_user" model="ir.rule">
+            <field name="name">Allocation échéances - Utilisateur</field>
+            <field name="model_id" ref="model_member_payment_installment"/>
+            <field name="domain_force">['|', ('member_id.user_id', '=', user.id), ('member_id.user_id', '=', False)]</field>
+            <field name="groups" eval="[(4, ref('group_installment_allocation_user'))]"/>
+        </record> -->
+
+        <!-- Les gestionnaires voient tout -->
+        <!-- <record id="rule_installment_allocation_manager" model="ir.rule">
+            <field name="name">Allocation échéances - Gestionnaire</field>
+            <field name="model_id" ref="model_member_payment_installment"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_installment_allocation_manager'))]"/>
+        </record> -->
 </odoo>

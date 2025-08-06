@@ -8,6 +8,150 @@ from datetime import datetime, timedelta, date
 _logger = logging.getLogger(__name__)
 
 
+class MemberAllocationConfigWizard(models.TransientModel):
+    """Assistant de configuration globale de l'allocation pour un membre"""
+
+    _name = "member.allocation.config.wizard"
+    _description = "Configuration allocation membre"
+
+    member_id = fields.Many2one(
+        "res.partner", string="Membre", required=True, readonly=True
+    )
+
+    # Configuration par défaut
+    default_allocation_method = fields.Selection(
+        [
+            ("auto", "Répartition automatique"),
+            ("oldest_first", "Plus anciennes d'abord"),
+            ("amount_priority", "Par montant (plus élevé d'abord)"),
+            ("manual", "Manuel uniquement"),
+        ],
+        string="Méthode par défaut",
+        required=True,
+        default="auto",
+    )
+
+    auto_allocate_new_installments = fields.Boolean(
+        string="Auto-allocation nouvelles échéances",
+        default=True,
+        help="Les nouvelles échéances seront automatiquement configurées",
+    )
+
+    # Actions en lot
+    update_existing_installments = fields.Boolean(
+        string="Mettre à jour les échéances existantes",
+        default=False,
+        help="Appliquer la configuration aux échéances non payées existantes",
+    )
+
+    reset_existing_links = fields.Boolean(
+        string="Réinitialiser les liens existants",
+        default=False,
+        help="Supprimer tous les liens existants avant application",
+    )
+
+    # Statistiques
+    existing_installments_count = fields.Integer(
+        string="Échéances existantes", compute="_compute_stats"
+    )
+
+    linked_installments_count = fields.Integer(
+        string="Échéances déjà liées", compute="_compute_stats"
+    )
+
+    pending_cotisations_count = fields.Integer(
+        string="Cotisations en attente", compute="_compute_stats"
+    )
+
+    @api.depends("member_id")
+    def _compute_stats(self):
+        """Calcule les statistiques du membre"""
+        for wizard in self:
+            if wizard.member_id:
+                # Compter les échéances
+                installments = self.env["member.payment.installment"].search(
+                    [
+                        ("member_id", "=", wizard.member_id.id),
+                        ("state", "in", ["pending", "partial"]),
+                    ]
+                )
+
+                wizard.existing_installments_count = len(installments)
+                wizard.linked_installments_count = len(
+                    installments.filtered("cotisation_ids")
+                )
+
+                # Compter les cotisations en attente
+                cotisations = self.env["member.cotisation"].search(
+                    [
+                        ("member_id", "=", wizard.member_id.id),
+                        ("state", "in", ["pending", "partial", "overdue"]),
+                    ]
+                )
+
+                wizard.pending_cotisations_count = len(cotisations)
+            else:
+                wizard.existing_installments_count = 0
+                wizard.linked_installments_count = 0
+                wizard.pending_cotisations_count = 0
+
+    def action_apply_config(self):
+        """Applique la configuration"""
+        self.ensure_one()
+
+        # Rechercher les échéances du membre
+        installments = self.env["member.payment.installment"].search(
+            [
+                ("member_id", "=", self.member_id.id),
+                ("state", "in", ["pending", "partial"]),
+            ]
+        )
+
+        updates_count = 0
+
+        # Réinitialiser les liens si demandé
+        if self.reset_existing_links:
+            installments.write({"cotisation_ids": [(5, 0, 0)]})
+
+        # Mettre à jour les échéances existantes si demandé
+        if self.update_existing_installments:
+            for installment in installments:
+                installment.write(
+                    {
+                        "allocation_method": self.default_allocation_method,
+                        "auto_allocate": self.auto_allocate_new_installments,
+                    }
+                )
+
+                # Auto-sélection des cotisations si pas de liens existants
+                if (
+                    not installment.cotisation_ids
+                    and self.auto_allocate_new_installments
+                ):
+                    installment._auto_select_cotisations()
+
+                updates_count += 1
+
+        # Configurer les préférences du membre (si le champ existe)
+        if hasattr(self.member_id, "default_allocation_method"):
+            self.member_id.write(
+                {
+                    "default_allocation_method": self.default_allocation_method,
+                    "auto_allocate_installments": self.auto_allocate_new_installments,
+                }
+            )
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Configuration appliquée",
+                "message": f"Configuration appliquée à {updates_count} échéance(s).",
+                "type": "success",
+            },
+        }
+
+
 class ResPartnerCotisation(models.Model):
     """Extension du modèle res.partner pour ajouter les relations avec les cotisations"""
 
@@ -247,102 +391,98 @@ class ResPartnerCotisation(models.Model):
         help="Indicateur visuel de performance",
     )
 
+    payment_installment_ids = fields.One2many(
+        "member.payment.installment",
+        "member_id",
+        string="ÉCHEANCES DE PAIEMENT",
+        help="ÉCHEANCES DE PAIEMENT",
+    )
 
+    installment_cotisation_links = fields.Integer(
+        string="Liens échéances-cotisations",
+        compute="_compute_installment_cotisation_stats",
+        help="Nombre de liens actifs entre échéances et cotisations",
+    )
 
+    auto_allocated_amount = fields.Monetary(
+        string="Montant auto-alloué",
+        compute="_compute_installment_cotisation_stats",
+        currency_field="currency_id",
+        help="Montant total alloué automatiquement via échéances",
+    )
 
+    @api.depends("payment_installment_ids.cotisation_ids")
+    def _compute_installment_cotisation_stats(self):
+        """Calcule les statistiques des liens échéances-cotisations"""
+        for partner in self:
+            if not partner.is_company:
+                # Compter les liens actifs
+                links_count = 0
+                auto_allocated = 0.0
 
+                installments = self.env["member.payment.installment"].search(
+                    [("member_id", "=", partner.id)]
+                )
 
+                for installment in installments:
+                    if installment.cotisation_ids:
+                        links_count += len(installment.cotisation_ids)
 
+                    # Calculer le montant auto-alloué (basé sur les paiements d'échéances)
+                    if installment.state == "paid" and installment.auto_allocate:
+                        auto_allocated += installment.amount_paid
 
+                partner.installment_cotisation_links = links_count
+                partner.auto_allocated_amount = auto_allocated
+            else:
+                partner.installment_cotisation_links = 0
+                partner.auto_allocated_amount = 0.0
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def action_configure_installment_allocation(self):
+        """Action pour configurer l'allocation des échéances de ce membre"""
+        return {
+            "name": f"Configuration allocation - {self.name}",
+            "type": "ir.actions.act_window",
+            "res_model": "member.allocation.config.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_member_id": self.id,
+            },
+        }
 
     # Nouveau champ pour compter les paiements
     payments_count = fields.Integer(
-        string="Nombre de paiements",
-        compute="_compute_payments_count",
-        store=True
+        string="Nombre de paiements", compute="_compute_payments_count", store=True
     )
 
     # Champs pour l'analyse des paiements
     last_payment_amount = fields.Monetary(
         string="Montant dernier paiement",
         compute="_compute_last_payment_info",
-        currency_field="currency_id"
+        currency_field="currency_id",
     )
 
     last_payment_method = fields.Char(
-        string="Méthode dernier paiement",
-        compute="_compute_last_payment_info"
+        string="Méthode dernier paiement", compute="_compute_last_payment_info"
     )
 
     total_payments_this_year = fields.Monetary(
         string="Total paiements année",
         compute="_compute_payment_analytics",
-        currency_field="currency_id"
+        currency_field="currency_id",
     )
 
     average_payment_delay = fields.Float(
         string="Délai moyen de paiement",
         compute="_compute_payment_analytics",
-        help="Délai moyen en jours entre l'échéance et le paiement"
+        help="Délai moyen en jours entre l'échéance et le paiement",
     )
 
     preferred_payment_method = fields.Char(
         string="Méthode préférée",
         compute="_compute_payment_analytics",
-        help="Méthode de paiement la plus utilisée"
+        help="Méthode de paiement la plus utilisée",
     )
 
     @api.depends("cotisation_ids.payment_ids")
@@ -352,10 +492,9 @@ class ResPartnerCotisation(models.Model):
             if partner.is_company:
                 partner.payments_count = 0
             else:
-                confirmed_payments = self.env['cotisation.payment'].search([
-                    ('member_id', '=', partner.id),
-                    ('state', '=', 'confirmed')
-                ])
+                confirmed_payments = self.env["cotisation.payment"].search(
+                    [("member_id", "=", partner.id), ("state", "=", "confirmed")]
+                )
                 partner.payments_count = len(confirmed_payments)
 
     @api.depends("cotisation_ids.payment_ids")
@@ -366,15 +505,20 @@ class ResPartnerCotisation(models.Model):
                 partner.last_payment_amount = 0.0
                 partner.last_payment_method = ""
             else:
-                last_payment = self.env['cotisation.payment'].search([
-                    ('member_id', '=', partner.id),
-                    ('state', '=', 'confirmed')
-                ], order='payment_date desc', limit=1)
-                
+                last_payment = self.env["cotisation.payment"].search(
+                    [("member_id", "=", partner.id), ("state", "=", "confirmed")],
+                    order="payment_date desc",
+                    limit=1,
+                )
+
                 if last_payment:
                     partner.last_payment_amount = last_payment.amount
-                    payment_methods = dict(last_payment._fields['payment_method'].selection)
-                    partner.last_payment_method = payment_methods.get(last_payment.payment_method, '')
+                    payment_methods = dict(
+                        last_payment._fields["payment_method"].selection
+                    )
+                    partner.last_payment_method = payment_methods.get(
+                        last_payment.payment_method, ""
+                    )
                 else:
                     partner.last_payment_amount = 0.0
                     partner.last_payment_method = ""
@@ -390,35 +534,45 @@ class ResPartnerCotisation(models.Model):
             else:
                 current_year = fields.Date.today().year
                 year_start = date(current_year, 1, 1)
-                
+
                 # Paiements de cette année
-                year_payments = self.env['cotisation.payment'].search([
-                    ('member_id', '=', partner.id),
-                    ('state', '=', 'confirmed'),
-                    ('payment_date', '>=', year_start)
-                ])
-                
-                partner.total_payments_this_year = sum(year_payments.mapped('amount'))
-                
+                year_payments = self.env["cotisation.payment"].search(
+                    [
+                        ("member_id", "=", partner.id),
+                        ("state", "=", "confirmed"),
+                        ("payment_date", ">=", year_start),
+                    ]
+                )
+
+                partner.total_payments_this_year = sum(year_payments.mapped("amount"))
+
                 # Délai moyen de paiement
                 delays = []
                 for payment in year_payments:
                     if payment.cotisation_id.due_date and payment.payment_date:
-                        delay = (payment.payment_date - payment.cotisation_id.due_date).days
+                        delay = (
+                            payment.payment_date - payment.cotisation_id.due_date
+                        ).days
                         delays.append(delay)
-                
-                partner.average_payment_delay = sum(delays) / len(delays) if delays else 0.0
-                
+
+                partner.average_payment_delay = (
+                    sum(delays) / len(delays) if delays else 0.0
+                )
+
                 # Méthode préférée
                 if year_payments:
                     methods_count = {}
                     for payment in year_payments:
                         method = payment.payment_method
                         methods_count[method] = methods_count.get(method, 0) + 1
-                    
+
                     preferred_method = max(methods_count, key=methods_count.get)
-                    payment_methods = dict(year_payments[0]._fields['payment_method'].selection)
-                    partner.preferred_payment_method = payment_methods.get(preferred_method, '')
+                    payment_methods = dict(
+                        year_payments[0]._fields["payment_method"].selection
+                    )
+                    partner.preferred_payment_method = payment_methods.get(
+                        preferred_method, ""
+                    )
                 else:
                     partner.preferred_payment_method = ""
 
@@ -430,11 +584,13 @@ class ResPartnerCotisation(models.Model):
 
         try:
             # Rechercher les cotisations impayées avec une requête sécurisée
-            outstanding = self.env['member.cotisation'].search([
-                ('member_id', '=', self.id),
-                ('state', 'in', ['pending', 'partial', 'overdue']),
-                ('active', '=', True)
-            ])
+            outstanding = self.env["member.cotisation"].search(
+                [
+                    ("member_id", "=", self.id),
+                    ("state", "in", ["pending", "partial", "overdue"]),
+                    ("active", "=", True),
+                ]
+            )
 
             if not outstanding:
                 return {
@@ -450,8 +606,10 @@ class ResPartnerCotisation(models.Model):
             # Préparer le contexte de manière sécurisée
             context = {
                 "default_member_id": self.id,
-                "default_cotisation_ids": [(6, 0, outstanding.ids)] if outstanding.ids else [],
-                "default_payment_method": self.preferred_payment_method or 'cash',
+                "default_cotisation_ids": (
+                    [(6, 0, outstanding.ids)] if outstanding.ids else []
+                ),
+                "default_payment_method": self.preferred_payment_method or "cash",
             }
 
             return {
@@ -462,12 +620,13 @@ class ResPartnerCotisation(models.Model):
                 "target": "new",
                 "context": context,
             }
-            
+
         except Exception as e:
             import logging
+
             _logger = logging.getLogger(__name__)
             _logger.error(f"Erreur lors du paiement rapide pour {self.name}: {e}")
-            
+
             return {
                 "type": "ir.actions.client",
                 "tag": "display_notification",
@@ -505,11 +664,13 @@ class ResPartnerCotisation(models.Model):
             return {"type": "ir.actions.act_window_close"}
 
         try:
-            overdue_cotisations = self.env['member.cotisation'].search([
-                ('member_id', '=', self.id),
-                ('state', '=', 'overdue'),
-                ('active', '=', True)
-            ])
+            overdue_cotisations = self.env["member.cotisation"].search(
+                [
+                    ("member_id", "=", self.id),
+                    ("state", "=", "overdue"),
+                    ("active", "=", True),
+                ]
+            )
 
             if not overdue_cotisations:
                 return {
@@ -522,7 +683,7 @@ class ResPartnerCotisation(models.Model):
                     },
                 }
 
-            total_amount = sum(overdue_cotisations.mapped('remaining_amount'))
+            total_amount = sum(overdue_cotisations.mapped("remaining_amount"))
             if total_amount <= 0:
                 return {
                     "type": "ir.actions.client",
@@ -536,13 +697,13 @@ class ResPartnerCotisation(models.Model):
 
             # ✅ Ne pas envoyer le Many2many comme (6,0,ids) directement
             context = {
-                'default_member_id': self.id,
-                'default_member_name': self.name,
-                'default_total_overdue_amount': total_amount,
-                'default_overdue_count': len(overdue_cotisations),
-                'default_cotisation_ids': overdue_cotisations.ids,  # ✅ Simple liste d'IDs
+                "default_member_id": self.id,
+                "default_member_name": self.name,
+                "default_total_overdue_amount": total_amount,
+                "default_overdue_count": len(overdue_cotisations),
+                "default_cotisation_ids": overdue_cotisations.ids,  # ✅ Simple liste d'IDs
             }
-            
+
             return {
                 "name": f"Plan de paiement - {self.name}",
                 "type": "ir.actions.act_window",
@@ -551,12 +712,15 @@ class ResPartnerCotisation(models.Model):
                 "target": "new",
                 "context": context,
             }
-            
+
         except Exception as e:
             import logging
+
             _logger = logging.getLogger(__name__)
-            _logger.error(f"Erreur lors de la création du plan de paiement pour {self.name}: {e}")
-            
+            _logger.error(
+                f"Erreur lors de la création du plan de paiement pour {self.name}: {e}"
+            )
+
             return {
                 "type": "ir.actions.client",
                 "tag": "display_notification",
@@ -567,121 +731,49 @@ class ResPartnerCotisation(models.Model):
                 },
             }
 
-
     def get_payment_statistics(self):
         """Retourne les statistiques de paiement pour les rapports"""
         self.ensure_one()
-        
+
         if self.is_company:
             return {}
-        
-        payments = self.env['cotisation.payment'].search([
-            ('member_id', '=', self.id),
-            ('state', '=', 'confirmed')
-        ])
-        
+
+        payments = self.env["cotisation.payment"].search(
+            [("member_id", "=", self.id), ("state", "=", "confirmed")]
+        )
+
         if not payments:
             return {
-                'total_payments': 0,
-                'total_amount': 0.0,
-                'average_amount': 0.0,
-                'most_used_method': 'Aucun',
-                'payment_frequency': 'Aucun',
+                "total_payments": 0,
+                "total_amount": 0.0,
+                "average_amount": 0.0,
+                "most_used_method": "Aucun",
+                "payment_frequency": "Aucun",
             }
-        
+
         # Calculs statistiques
-        total_amount = sum(payments.mapped('amount'))
+        total_amount = sum(payments.mapped("amount"))
         average_amount = total_amount / len(payments)
-        
+
         # Méthode la plus utilisée
-        methods = payments.mapped('payment_method')
-        most_used_method = max(set(methods), key=methods.count) if methods else 'cash'
-        method_labels = dict(payments[0]._fields['payment_method'].selection)
-        
+        methods = payments.mapped("payment_method")
+        most_used_method = max(set(methods), key=methods.count) if methods else "cash"
+        method_labels = dict(payments[0]._fields["payment_method"].selection)
+
         # Fréquence de paiement (paiements par mois)
-        months_with_payments = len(set(p.payment_date.strftime('%Y-%m') for p in payments))
+        months_with_payments = len(
+            set(p.payment_date.strftime("%Y-%m") for p in payments)
+        )
         frequency = len(payments) / max(months_with_payments, 1)
-        
+
         return {
-            'total_payments': len(payments),
-            'total_amount': total_amount,
-            'average_amount': average_amount,
-            'most_used_method': method_labels.get(most_used_method, 'Inconnu'),
-            'payment_frequency': f"{frequency:.1f} paiements/mois",
-            'currency_symbol': self.currency_id.symbol or '€',
+            "total_payments": len(payments),
+            "total_amount": total_amount,
+            "average_amount": average_amount,
+            "most_used_method": method_labels.get(most_used_method, "Inconnu"),
+            "payment_frequency": f"{frequency:.1f} paiements/mois",
+            "currency_symbol": self.currency_id.symbol or "€",
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     @api.depends(
         "payment_rate", "group_collection_rate", "overdue_cotisations", "is_good_payer"
@@ -2952,11 +3044,13 @@ class ResPartnerCotisation(models.Model):
 
         try:
             # Rechercher les cotisations impayées avec une requête sécurisée
-            outstanding_cotisations = self.env['member.cotisation'].search([
-                ('member_id', '=', self.id),
-                ('state', 'in', ['pending', 'partial', 'overdue']),
-                ('active', '=', True)
-            ])
+            outstanding_cotisations = self.env["member.cotisation"].search(
+                [
+                    ("member_id", "=", self.id),
+                    ("state", "in", ["pending", "partial", "overdue"]),
+                    ("active", "=", True),
+                ]
+            )
 
             if not outstanding_cotisations:
                 return {
@@ -2972,7 +3066,11 @@ class ResPartnerCotisation(models.Model):
             # Préparer le contexte de manière sécurisée
             context = {
                 "default_member_id": self.id,
-                "default_cotisation_ids": [(6, 0, outstanding_cotisations.ids)] if outstanding_cotisations.ids else [],
+                "default_cotisation_ids": (
+                    [(6, 0, outstanding_cotisations.ids)]
+                    if outstanding_cotisations.ids
+                    else []
+                ),
             }
 
             return {
@@ -2983,17 +3081,18 @@ class ResPartnerCotisation(models.Model):
                 "target": "new",
                 "context": context,
             }
-            
+
         except Exception as e:
             import logging
+
             _logger = logging.getLogger(__name__)
             _logger.error(f"Erreur lors du paiement en masse pour {self.name}: {e}")
-            
+
             return {
                 "type": "ir.actions.client",
                 "tag": "display_notification",
                 "params": {
-                    "title": "Erreur", 
+                    "title": "Erreur",
                     "message": f"Impossible d'ouvrir le paiement en masse: {str(e)}",
                     "type": "danger",
                 },
@@ -3151,18 +3250,22 @@ class ResPartnerCotisation(models.Model):
         try:
             if self.is_company:
                 # Pour les groupes: rappels pour toutes les cotisations impayées
-                overdue_cotisations = self.env["member.cotisation"].search([
-                    ("group_id", "=", self.id),
-                    ("state", "in", ["pending", "partial", "overdue"]),
-                    ("active", "=", True),
-                ])
+                overdue_cotisations = self.env["member.cotisation"].search(
+                    [
+                        ("group_id", "=", self.id),
+                        ("state", "in", ["pending", "partial", "overdue"]),
+                        ("active", "=", True),
+                    ]
+                )
             else:
                 # Pour les membres: rappels pour ses propres cotisations
-                overdue_cotisations = self.env["member.cotisation"].search([
-                    ("member_id", "=", self.id),
-                    ("state", "in", ["pending", "partial", "overdue"]),
-                    ("active", "=", True),
-                ])
+                overdue_cotisations = self.env["member.cotisation"].search(
+                    [
+                        ("member_id", "=", self.id),
+                        ("state", "in", ["pending", "partial", "overdue"]),
+                        ("active", "=", True),
+                    ]
+                )
 
             if not overdue_cotisations:
                 return {
@@ -3178,7 +3281,9 @@ class ResPartnerCotisation(models.Model):
             # Préparer le contexte de manière sécurisée
             context = {
                 "default_partner_id": self.id,
-                "default_cotisation_ids": [(6, 0, overdue_cotisations.ids)] if overdue_cotisations.ids else [],
+                "default_cotisation_ids": (
+                    [(6, 0, overdue_cotisations.ids)] if overdue_cotisations.ids else []
+                ),
             }
 
             return {
@@ -3189,12 +3294,13 @@ class ResPartnerCotisation(models.Model):
                 "target": "new",
                 "context": context,
             }
-            
+
         except Exception as e:
             import logging
+
             _logger = logging.getLogger(__name__)
             _logger.error(f"Erreur lors de l'envoi des rappels pour {self.name}: {e}")
-            
+
             return {
                 "type": "ir.actions.client",
                 "tag": "display_notification",
@@ -3204,7 +3310,6 @@ class ResPartnerCotisation(models.Model):
                     "type": "danger",
                 },
             }
-
 
     def action_generate_payment_report(self):
         """Génère un rapport de paiement"""

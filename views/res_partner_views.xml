@@ -305,8 +305,11 @@
 
                     <!-- Résumé cotisations -->
                     <div t-if="record.total_cotisations.raw_value > 0" class="small">
-                        <span class="text-success me-2"><i class="fa fa-check me-1"></i><field name="paid_cotisations" widget="monetary" /> payées </span>
-                        <span t-if="record.overdue_cotisations.raw_value > 0" class="text-danger"><i class="fa fa-exclamation-triangle me-1"></i><field name="overdue_cotisations" widget="monetary" /> en retard </span>
+                        <span class="text-success me-2"><i class="fa fa-check me-1"></i><field
+                                name="paid_cotisations" widget="monetary" /> payées </span>
+                        <span t-if="record.overdue_cotisations.raw_value > 0" class="text-danger"><i
+                                class="fa fa-exclamation-triangle me-1"></i><field
+                                name="overdue_cotisations" widget="monetary" /> en retard </span>
                     </div>
                 </div>
 

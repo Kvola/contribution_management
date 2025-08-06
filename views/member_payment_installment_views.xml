@@ -5,43 +5,46 @@
         <field name="name">member.payment.installment.tree</field>
         <field name="model">member.payment.installment</field>
         <field name="arch" type="xml">
-            <tree string="Échéances de Paiement" 
-                  decoration-success="state=='paid'" 
-                  decoration-warning="state=='partial'" 
-                  decoration-danger="state=='overdue'" 
-                  decoration-muted="state=='cancelled'"
-                  multi_edit="1"
-                  editable="bottom">
-                <field name="sequence"/>
-                <field name="payment_plan_id"/>
-                <field name="member_id"/>
-                <field name="due_date"/>
-                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                <field name="amount_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                <field name="remaining_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                <field name="days_overdue" invisible="state not in ('pending', 'partial', 'overdue')"/>
-                <field name="payment_date"/>
-                <field name="state" 
-                       decoration-success="state=='paid'" 
-                       decoration-warning="state=='partial'" 
-                       decoration-danger="state=='overdue'" 
-                       decoration-info="state=='pending'"
-                       decoration-muted="state=='cancelled'"/>
-                <field name="currency_id" column_invisible="1"/>
-                
+            <tree string="Échéances de Paiement"
+                decoration-success="state=='paid'"
+                decoration-warning="state=='partial'"
+                decoration-danger="state=='overdue'"
+                decoration-muted="state=='cancelled'"
+                multi_edit="1"
+                editable="bottom">
+                <field name="sequence" />
+                <field name="payment_plan_id" />
+                <field name="member_id" />
+                <field name="due_date" />
+                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" />
+                <field name="amount_paid" widget="monetary"
+                    options="{'currency_field': 'currency_id'}" />
+                <field name="remaining_amount" widget="monetary"
+                    options="{'currency_field': 'currency_id'}" />
+                <field name="days_overdue"
+                    invisible="state not in ('pending', 'partial', 'overdue')" />
+                <field name="payment_date" />
+                <field name="state"
+                    decoration-success="state=='paid'"
+                    decoration-warning="state=='partial'"
+                    decoration-danger="state=='overdue'"
+                    decoration-info="state=='pending'"
+                    decoration-muted="state=='cancelled'" />
+                <field name="currency_id" column_invisible="1" />
+
                 <!-- Boutons d'action dans la liste -->
-                <button name="action_mark_paid" type="object" 
-                        string="Marquer payé" 
-                        class="btn-success" 
-                        icon="fa-check"
-                        invisible="state in ('paid', 'cancelled')"
-                        context="{'no_destroy': True}"/>
-                <button name="action_cancel" type="object" 
-                        string="Annuler" 
-                        class="btn-danger" 
-                        icon="fa-times"
-                        invisible="state in ('paid', 'cancelled')"
-                        context="{'no_destroy': True}"/>
+                <button name="action_mark_paid" type="object"
+                    string="Marquer payé"
+                    class="btn-success"
+                    icon="fa-check"
+                    invisible="state in ('paid', 'cancelled')"
+                    context="{'no_destroy': True}" />
+                <button name="action_cancel" type="object"
+                    string="Annuler"
+                    class="btn-danger"
+                    icon="fa-times"
+                    invisible="state in ('paid', 'cancelled')"
+                    context="{'no_destroy': True}" />
             </tree>
         </field>
     </record>
@@ -53,65 +56,71 @@
         <field name="arch" type="xml">
             <form string="Échéance de Paiement">
                 <header>
-                    <button name="action_mark_paid" type="object" string="Marquer comme payé" 
-                            class="oe_highlight" invisible="state in ('paid', 'cancelled')"/>
-                    <button name="action_cancel" type="object" string="Annuler" 
-                            class="btn-danger" invisible="state in ('paid', 'cancelled')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="pending,partial,paid"/>
+                    <button name="action_mark_paid" type="object" string="Marquer comme payé"
+                        class="oe_highlight" invisible="state in ('paid', 'cancelled')" />
+                    <button name="action_cancel" type="object" string="Annuler"
+                        class="btn-danger" invisible="state in ('paid', 'cancelled')" />
+                    <field name="state" widget="statusbar" statusbar_visible="pending,partial,paid" />
                 </header>
-                
+
                 <sheet>
-                    <widget name="web_ribbon" title="Payé" bg_color="text-bg-success" invisible="state != 'paid'"/>
-                    <widget name="web_ribbon" title="En retard" bg_color="text-bg-danger" invisible="state != 'overdue'"/>
-                    <widget name="web_ribbon" title="Annulé" bg_color="text-bg-secondary" invisible="state != 'cancelled'"/>
+                    <widget name="web_ribbon" title="Payé" bg_color="text-bg-success"
+                        invisible="state != 'paid'" />
+                    <widget name="web_ribbon" title="En retard" bg_color="text-bg-danger"
+                        invisible="state != 'overdue'" />
+                    <widget name="web_ribbon" title="Annulé" bg_color="text-bg-secondary"
+                        invisible="state != 'cancelled'" />
 
                     <div class="oe_title">
                         <h1>
                             <span>Échéance </span>
-                            <field name="sequence" class="oe_inline"/>
+                            <field name="sequence" class="oe_inline" />
                         </h1>
                         <h2 invisible="not member_id">
-                            <field name="member_id" readonly="1"/>
+                            <field name="member_id" readonly="1" />
                         </h2>
                     </div>
 
                     <group>
                         <group name="main_info" string="Informations principales">
-                            <field name="payment_plan_id" readonly="1"/>
-                            <field name="due_date"/>
-                            <field name="amount" 
-                                   widget="monetary" 
-                                   options="{'currency_field': 'currency_id'}"/>
-                            <field name="currency_id" column_invisible="1"/>
+                            <field name="payment_plan_id" readonly="1" />
+                            <field name="due_date" />
+                            <field name="amount"
+                                widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="currency_id" column_invisible="1" />
                         </group>
-                        
+
                         <group name="payment_info" string="Informations de paiement">
-                            <field name="amount_paid" 
-                                   widget="monetary" 
-                                   options="{'currency_field': 'currency_id'}"/>
-                            <field name="remaining_amount" 
-                                   widget="monetary" 
-                                   options="{'currency_field': 'currency_id'}" 
-                                   readonly="1"/>
-                            <field name="payment_date"/>
+                            <field name="amount_paid"
+                                widget="monetary"
+                                options="{'currency_field': 'currency_id'}" />
+                            <field name="remaining_amount"
+                                widget="monetary"
+                                options="{'currency_field': 'currency_id'}"
+                                readonly="1" />
+                            <field name="payment_date" />
                         </group>
                     </group>
 
-                    <group name="status_info" string="Informations de statut" invisible="state == 'pending'">
+                    <group name="status_info" string="Informations de statut"
+                        invisible="state == 'pending'">
                         <group>
-                            <field name="days_overdue" invisible="state not in ('overdue', 'partial')"/>
+                            <field name="days_overdue"
+                                invisible="state not in ('overdue', 'partial')" />
                         </group>
                     </group>
 
                     <group name="notes" string="Notes">
-                        <field name="notes" nolabel="1" placeholder="Ajoutez des notes sur cette échéance..."/>
+                        <field name="notes" nolabel="1"
+                            placeholder="Ajoutez des notes sur cette échéance..." />
                     </group>
                 </sheet>
-                
+
                 <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="activity_ids"/>
-                    <field name="message_ids"/>
+                    <field name="message_follower_ids" />
+                    <field name="activity_ids" />
+                    <field name="message_ids" />
                 </div>
             </form>
         </field>
@@ -123,43 +132,48 @@
         <field name="model">member.payment.installment</field>
         <field name="arch" type="xml">
             <search string="Rechercher Échéances">
-                <field name="payment_plan_id" string="Plan de paiement"/>
-                <field name="member_id" string="Membre"/>
-                <field name="due_date" string="Date d'échéance"/>
-                <field name="amount"/>
-                
-                <filter string="En attente" name="pending" domain="[('state', '=', 'pending')]"/>
-                <filter string="Partiellement payé" name="partial" domain="[('state', '=', 'partial')]"/>
-                <filter string="Payé" name="paid" domain="[('state', '=', 'paid')]"/>
-                <filter string="En retard" name="overdue" domain="[('state', '=', 'overdue')]"/>
-                <filter string="Annulé" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
-                
-                <separator/>
-                <filter string="Non payées" name="unpaid" domain="[('state', 'in', ['pending', 'partial', 'overdue'])]"/>
-                <filter string="Avec retard" name="with_overdue" domain="[('days_overdue', '>', 0)]"/>
-                
-                <separator/>
-                <filter string="Aujourd'hui" name="today" 
-                        domain="[('due_date', '=', context_today())]"/>
-                <filter string="Cette semaine" name="this_week" 
-                        domain="[('due_date', '&gt;=', context_today()), ('due_date', '&lt;=', (context_today() + datetime.timedelta(days=6)))]"/>
-                <filter string="Ce mois" name="this_month" 
-                        domain="[('due_date', '&gt;=', context_today().replace(day=1)), ('due_date', '&lt;', (context_today().replace(day=1) + relativedelta(months=1)))]"/>
-                <filter string="Échéances passées" name="past_due" 
-                        domain="[('due_date', '&lt;', context_today()), ('state', 'not in', ['paid', 'cancelled'])]"/>
+                <field name="payment_plan_id" string="Plan de paiement" />
+                <field name="member_id" string="Membre" />
+                <field name="due_date" string="Date d'échéance" />
+                <field name="amount" />
+
+                <filter string="En attente" name="pending" domain="[('state', '=', 'pending')]" />
+                <filter string="Partiellement payé" name="partial"
+                    domain="[('state', '=', 'partial')]" />
+                <filter string="Payé" name="paid" domain="[('state', '=', 'paid')]" />
+                <filter string="En retard" name="overdue" domain="[('state', '=', 'overdue')]" />
+                <filter string="Annulé" name="cancelled" domain="[('state', '=', 'cancelled')]" />
+
+                <separator />
+                <filter string="Non payées" name="unpaid"
+                    domain="[('state', 'in', ['pending', 'partial', 'overdue'])]" />
+                <filter string="Avec retard" name="with_overdue" domain="[('days_overdue', '>', 0)]" />
+
+                <separator />
+                <filter string="Aujourd'hui" name="today"
+                    domain="[('due_date', '=', context_today())]" />
+                <filter string="Cette semaine" name="this_week"
+                    domain="[('due_date', '&gt;=', context_today()), ('due_date', '&lt;=', (context_today() + datetime.timedelta(days=6)))]" />
+                <filter string="Ce mois" name="this_month"
+                    domain="[('due_date', '&gt;=', context_today().replace(day=1)), ('due_date', '&lt;', (context_today().replace(day=1) + relativedelta(months=1)))]" />
+                <filter string="Échéances passées" name="past_due"
+                    domain="[('due_date', '&lt;', context_today()), ('state', 'not in', ['paid', 'cancelled'])]" />
 
                 <searchpanel>
-                    <field name="state" string="État" select="multi" icon="fa-tasks"/>
-                    <field name="member_id" string="Membre" limit="100" icon="fa-user"/>
-                    <field name="payment_plan_id" string="Plan" limit="50" icon="fa-calendar"/>
+                    <field name="state" string="État" select="multi" icon="fa-tasks" />
+                    <field name="member_id" string="Membre" limit="100" icon="fa-user" />
+                    <field name="payment_plan_id" string="Plan" limit="50" icon="fa-calendar" />
                 </searchpanel>
 
                 <group expand="0" string="Grouper par">
-                    <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
-                    <filter string="Membre" name="group_member" context="{'group_by': 'member_id'}"/>
-                    <filter string="Plan de paiement" name="group_plan" context="{'group_by': 'payment_plan_id'}"/>
-                    <filter string="Date d'échéance" name="group_due_date" context="{'group_by': 'due_date:month'}"/>
-                    <filter string="Date de paiement" name="group_payment_date" context="{'group_by': 'payment_date:month'}"/>
+                    <filter string="État" name="group_state" context="{'group_by': 'state'}" />
+                    <filter string="Membre" name="group_member" context="{'group_by': 'member_id'}" />
+                    <filter string="Plan de paiement" name="group_plan"
+                        context="{'group_by': 'payment_plan_id'}" />
+                    <filter string="Date d'échéance" name="group_due_date"
+                        context="{'group_by': 'due_date:month'}" />
+                    <filter string="Date de paiement" name="group_payment_date"
+                        context="{'group_by': 'payment_date:month'}" />
                 </group>
             </search>
         </field>
@@ -171,64 +185,79 @@
         <field name="model">member.payment.installment</field>
         <field name="arch" type="xml">
             <kanban default_group_by="state" class="o_kanban_small_column" sample="1">
-                <field name="sequence"/>
-                <field name="member_id"/>
-                <field name="payment_plan_id"/>
-                <field name="due_date"/>
-                <field name="amount"/>
-                <field name="amount_paid"/>
-                <field name="remaining_amount"/>
-                <field name="state"/>
-                <field name="currency_id"/>
-                <field name="days_overdue"/>
-                <progressbar field="state" colors='{"pending": "muted", "partial": "warning", "paid": "success", "overdue": "danger", "cancelled": "secondary"}'/>
+                <field name="sequence" />
+                <field name="member_id" />
+                <field name="payment_plan_id" />
+                <field name="due_date" />
+                <field name="amount" />
+                <field name="amount_paid" />
+                <field name="remaining_amount" />
+                <field name="state" />
+                <field name="currency_id" />
+                <field name="days_overdue" />
+                <progressbar field="state"
+                    colors='{"pending": "muted", "partial": "warning", "paid": "success", "overdue": "danger", "cancelled": "secondary"}' />
                 <templates>
                     <t t-name="kanban-menu">
                         <a role="menuitem" type="edit" class="dropdown-item">Modifier</a>
-                        <a role="menuitem" name="action_mark_paid" type="object" class="dropdown-item" t-if="record.state.raw_value not in ['paid', 'cancelled']">Marquer payé</a>
-                        <a role="menuitem" name="action_cancel" type="object" class="dropdown-item" t-if="record.state.raw_value not in ['paid', 'cancelled']">Annuler</a>
+                        <a role="menuitem" name="action_mark_paid" type="object"
+                            class="dropdown-item"
+                            t-if="record.state.raw_value not in ['paid', 'cancelled']">Marquer payé</a>
+                        <a role="menuitem" name="action_cancel" type="object" class="dropdown-item"
+                            t-if="record.state.raw_value not in ['paid', 'cancelled']">Annuler</a>
                         <a role="menuitem" type="delete" class="dropdown-item">Supprimer</a>
                     </t>
                     <t t-name="kanban-box">
-                        <div t-attf-class="oe_kanban_card oe_kanban_global_click #{record.state.raw_value == 'overdue' ? 'border-danger' : ''}">
+                        <div
+                            t-attf-class="oe_kanban_card oe_kanban_global_click #{record.state.raw_value == 'overdue' ? 'border-danger' : ''}">
                             <div class="oe_kanban_content">
                                 <div class="o_kanban_record_title">
-                                    <strong>Échéance <field name="sequence"/></strong>
-                                    <span t-if="record.days_overdue.raw_value > 0" class="badge text-bg-danger ms-2">
-                                        <i class="fa fa-clock-o"/> <field name="days_overdue"/> j
-                                    </span>
+                                    <strong>Échéance <field name="sequence" /></strong>
+                                    <span t-if="record.days_overdue.raw_value > 0"
+                                        class="badge text-bg-danger ms-2">
+                                        <i class="fa fa-clock-o" /> <field name="days_overdue" /> j </span>
                                 </div>
                                 <div class="o_kanban_record_subtitle">
-                                    <i class="fa fa-user" role="img" aria-label="Membre" title="Membre"/> <field name="member_id"/>
+                                    <i class="fa fa-user" role="img" aria-label="Membre"
+                                        title="Membre" />
+                                    <field name="member_id" />
                                 </div>
                                 <div class="o_kanban_record_body">
                                     <div class="row">
                                         <div class="col-6">
-                                            <strong>Dû: </strong><field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                            <strong>Dû: </strong>
+                                            <field name="amount" widget="monetary"
+                                                options="{'currency_field': 'currency_id'}" />
                                         </div>
                                         <div class="col-6 text-end">
-                                            <field name="due_date"/>
+                                            <field name="due_date" />
                                         </div>
                                     </div>
                                     <div class="row mt-1" t-if="record.amount_paid.raw_value > 0">
                                         <div class="col-6">
-                                            <span class="text-success">Payé: </span><field name="amount_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                            <span class="text-success">Payé: </span>
+                                            <field name="amount_paid" widget="monetary"
+                                                options="{'currency_field': 'currency_id'}" />
                                         </div>
-                                        <div class="col-6 text-end" t-if="record.remaining_amount.raw_value > 0">
-                                            <span class="text-warning">Reste: </span><field name="remaining_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        <div class="col-6 text-end"
+                                            t-if="record.remaining_amount.raw_value > 0">
+                                            <span class="text-warning">Reste: </span>
+                                            <field name="remaining_amount" widget="monetary"
+                                                options="{'currency_field': 'currency_id'}" />
                                         </div>
                                     </div>
                                 </div>
                                 <div class="o_kanban_record_bottom">
                                     <div class="oe_kanban_bottom_left">
-                                        <field name="state" widget="label_selection" 
-                                               options="{'classes': {'pending': 'secondary', 'partial': 'warning', 'paid': 'success', 'overdue': 'danger', 'cancelled': 'dark'}}"/>
+                                        <field name="state" widget="label_selection"
+                                            options="{'classes': {'pending': 'secondary', 'partial': 'warning', 'paid': 'success', 'overdue': 'danger', 'cancelled': 'dark'}}" />
                                     </div>
                                     <div class="oe_kanban_bottom_right">
-                                        <img t-att-src="kanban_image('res.partner', 'avatar_128', record.member_id.raw_value)" 
-                                             t-att-title="record.member_id.value" 
-                                             t-att-alt="record.member_id.value"
-                                             class="oe_kanban_avatar o_image_24_cover rounded"/>
+                                        <img
+                                            t-att-src="kanban_image('res.partner', 'avatar_128', record.member_id.raw_value)"
+                                            t-att-title="record.member_id.value"
+                                            t-att-alt="record.member_id.value"
+                                            class="oe_kanban_avatar o_image_24_cover rounded" />
                                     </div>
                                 </div>
                             </div>
@@ -245,26 +274,29 @@
         <field name="model">member.payment.installment</field>
         <field name="arch" type="xml">
             <activity string="Échéances de Paiement">
-                <field name="member_id"/>
+                <field name="member_id" />
                 <templates>
                     <div t-name="activity-box">
-                        <img t-att-src="activity_image('res.partner', 'avatar_128', record.member_id.raw_value)" 
-                             role="img" 
-                             t-att-title="record.member_id.value" 
-                             t-att-alt="record.member_id.value"/>
+                        <img
+                            t-att-src="activity_image('res.partner', 'avatar_128', record.member_id.raw_value)"
+                            role="img"
+                            t-att-title="record.member_id.value"
+                            t-att-alt="record.member_id.value" />
                         <div>
                             <div class="o_activity_record_title">
-                                <span>Échéance </span><field name="sequence"/>
-                                <span t-if="record.days_overdue.raw_value > 0" class="badge text-bg-danger ms-2">
-                                    <field name="days_overdue"/> jours de retard
-                                </span>
+                                <span>Échéance </span>
+                                <field name="sequence" />
+                                <span t-if="record.days_overdue.raw_value > 0"
+                                    class="badge text-bg-danger ms-2">
+                                    <field name="days_overdue" /> jours de retard </span>
                             </div>
                             <div t-if="record.member_id.value" class="text-muted">
-                                <field name="member_id" muted="1"/>
+                                <field name="member_id" muted="1" />
                             </div>
                             <div class="o_activity_record_details text-muted">
-                                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/> - 
-                                <field name="due_date"/>
+                                <field name="amount" widget="monetary"
+                                    options="{'currency_field': 'currency_id'}" /> - <field
+                                    name="due_date" />
                             </div>
                         </div>
                     </div>
@@ -279,12 +311,12 @@
         <field name="model">member.payment.installment</field>
         <field name="arch" type="xml">
             <pivot string="Analyse des Échéances" sample="1">
-                <field name="member_id" type="row"/>
-                <field name="state" type="col"/>
-                <field name="amount" type="measure"/>
-                <field name="amount_paid" type="measure"/>
-                <field name="remaining_amount" type="measure"/>
-                <field name="days_overdue" type="measure"/>
+                <field name="member_id" type="row" />
+                <field name="state" type="col" />
+                <field name="amount" type="measure" />
+                <field name="amount_paid" type="measure" />
+                <field name="remaining_amount" type="measure" />
+                <field name="days_overdue" type="measure" />
             </pivot>
         </field>
     </record>
@@ -295,8 +327,8 @@
         <field name="model">member.payment.installment</field>
         <field name="arch" type="xml">
             <graph string="Graphique des Échéances" type="bar" sample="1">
-                <field name="state"/>
-                <field name="amount" type="measure"/>
+                <field name="state" />
+                <field name="amount" type="measure" />
             </graph>
         </field>
     </record>
@@ -306,16 +338,16 @@
         <field name="name">member.payment.installment.calendar</field>
         <field name="model">member.payment.installment</field>
         <field name="arch" type="xml">
-            <calendar string="Calendrier des Échéances" 
-                      date_start="due_date" 
-                      color="state"
-                      event_open_popup="1"
-                      event_limit="5"
-                      mode="month">
-                <field name="member_id" avatar_field="avatar_128"/>
-                <field name="amount"/>
-                <field name="state" filters="1"/>
-                <field name="sequence"/>
+            <calendar string="Calendrier des Échéances"
+                date_start="due_date"
+                color="state"
+                event_open_popup="1"
+                event_limit="5"
+                mode="month">
+                <field name="member_id" avatar_field="avatar_128" />
+                <field name="amount" />
+                <field name="state" filters="1" />
+                <field name="sequence" />
             </calendar>
         </field>
     </record>
@@ -327,13 +359,14 @@
         <field name="view_mode">tree,kanban,form,calendar,activity,pivot,graph</field>
         <field name="context">{
             'search_default_unpaid': 1,
-        }</field>
+            }</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Aucune échéance trouvée
             </p>
             <p>
-                Les échéances sont générées automatiquement lors de la création d'un plan de paiement.
+                Les échéances sont générées automatiquement lors de la création d'un plan de
+                paiement.
                 Vous pouvez suivre leur statut et enregistrer les paiements depuis cette vue.
             </p>
         </field>
@@ -342,29 +375,29 @@
     <!-- Action serveur pour paiement partiel -->
     <record id="action_partial_payment_wizard" model="ir.actions.server">
         <field name="name">Paiement partiel</field>
-        <field name="model_id" ref="model_member_payment_installment"/>
-        <field name="binding_model_id" ref="model_member_payment_installment"/>
+        <field name="model_id" ref="model_member_payment_installment" />
+        <field name="binding_model_id" ref="model_member_payment_installment" />
         <field name="state">code</field>
         <field name="code">
-if records:
-    action = {
-        'name': 'Paiement partiel',
-        'type': 'ir.actions.act_window',
-        'res_model': 'member.payment.installment.partial.wizard',
-        'view_mode': 'form',
-        'target': 'new',
-        'context': {
+            if records:
+            action = {
+            'name': 'Paiement partiel',
+            'type': 'ir.actions.act_window',
+            'res_model': 'member.payment.installment.partial.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
             'default_installment_id': records[0].id if len(records) == 1 else False,
             'default_installment_ids': [(6, 0, records.ids)],
-        }
-    }
+            }
+            }
         </field>
     </record>
 
     <!-- Tâche cron pour mise à jour automatique du statut -->
     <record id="cron_update_installment_status" model="ir.cron">
         <field name="name">Mise à jour statut échéances</field>
-        <field name="model_id" ref="model_member_payment_installment"/>
+        <field name="model_id" ref="model_member_payment_installment" />
         <field name="state">code</field>
         <field name="code">model._cron_update_installment_status()</field>
         <field name="interval_number">1</field>

@@ -12,11 +12,17 @@
                             <field name="activity_id" readonly="1" />
                         </h1>
                     </div>
-                    <field name="analysis_type" widget="radio" />
-                    <field name="include_forecast" />
-                    <field name="show_by_category" />
-                    <field name="show_trends" />
-                    <field name="export_format" widget="radio" />
+                    <group>
+                        <group>
+                            <field name="analysis_type" widget="radio" options="{'horizontal': True}" />
+                            <field name="export_format" widget="radio" options="{'horizontal': True}" />
+                        </group>
+                        <group>
+                            <field name="include_forecast" />
+                            <field name="show_by_category" />
+                            <field name="show_trends" />
+                        </group>
+                    </group>
                 </sheet>
 
                 <footer>
@@ -75,15 +81,13 @@
                         </group>
                     </group>
 
-                    <group string="Répartition des dépenses">
-                        <field name="expense_breakdown" widget="text" nolabel="1" />
+                    <group string="Répartition des dépenses" invisible="not expense_breakdown">
+                        <field name="expense_breakdown" widget="text" readonly="1"/>
                     </group>
+                    
+                    <field name="recommendations" invisible="not recommendations" widget="html" readonly="1" nolabel="1"/>
 
-                    <group string="Recommandations">
-                        <field name="recommendations" widget="html" nolabel="1" />
-                    </group>
-
-                    <field name="currency_id" column_invisible="1" />
+                    <field name="currency_id" invisible="1" />
                 </sheet>
 
                 <footer>

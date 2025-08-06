@@ -252,6 +252,10 @@ class CotisationPaymentWizard(models.TransientModel):
             elif self.payment_method == 'online':
                 self.reference = f"WEB-{cotisation_ref}-{date_str}"
             elif self.payment_method == 'cash':
+                self.reference = f"ESP-{cotisation_ref}-{date_str}"
+            elif self.payment_method == 'installment':
+                self.reference = f"INST-{cotisation_ref}-{date_str}"
+            else :
                 self.reference = False  # Pas de référence nécessaire pour les espèces
     
     @api.constrains('amount')

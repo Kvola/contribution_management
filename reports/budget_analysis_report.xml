@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Définition du rapport PDF -->
+    <record id="budget_analysis_report" model="ir.actions.report">
+        <field name="name">Analyse Budgétaire</field>
+        <field name="model">activity.budget.report.display</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">contribution_management.budget_analysis_report_template</field>
+        <field name="report_file">contribution_management.budget_analysis_report_template</field>
+        <field name="binding_model_id" ref="model_activity_budget_report_display"/>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+        <field name="print_report_name">'Analyse_Budgetaire_%s' % (object.activity_id.name)</field>
+    </record>
+
+    <!-- Template principal du rapport -->
+    <template id="budget_analysis_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="contribution_management.budget_analysis_report_document" t-lang="doc.env.lang"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- Document principal -->
+    <template id="budget_analysis_report_document">
+        <t t-call="web.external_layout">
+            <style type="text/css">
+                .section {
+                    margin-bottom: 25px;
+                    page-break-inside: avoid;
+                }
+                .section-title {
+                    background-color: #00477a;
+                    color: white;
+                    padding: 8px 12px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    margin-bottom: 0;
+                }
+                .section-content {
+                    border: 1px solid #dee2e6;
+                    border-top: none;
+                    padding: 15px;
+                }
+                .progress-bar-container {
+                    background-color: #e9ecef;
+                    height: 20px;
+                    border-radius: 4px;
+                    overflow: hidden;
+                    margin: 10px 0;
+                    position: relative;
+                }
+                .progress-bar {
+                    height: 100%;
+                    background-color: #007bff;
+                    transition: width 0.3s ease;
+                }
+                .alert {
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    border: 1px solid transparent;
+                    border-radius: 4px;
+                }
+                .alert-success {
+                    color: #155724;
+                    background-color: #d4edda;
+                    border-color: #c3e6cb;
+                }
+                .alert-warning {
+                    color: #856404;
+                    background-color: #fff3cd;
+                    border-color: #ffeaa7;
+                }
+                .alert-danger {
+                    color: #721c24;
+                    background-color: #f8d7da;
+                    border-color: #f5c6cb;
+                }
+                .alert-info {
+                    color: #0c5460;
+                    background-color: #d1ecf1;
+                    border-color: #bee5eb;
+                }
+                @media print {
+                    .page {
+                        page-break-after: always;
+                    }
+                }
+            </style>
+            <div class="page">
+                <!-- En-tête personnalisé -->
+                <div class="header" style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #00477a; padding-bottom: 15px;">
+                    <h1 style="color: #00477a; font-size: 24px; margin: 0 0 10px 0;">
+                        Analyse Budgétaire
+                    </h1>
+                    <h2 style="color: #666; font-size: 18px; margin: 0 0 5px 0;">
+                        <t t-esc="doc.activity_id.name"/>
+                    </h2>
+                    <p style="color: #999; font-size: 11px; margin: 0;">
+                        Rapport généré le <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                    </p>
+                </div>
+
+                <!-- Variables de données -->
+                <t t-set="data" t-value="json.loads(doc.report_data)"/>
+                <t t-set="budget_amount" t-value="data.get('budget_amount', 0)"/>
+                <t t-set="total_expenses" t-value="data.get('total_expenses', 0)"/>
+                <t t-set="budget_remaining" t-value="data.get('budget_remaining', 0)"/>
+                <t t-set="budget_used_percentage" t-value="data.get('budget_used_percentage', 0)"/>
+                <t t-set="total_collected" t-value="data.get('total_collected', 0)"/>
+                <t t-set="net_result" t-value="data.get('net_result', 0)"/>
+                <t t-set="profitability_rate" t-value="data.get('profitability_rate', 0)"/>
+                <t t-set="participant_count" t-value="data.get('participant_count', 0)"/>
+                <t t-set="currency" t-value="doc.activity_id.currency_id"/>
+
+                <!-- Résumé Exécutif -->
+                <div class="section" style="margin-bottom: 25px; page-break-inside: avoid;">
+                    <div class="section-title" style="background-color: #00477a; color: white; padding: 8px 12px; font-size: 14px; font-weight: bold; margin-bottom: 0;">
+                        Résumé Exécutif
+                    </div>
+                    <div class="section-content" style="border: 1px solid #dee2e6; border-top: none; padding: 15px;">
+                        <div class="row">
+                            <div class="col-3 text-center" style="border: 1px solid #e0e0e0; padding: 12px;">
+                                <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px; color: #28a745;" t-att-class="'text-success' if net_result >= 0 else 'text-danger'">
+                                    <t t-esc="'{:,.2f}'.format(net_result)"/> <t t-esc="currency.symbol"/>
+                                </div>
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">
+                                    Résultat Net
+                                </div>
+                            </div>
+                            <div class="col-3 text-center" style="border: 1px solid #e0e0e0; padding: 12px;">
+                                <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">
+                                    <t t-esc="'{:.1f}'.format(profitability_rate)"/>%
+                                </div>
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">
+                                    Rentabilité
+                                </div>
+                            </div>
+                            <div class="col-3 text-center" style="border: 1px solid #e0e0e0; padding: 12px;">
+                                <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;" t-att-class="'text-danger' if budget_remaining &lt; 0 else 'text-success'">
+                                    <t t-esc="'{:,.2f}'.format(budget_remaining)"/> <t t-esc="currency.symbol"/>
+                                </div>
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">
+                                    Budget Restant
+                                </div>
+                            </div>
+                            <div class="col-3 text-center" style="border: 1px solid #e0e0e0; padding: 12px;">
+                                <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">
+                                    <t t-esc="participant_count"/>
+                                </div>
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">
+                                    Participants
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analyse Budgétaire Détaillée -->
+                <div class="section" style="margin-bottom: 25px; page-break-inside: avoid;">
+                    <div class="section-title" style="background-color: #00477a; color: white; padding: 8px 12px; font-size: 14px; font-weight: bold; margin-bottom: 0;">
+                        Analyse Budgétaire Détaillée
+                    </div>
+                    <div class="section-content" style="border: 1px solid #dee2e6; border-top: none; padding: 15px;">
+                        <table class="table table-sm" style="width: 100%; margin-bottom: 15px;">
+                            <tr>
+                                <td><strong>Budget Alloué</strong></td>
+                                <td class="text-right">
+                                    <t t-esc="'{:,.2f}'.format(budget_amount)"/> <t t-esc="currency.symbol"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dépenses Totales</strong></td>
+                                <td class="text-right">
+                                    <t t-esc="'{:,.2f}'.format(total_expenses)"/> <t t-esc="currency.symbol"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Budget Restant</strong></td>
+                                <td class="text-right" t-att-class="'text-success' if budget_remaining >= 0 else 'text-danger'">
+                                    <t t-esc="'{:,.2f}'.format(budget_remaining)"/> <t t-esc="currency.symbol"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>% Budget Utilisé</strong></td>
+                                <td class="text-right">
+                                    <t t-esc="'{:.1f}'.format(budget_used_percentage)"/>%
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Barre de progression -->
+                        <div style="background-color: #e9ecef; height: 20px; border-radius: 4px; overflow: hidden; margin: 10px 0; position: relative;">
+                            <div style="height: 100%; background-color: #007bff; transition: width 0.3s ease;" t-att-style="'width: {}%;'.format(min(budget_used_percentage, 100))"></div>
+                        </div>
+                        <p class="text-center" style="font-size: 10px; margin-top: 5px;">
+                            Utilisation du budget: <t t-esc="'{:.1f}'.format(budget_used_percentage)"/>%
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Analyse Financière -->
+                <div class="section" style="margin-bottom: 25px; page-break-inside: avoid;">
+                    <div class="section-title" style="background-color: #006400; color: white; padding: 8px 12px; font-size: 14px; font-weight: bold; margin-bottom: 0;">
+                        Analyse Financière
+                    </div>
+                    <div class="section-content" style="border: 1px solid #dee2e6; border-top: none; padding: 15px;">
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Recettes Collectées</strong></td>
+                                <td class="text-right">
+                                    <t t-esc="'{:,.2f}'.format(total_collected)"/> <t t-esc="currency.symbol"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dépenses Totales</strong></td>
+                                <td class="text-right">
+                                    <t t-esc="'{:,.2f}'.format(total_expenses)"/> <t t-esc="currency.symbol"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Résultat Net</strong></td>
+                                <td class="text-right" t-att-class="'text-success' if net_result >= 0 else 'text-danger'">
+                                    <t t-esc="'{:,.2f}'.format(net_result)"/> <t t-esc="currency.symbol"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Taux de Rentabilité</strong></td>
+                                <td class="text-right">
+                                    <t t-esc="'{:.1f}'.format(profitability_rate)"/>%
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nombre de Participants</strong></td>
+                                <td class="text-right">
+                                    <t t-esc="participant_count"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Dépenses par Catégorie -->
+                <t t-if="data.get('expenses_by_category')">
+                    <div class="section" style="margin-bottom: 25px; page-break-inside: avoid;">
+                        <div class="section-title" style="background-color: #0dcaf0; color: white; padding: 8px 12px; font-size: 14px; font-weight: bold; margin-bottom: 0;">
+                            Répartition des Dépenses par Catégorie
+                        </div>
+                        <div class="section-content" style="border: 1px solid #dee2e6; border-top: none; padding: 15px;">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr style="background-color: #f8f9fa;">
+                                        <th>Catégorie</th>
+                                        <th class="text-right">Montant</th>
+                                        <th class="text-center">Nombre</th>
+                                        <th class="text-right">Pourcentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data.get('expenses_by_category', {}).items()" t-as="category_item">
+                                        <tr>
+                                            <td><t t-esc="category_item[0]"/></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(category_item[1].get('amount', 0))"/> <t t-esc="currency.symbol"/>
+                                            </td>
+                                            <td class="text-center">
+                                                <t t-esc="category_item[1].get('count', 0)"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:.1f}'.format(category_item[1].get('percentage', 0))"/>%
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Recommandations -->
+                <t t-if="data.get('recommendations')">
+                    <div class="section" style="margin-bottom: 25px; page-break-inside: avoid;">
+                        <div class="section-title" style="background-color: #6f42c1; color: white; padding: 8px 12px; font-size: 14px; font-weight: bold; margin-bottom: 0;">
+                            Recommandations
+                        </div>
+                        <div class="section-content" style="border: 1px solid #dee2e6; border-top: none; padding: 15px;">
+                            <t t-foreach="data.get('recommendations', [])" t-as="recommendation">
+                                <t t-set="rec_type" t-value="recommendation.get('type', 'info')"/>
+                                <t t-set="alert_class" t-value="'alert-success' if rec_type == 'success' else 'alert-warning' if rec_type == 'warning' else 'alert-danger' if rec_type in ['danger', 'error'] else 'alert-info'"/>
+                                <div t-att-class="'alert ' + alert_class" style="margin-bottom: 10px; padding: 10px; border-radius: 4px;">
+                                    <strong><t t-esc="recommendation.get('title', '')"/></strong><br/>
+                                    <t t-esc="recommendation.get('message', '')"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Prévisions -->
+                <t t-if="data.get('forecast')">
+                    <t t-set="forecast" t-value="data.get('forecast', {})"/>
+                    <div class="section" style="margin-bottom: 25px; page-break-inside: avoid;">
+                        <div class="section-title" style="background-color: #6c757d; color: white; padding: 8px 12px; font-size: 14px; font-weight: bold; margin-bottom: 0;">
+                            Prévisions et Projections
+                        </div>
+                        <div class="section-content" style="border: 1px solid #dee2e6; border-top: none; padding: 15px;">
+                            <p><strong>Progression de l'activité:</strong> 
+                                <t t-esc="'{:.1f}'.format(forecast.get('progress_percentage', 0))"/>%
+                            </p>
+                            
+                            <!-- Barre de progression -->
+                            <div style="background-color: #e9ecef; height: 20px; border-radius: 4px; overflow: hidden; margin: 10px 0;">
+                                <div style="height: 100%; background-color: #28a745; transition: width 0.3s ease;" t-att-style="'width: {}%;'.format(min(forecast.get('progress_percentage', 0), 100))"></div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-6">
+                                    <h5>Projections Financières</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Dépenses Projetées</strong></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(forecast.get('projected_total_expenses', 0))"/> <t t-esc="currency.symbol"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Recettes Projetées</strong></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(forecast.get('projected_total_collected', 0))"/> <t t-esc="currency.symbol"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Résultat Net Projeté</strong></td>
+                                            <td class="text-right" t-att-class="'text-success' if forecast.get('projected_net_result', 0) >= 0 else 'text-danger'">
+                                                <t t-esc="'{:,.2f}'.format(forecast.get('projected_net_result', 0))"/> <t t-esc="currency.symbol"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-6">
+                                    <h5>Projection Budgétaire</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Usage Budget Projeté</strong></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:.1f}'.format(forecast.get('projected_budget_usage', 0))"/>%
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <div style="background-color: #e9ecef; height: 20px; border-radius: 4px; overflow: hidden; margin: 10px 0;">
+                                        <t t-set="projected_usage" t-value="forecast.get('projected_budget_usage', 0)"/>
+                                        <div t-att-style="'height: 100%; width: {}%; background-color: {}; transition: width 0.3s ease;'.format(min(projected_usage, 100), '#dc3545' if projected_usage > 100 else '#007bff')"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Pied de page -->
+                <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #dee2e6; padding-top: 15px;">
+                    <p>Rapport généré automatiquement par le système de gestion d'activités</p>
+                    <p>© <t t-esc="datetime.datetime.now().year"/> - Document confidentiel</p>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

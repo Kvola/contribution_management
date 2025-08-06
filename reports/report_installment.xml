@@ -1,0 +1,147 @@
+<odoo>
+    <!-- Configuration des rapports -->
+    <data>
+        
+        <!-- Rapport d'allocation échéances-cotisations -->
+        <record id="report_installment_allocation_summary" model="ir.actions.report">
+            <field name="name">Rapport allocation échéances</field>
+            <field name="model">member.payment.installment</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">contribution_management.report_installment_allocation_template</field>
+            <field name="report_file">contribution_management.report_installment_allocation</field>
+            <field name="binding_model_id" ref="model_member_payment_installment"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <!-- Template de rapport -->
+        <template id="report_installment_allocation_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="installment">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <h2>Rapport d'allocation - <span t-field="installment.name"/></h2>
+                            
+                            <div class="row mt32 mb32">
+                                <div class="col-6">
+                                    <strong>Membre :</strong> <span t-field="installment.member_id"/>
+                                    <br/>
+                                    <strong>Plan de paiement :</strong> <span t-field="installment.payment_plan_id"/>
+                                    <br/>
+                                    <strong>Échéance :</strong> <span t-field="installment.sequence"/>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Montant :</strong> <span t-field="installment.amount" t-options="{'widget': 'monetary', 'display_currency': installment.currency_id}"/>
+                                    <br/>
+                                    <strong>Date d'échéance :</strong> <span t-field="installment.due_date"/>
+                                    <br/>
+                                    <strong>État :</strong> <span t-field="installment.state"/>
+                                </div>
+                            </div>
+
+                            <h3>Configuration d'allocation</h3>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Méthode :</strong></td>
+                                    <td><span t-field="installment.allocation_method"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Allocation automatique :</strong></td>
+                                    <td><span t-if="installment.auto_allocate">✓ Activée</span><span t-else="">✗ Désactivée</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Cotisations liées :</strong></td>
+                                    <td><span t-field="installment.cotisation_count"/></td>
+                                </tr>
+                            </table>
+
+                            <t t-if="installment.cotisation_ids">
+                                <h3>Cotisations liées</h3>
+                                <table class="table table-sm o_main_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Cotisation</th>
+                                            <th>Date échéance</th>
+                                            <th>Montant dû</th>
+                                            <th>Montant payé</th>
+                                            <th>Restant</th>
+                                            <th>État</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="installment.cotisation_ids" t-as="cotisation">
+                                            <tr>
+                                                <td><span t-field="cotisation.name"/></td>
+                                                <td><span t-field="cotisation.due_date"/></td>
+                                                <td><span t-field="cotisation.amount_due" t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"/></td>
+                                                <td><span t-field="cotisation.amount_paid" t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"/></td>
+                                                <td><span t-esc="cotisation.amount_due - cotisation.amount_paid" t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"/></td>
+                                                <td>
+                                                    <span t-if="cotisation.state == 'paid'" class="badge badge-success">Payée</span>
+                                                    <span t-elif="cotisation.state == 'partial'" class="badge badge-warning">Partielle</span>
+                                                    <span t-elif="cotisation.state == 'overdue'" class="badge badge-danger">En retard</span>
+                                                    <span t-else="" class="badge badge-info">En attente</span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+
+                            <t t-if="installment.allocation_details">
+                                <h3>Historique des répartitions</h3>
+                                <div class="well">
+                                    <pre t-field="installment.allocation_details"/>
+                                </div>
+                            </t>
+
+                            <t t-if="installment.payment_ids">
+                                <h3>Paiements de cotisations générés</h3>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Cotisation</th>
+                                            <th>Montant</th>
+                                            <th>Référence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="installment.cotisation_ids.payment_ids.filtered(lambda p: p.installment_id == installment)" t-as="payment">
+                                            <tr>
+                                                <td><span t-field="payment.payment_date"/></td>
+                                                <td><span t-field="payment.cotisation_id.display_name"/></td>
+                                                <td><span t-field="payment.amount" t-options="{'widget': 'monetary', 'display_currency': payment.currency_id}"/></td>
+                                                <td><span t-field="payment.reference"/></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+        <!-- Action pour générer un rapport consolidé -->
+        <record id="action_allocation_summary_report" model="ir.actions.server">
+            <field name="name">Rapport consolidé allocations</field>
+            <field name="model_id" ref="model_res_partner"/>
+            <field name="state">code</field>
+            <field name="code">
+# Générer un rapport consolidé pour un membre
+if record.is_company == False:
+    installments = env['member.payment.installment'].search([
+        ('member_id', '=', record.id),
+        ('cotisation_count', '>', 0)
+    ])
+    
+    if installments:
+        action = env.ref('contribution_management.report_installment_allocation_summary').report_action(installments)
+    else:
+        raise UserError("Aucune échéance avec allocation configurée pour ce membre.")
+            </field>
+        </record>
+
+    </data>
+</odoo>

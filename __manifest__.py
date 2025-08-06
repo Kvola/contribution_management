@@ -65,6 +65,7 @@ Sécurité et contrôles :
     'website': 'https://www.dibi.ci',
     'depends': [
         'base',
+        'base_automation',
         'mail',
         'web',
         'account',
@@ -86,7 +87,12 @@ Sécurité et contrôles :
         'views/report_generation_log_views.xml',
         'views/member_payment_plan_views.xml',
         'views/member_payment_installment_views.xml',
+        'views/cotisation_linked_to_installment_views.xml',
         'data/data.xml',
+        'data/installment_data.xml',
+
+        # Cron
+        'data/ir_cron_data.xml',
 
         # Rapports
         'reports/res_partner_report.xml',
@@ -96,6 +102,8 @@ Sécurité et contrôles :
         'reports/grouped_res_partner_report.xml',
         'reports/monthly_cotisation_report.xml',
         'reports/dashboard_report.xml',
+        'reports/budget_analysis_report.xml',
+        'reports/report_installment.xml',
 
         # Wizards
         'wizards/cotisation_payment_wizard_views.xml',

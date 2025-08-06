@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
 
         <!-- ================= ÉGLISES ET GROUPES ================= -->
         
@@ -339,5 +339,91 @@
             <field name="currency_id" eval="ref('base.XOF')"/>
             <field name="state">paid</field>
         </record>
+        
+        <!-- Exemple de configuration pour un membre test -->
+        <record id="demo_member_allocation_config" model="res.partner">
+            <field name="name">Membre Démo Allocation</field>
+            <field name="is_company" eval="False"/>
+            <field name="email">demo.allocation@example.com</field>
+            <field name="phone">+225 12 34 56 78</field>
+        </record>
+
+        <!-- Cotisations de démonstration -->
+        <record id="demo_cotisation_1" model="member.cotisation">
+            <field name="member_id" ref="demo_member_allocation_config"/>
+            <field name="name">Cotisation Janvier 2024</field>
+            <field name="amount_due">50000</field>
+            <field name="amount_paid">0</field>
+            <field name="due_date" eval="(DateTime.today() - timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="state">overdue</field>
+        </record>
+
+        <record id="demo_cotisation_2" model="member.cotisation">
+            <field name="member_id" ref="demo_member_allocation_config"/>
+            <field name="name">Cotisation Février 2024</field>
+            <field name="amount_due">50000</field>
+            <field name="amount_paid">25000</field>
+            <field name="due_date" eval="(DateTime.today() - timedelta(days=15)).strftime('%Y-%m-%d')"/>
+            <field name="state">partial</field>
+        </record>
+
+        <record id="demo_cotisation_3" model="member.cotisation">
+            <field name="member_id" ref="demo_member_allocation_config"/>
+            <field name="name">Cotisation Mars 2024</field>
+            <field name="amount_due">50000</field>
+            <field name="amount_paid">0</field>
+            <field name="due_date" eval="(DateTime.today() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+            <field name="state">pending</field>
+        </record>
+
+        <!-- Plan de paiement de démonstration -->
+        <record id="demo_payment_plan" model="member.payment.plan">
+            <field name="name">Plan démo allocation</field>
+            <field name="member_id" ref="demo_member_allocation_config"/>
+            <field name="total_amount">120000</field>
+            <field name="installments_count">3</field>
+            <field name="start_date" eval="DateTime.today().strftime('%Y-%m-%d')"/>
+            <field name="auto_allocate_to_cotisations" eval="True"/>
+            <field name="allocation_method">auto</field>
+        </record>
+
+        <!-- Échéances de démonstration avec liens -->
+        <record id="demo_installment_1" model="member.payment.installment">
+            <field name="payment_plan_id" ref="demo_payment_plan"/>
+            <field name="member_id" ref="demo_member_allocation_config"/>
+            <field name="sequence">1</field>
+            <field name="amount">40000</field>
+            <field name="due_date" eval="DateTime.today().strftime('%Y-%m-%d')"/>
+            <field name="state">pending</field>
+            <field name="allocation_method">auto</field>
+            <field name="auto_allocate" eval="True"/>
+            <field name="cotisation_ids" eval="[(6, 0, [ref('demo_cotisation_1'), ref('demo_cotisation_2')])]"/>
+        </record>
+
+        <record id="demo_installment_2" model="member.payment.installment">
+            <field name="payment_plan_id" ref="demo_payment_plan"/>
+            <field name="member_id" ref="demo_member_allocation_config"/>
+            <field name="sequence">2</field>
+            <field name="amount">40000</field>
+            <field name="due_date" eval="(DateTime.today() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="state">pending</field>
+            <field name="allocation_method">oldest_first</field>
+            <field name="auto_allocate" eval="True"/>
+            <field name="cotisation_ids" eval="[(6, 0, [ref('demo_cotisation_2'), ref('demo_cotisation_3')])]"/>
+        </record>
+
+        <record id="demo_installment_3" model="member.payment.installment">
+            <field name="payment_plan_id" ref="demo_payment_plan"/>
+            <field name="member_id" ref="demo_member_allocation_config"/>
+            <field name="sequence">3</field>
+            <field name="amount">40000</field>
+            <field name="due_date" eval="(DateTime.today() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="state">pending</field>
+            <field name="allocation_method">amount_priority</field>
+            <field name="auto_allocate" eval="True"/>
+            <field name="cotisation_ids" eval="[(6, 0, [ref('demo_cotisation_3')])]"/>
+        </record>
+
     </data>
+
 </odoo>

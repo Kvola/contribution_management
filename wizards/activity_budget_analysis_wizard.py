@@ -92,6 +92,555 @@ class ActivityBudgetAnalysisWizard(models.TransientModel):
         default="html",
     )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def _export_to_pdf(self, data):
+        """Exporte l'analyse vers PDF en utilisant le moteur de rapport Odoo"""
+        try:
+            # Créer un modèle temporaire pour le rapport PDF
+            report_wizard = self.env["activity.budget.report.display"].create(
+                {
+                    "activity_id": self.activity_id.id,
+                    "report_data": json.dumps(data, cls=Odoo17JSONEncoder, ensure_ascii=False),
+                    "analysis_type": self.analysis_type,
+                }
+            )
+
+            # Générer le contenu HTML pour le PDF
+            html_content = self._generate_pdf_template(data)
+            
+            # Créer un rapport PDF temporaire
+            report_name = f"budget_analysis_{self.activity_id.name.replace(' ', '_')}"
+            
+            # Utiliser le moteur de rapport Odoo pour générer le PDF
+            pdf_content = self.env['ir.actions.report']._render_qweb_pdf(
+                'contribution_management.budget_analysis_report',
+                [report_wizard.id],
+                data={'html_content': html_content, 'data': data}
+            )[0]
+
+            # Créer l'attachement PDF
+            attachment_name = f"analyse_budgetaire_{self.activity_id.name.replace(' ', '_')}.pdf"
+            attachment = self.env["ir.attachment"].create(
+                {
+                    "name": attachment_name,
+                    "type": "binary",
+                    "datas": base64.b64encode(pdf_content),
+                    "res_model": self._name,
+                    "res_id": self.id,
+                    "mimetype": "application/pdf",
+                }
+            )
+
+            return {
+                "type": "ir.actions.act_url",
+                "url": f"/web/content/{attachment.id}?download=true",
+                "target": "self",
+            }
+
+        except Exception as e:
+            _logger.error(f"Erreur lors de l'export PDF: {e}")
+            raise UserError(f"Impossible de générer le PDF: {str(e)}")
+
+    def _generate_pdf_template(self, data):
+        """Génère le template HTML optimisé pour l'export PDF"""
+        
+        # Helper functions pour la sécurité des données
+        def safe_float(val, default=0.0):
+            try:
+                return float(val) if val is not None else default
+            except:
+                return default
+
+        def safe_int(val, default=0):
+            try:
+                return int(val) if val is not None else default
+            except:
+                return default
+
+        # Extraction sécurisée des données
+        budget_amount = safe_float(data.get("budget_amount"))
+        total_expenses = safe_float(data.get("total_expenses"))
+        budget_remaining = safe_float(data.get("budget_remaining"))
+        budget_used_percentage = safe_float(data.get("budget_used_percentage"))
+        total_collected = safe_float(data.get("total_collected"))
+        net_result = safe_float(data.get("net_result"))
+        profitability_rate = safe_float(data.get("profitability_rate"))
+        participant_count = safe_int(data.get("participant_count"))
+        activity_name = str(data.get("activity_name", "Activité non spécifiée"))
+
+        # Gestion de la date d'analyse
+        analysis_date = "Date non disponible"
+        if data.get("analysis_date"):
+            try:
+                analysis_date = str(data["analysis_date"]).split(".")[0]
+            except Exception:
+                pass
+
+        # CSS pour le PDF
+        css_styles = """
+        <style>
+            body { 
+                font-family: 'DejaVu Sans', Arial, sans-serif; 
+                font-size: 12px; 
+                line-height: 1.4; 
+                margin: 0; 
+                padding: 20px;
+            }
+            .header { 
+                text-align: center; 
+                margin-bottom: 30px; 
+                border-bottom: 2px solid #00477a; 
+                padding-bottom: 15px;
+            }
+            .header h1 { 
+                color: #00477a; 
+                font-size: 24px; 
+                margin: 0 0 10px 0;
+            }
+            .header h2 { 
+                color: #666; 
+                font-size: 18px; 
+                margin: 0 0 5px 0;
+            }
+            .header p { 
+                color: #999; 
+                font-size: 11px; 
+                margin: 0;
+            }
+            .section { 
+                margin-bottom: 25px; 
+                page-break-inside: avoid;
+            }
+            .section-title { 
+                background-color: #00477a; 
+                color: white; 
+                padding: 8px 12px; 
+                font-size: 14px; 
+                font-weight: bold; 
+                margin-bottom: 0;
+            }
+            .section-content { 
+                border: 1px solid #dee2e6; 
+                border-top: none; 
+                padding: 15px;
+            }
+            .financial-grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr; 
+                gap: 20px; 
+                margin-bottom: 20px;
+            }
+            .metric-card { 
+                border: 1px solid #e0e0e0; 
+                padding: 12px; 
+                text-align: center;
+            }
+            .metric-value { 
+                font-size: 16px; 
+                font-weight: bold; 
+                margin-bottom: 5px;
+            }
+            .metric-label { 
+                font-size: 11px; 
+                color: #666; 
+                text-transform: uppercase;
+            }
+            .positive { color: #28a745; }
+            .negative { color: #dc3545; }
+            .warning { color: #ffc107; }
+            table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 10px;
+            }
+            th, td { 
+                border: 1px solid #dee2e6; 
+                padding: 8px; 
+                text-align: left;
+            }
+            th { 
+                background-color: #f8f9fa; 
+                font-weight: bold; 
+                font-size: 11px;
+            }
+            td { 
+                font-size: 11px;
+            }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .recommendation { 
+                padding: 10px; 
+                margin: 5px 0; 
+                border-left: 4px solid;
+            }
+            .rec-success { 
+                border-left-color: #28a745; 
+                background-color: #d4edda;
+            }
+            .rec-warning { 
+                border-left-color: #ffc107; 
+                background-color: #fff3cd;
+            }
+            .rec-danger { 
+                border-left-color: #dc3545; 
+                background-color: #f8d7da;
+            }
+            .rec-info { 
+                border-left-color: #17a2b8; 
+                background-color: #d1ecf1;
+            }
+            .forecast-grid { 
+                display: grid; 
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 15px;
+            }
+            .progress-bar-container { 
+                background-color: #e9ecef; 
+                height: 20px; 
+                border-radius: 4px; 
+                overflow: hidden; 
+                margin: 10px 0;
+            }
+            .progress-bar { 
+                height: 100%; 
+                background-color: #007bff; 
+                transition: width 0.3s ease;
+            }
+            .footer { 
+                margin-top: 30px; 
+                text-align: center; 
+                font-size: 10px; 
+                color: #666; 
+                border-top: 1px solid #dee2e6; 
+                padding-top: 15px;
+            }
+        </style>
+        """
+
+        # Construction du HTML pour PDF
+        html_template = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8"/>
+            <title>Analyse Budgétaire - {activity_name}</title>
+            {css_styles}
+        </head>
+        <body>
+            <!-- En-tête -->
+            <div class="header">
+                <h1>Analyse Budgétaire</h1>
+                <h2>{activity_name}</h2>
+                <p>Rapport généré le {analysis_date}</p>
+            </div>
+
+            <!-- Résumé Exécutif -->
+            <div class="section">
+                <div class="section-title">Résumé Exécutif</div>
+                <div class="section-content">
+                    <div class="financial-grid">
+                        <div class="metric-card">
+                            <div class="metric-value {'positive' if net_result >= 0 else 'negative'}">{net_result:.2f} F</div>
+                            <div class="metric-label">Résultat Net</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">{profitability_rate:.1f}%</div>
+                            <div class="metric-label">Rentabilité</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value {'negative' if budget_remaining < 0 else 'positive'}">{budget_remaining:.2f} F</div>
+                            <div class="metric-label">Budget Restant</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">{participant_count}</div>
+                            <div class="metric-label">Participants</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyse Budgétaire Détaillée -->
+            <div class="section">
+                <div class="section-title">Analyse Budgétaire Détaillée</div>
+                <div class="section-content">
+                    <table>
+                        <tr>
+                            <td><strong>Budget Alloué</strong></td>
+                            <td class="text-right">{budget_amount:.2f} F</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dépenses Totales</strong></td>
+                            <td class="text-right">{total_expenses:.2f} F</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Budget Restant</strong></td>
+                            <td class="text-right {'positive' if budget_remaining >= 0 else 'negative'}">{budget_remaining:.2f} F</td>
+                        </tr>
+                        <tr>
+                            <td><strong>% Budget Utilisé</strong></td>
+                            <td class="text-right">{budget_used_percentage:.1f}%</td>
+                        </tr>
+                    </table>
+                    
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: {min(budget_used_percentage, 100):.1f}%;"></div>
+                    </div>
+                    <p class="text-center" style="font-size: 10px; margin-top: 5px;">
+                        Utilisation du budget: {budget_used_percentage:.1f}%
+                    </p>
+                </div>
+            </div>
+
+            <!-- Analyse Financière -->
+            <div class="section">
+                <div class="section-title">Analyse Financière</div>
+                <div class="section-content">
+                    <table>
+                        <tr>
+                            <td><strong>Recettes Collectées</strong></td>
+                            <td class="text-right">{total_collected:.2f} F</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dépenses Totales</strong></td>
+                            <td class="text-right">{total_expenses:.2f} F</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Résultat Net</strong></td>
+                            <td class="text-right {'positive' if net_result >= 0 else 'negative'}">{net_result:.2f} F</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Taux de Rentabilité</strong></td>
+                            <td class="text-right">{profitability_rate:.1f}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Nombre de Participants</strong></td>
+                            <td class="text-right">{participant_count}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {self._generate_expenses_section_pdf(data.get("expenses_by_category", {}))}
+            {self._generate_recommendations_section_pdf(data.get("recommendations", []))}
+            {self._generate_forecast_section_pdf(data.get("forecast", {}))}
+
+            <!-- Pied de page -->
+            <div class="footer">
+                <p>Rapport généré automatiquement par le système de gestion d'activités</p>
+                <p>© {fields.Date.today().year} - Document confidentiel</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        return html_template
+
+    def _generate_expenses_section_pdf(self, expenses_by_category):
+        """Génère la section des dépenses par catégorie pour le PDF"""
+        if not expenses_by_category:
+            return ""
+
+        rows = ""
+        total_amount = sum(cat_data.get("amount", 0) for cat_data in expenses_by_category.values() if isinstance(cat_data, dict))
+        
+        for category, cat_data in expenses_by_category.items():
+            if isinstance(cat_data, dict):
+                amount = cat_data.get("amount", 0)
+                count = cat_data.get("count", 0)
+                percentage = cat_data.get("percentage", 0)
+                
+                rows += f"""
+                <tr>
+                    <td>{category}</td>
+                    <td class="text-right">{amount:.2f} F</td>
+                    <td class="text-center">{count}</td>
+                    <td class="text-right">{percentage:.1f}%</td>
+                </tr>
+                """
+
+        return f"""
+        <div class="section">
+            <div class="section-title">Répartition des Dépenses par Catégorie</div>
+            <div class="section-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Catégorie</th>
+                            <th class="text-right">Montant</th>
+                            <th class="text-center">Nombre</th>
+                            <th class="text-right">Pourcentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows}
+                    </tbody>
+                    <tfoot>
+                        <tr style="font-weight: bold; background-color: #f8f9fa;">
+                            <td>TOTAL</td>
+                            <td class="text-right">{total_amount:.2f} F</td>
+                            <td class="text-center">{sum(cat_data.get('count', 0) for cat_data in expenses_by_category.values() if isinstance(cat_data, dict))}</td>
+                            <td class="text-right">100.0%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        """
+
+    def _generate_recommendations_section_pdf(self, recommendations):
+        """Génère la section des recommandations pour le PDF"""
+        if not recommendations:
+            return ""
+
+        rec_html = ""
+        type_mapping = {
+            "success": "rec-success",
+            "warning": "rec-warning", 
+            "danger": "rec-danger",
+            "error": "rec-danger",
+            "info": "rec-info"
+        }
+
+        for rec in recommendations:
+            if isinstance(rec, dict):
+                rec_type = rec.get("type", "info")
+                css_class = type_mapping.get(rec_type, "rec-info")
+                title = rec.get("title", "")
+                message = rec.get("message", "")
+                
+                rec_html += f"""
+                <div class="recommendation {css_class}">
+                    <strong>{title}</strong><br/>
+                    {message}
+                </div>
+                """
+
+        return f"""
+        <div class="section">
+            <div class="section-title">Recommandations</div>
+            <div class="section-content">
+                {rec_html}
+            </div>
+        </div>
+        """
+
+    def _generate_forecast_section_pdf(self, forecast):
+        """Génère la section des prévisions pour le PDF"""
+        if not forecast:
+            return ""
+
+        progress = forecast.get("progress_percentage", 0)
+        projected_expenses = forecast.get("projected_total_expenses", 0)
+        projected_collected = forecast.get("projected_total_collected", 0)
+        projected_net = forecast.get("projected_net_result", 0)
+        projected_budget_usage = forecast.get("projected_budget_usage", 0)
+
+        return f"""
+        <div class="section">
+            <div class="section-title">Prévisions et Projections</div>
+            <div class="section-content">
+                <p><strong>Progression de l'activité:</strong> {progress:.1f}%</p>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: {min(progress, 100):.1f}%; background-color: #28a745;"></div>
+                </div>
+                
+                <div class="forecast-grid">
+                    <div>
+                        <h4>Projections Financières</h4>
+                        <table>
+                            <tr>
+                                <td><strong>Dépenses Projetées</strong></td>
+                                <td class="text-right">{projected_expenses:.2f} F</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Recettes Projetées</strong></td>
+                                <td class="text-right">{projected_collected:.2f} F</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Résultat Net Projeté</strong></td>
+                                <td class="text-right {'positive' if projected_net >= 0 else 'negative'}">{projected_net:.2f} F</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h4>Projection Budgétaire</h4>
+                        <table>
+                            <tr>
+                                <td><strong>Usage Budget Projeté</strong></td>
+                                <td class="text-right">{projected_budget_usage:.1f}%</td>
+                            </tr>
+                        </table>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: {min(projected_budget_usage, 100):.1f}%; 
+                                background-color: {'#dc3545' if projected_budget_usage > 100 else '#007bff'};"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def action_generate_analysis(self):
         """Génère l'analyse budgétaire"""
         self.ensure_one()

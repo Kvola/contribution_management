@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue formulaire étendue pour les échéances -->
+    <record id="view_payment_installment_form_extended" model="ir.ui.view">
+        <field name="name">member.payment.installment.form.extended</field>
+        <field name="model">member.payment.installment</field>
+        <field name="inherit_id" ref="contribution_management.view_member_payment_installment_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_view_linked_cotisations"
+                    string="Voir cotisations liées"
+                    type="object"
+                    class="oe_highlight"
+                    invisible="cotisation_count == 0" />
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <notebook>
+                    <page string="Cotisations liées" invisible="state == 'paid'">
+                        <group>
+                            <group>
+                                <field name="allocation_method" />
+                                <field name="auto_allocate" />
+                                <field name="cotisation_count" />
+                            </group>
+                            <group>
+                                <button name="action_configure_allocation"
+                                    string="Configurer allocation"
+                                    type="object"
+                                    class="oe_highlight"
+                                    invisible="state == 'paid'" />
+                                <button name="action_manual_allocation"
+                                    string="Répartition manuelle"
+                                    type="object"
+                                    invisible="state == 'paid' or amount_paid == 0" />
+                            </group>
+                        </group>
+
+                        <field name="cotisation_ids" widget="many2many_tags"
+                            domain="[('member_id', '=', member_id), ('state', 'in', ['pending', 'partial', 'overdue'])]">
+                            <tree editable="bottom">
+                                <field name="display_name" />
+                                <field name="due_date" />
+                                <field name="amount_due" />
+                                <field name="amount_paid" />
+                                <field name="state" widget="badge"
+                                    options="{'success': {'state': 'paid'}, 'warning': {'state': 'partial'}, 'danger': {'state': 'overdue'}}" />
+                                <button name="action_quick_payment"
+                                    string="Payer"
+                                    type="object"
+                                    icon="fa-credit-card"
+                                    invisible="state == 'paid'" />
+                            </tree>
+                        </field>
+
+                        <div invisible="not allocation_details">
+                            <separator string="Historique des répartitions" />
+                            <field name="allocation_details" readonly="1" />
+                        </div>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue liste étendue pour les échéances -->
+    <record id="view_payment_installment_tree_extended" model="ir.ui.view">
+        <field name="name">member.payment.installment.tree.extended</field>
+        <field name="model">member.payment.installment</field>
+        <field name="inherit_id" ref="contribution_management.view_member_payment_installment_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="cotisation_count" string="Cotisations" />
+                <field name="auto_allocate" widget="boolean_toggle" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Wizard de configuration d'allocation -->
+    <record id="view_installment_allocation_wizard_form" model="ir.ui.view">
+        <field name="name">installment.allocation.wizard.form</field>
+        <field name="model">installment.allocation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Configuration de répartition">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="installment_id" />
+                            <field name="member_id" />
+                        </group>
+                        <group>
+                            <field name="allocation_method" />
+                            <field name="auto_allocate" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Cotisations disponibles">
+                            <field name="available_cotisations" readonly="1">
+                                <tree>
+                                    <field name="display_name" />
+                                    <field name="due_date" />
+                                    <field name="amount_due" />
+                                    <field name="amount_paid" />
+                                    <field name="state" widget="badge" />
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Sélection">
+                            <div class="oe_button_box">
+                                <button name="action_auto_select_all"
+                                    string="Tout sélectionner"
+                                    type="object"
+                                    class="oe_highlight" />
+                            </div>
+                            <field name="selected_cotisations"
+                                domain="[('id', 'in', available_cotisations)]">
+                                <tree>
+                                    <field name="display_name" />
+                                    <field name="due_date" />
+                                    <field name="amount_due" />
+                                    <field name="amount_paid" />
+                                    <field name="state" widget="badge" />
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <footer>
+                    <button name="action_configure"
+                        string="Appliquer"
+                        type="object"
+                        class="oe_highlight" />
+                    <button string="Annuler" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard de répartition manuelle -->
+    <record id="view_manual_allocation_wizard_form" model="ir.ui.view">
+        <field name="name">manual.allocation.wizard.form</field>
+        <field name="model">manual.allocation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Répartition manuelle">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="installment_id" readonly="1" />
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="available_amount" />
+                            <field name="total_allocated" />
+                        </group>
+                        <group>
+                            <field name="remaining_amount" />
+                            <field name="currency_id" invisible="1" />
+                        </group>
+                    </group>
+
+                    <field name="allocation_line_ids">
+                        <tree editable="bottom">
+                            <field name="cotisation_id" readonly="1" />
+                            <field name="cotisation_remaining" readonly="1" />
+                            <field name="amount" />
+                            <field name="currency_id" invisible="1" />
+                        </tree>
+                    </field>
+                </sheet>
+
+                <footer>
+                    <button name="action_apply_allocation"
+                        string="Appliquer répartition"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="remaining_amount &lt; 0" />
+                    <button string="Annuler" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard de configuration en lot -->
+    <record id="view_batch_cotisation_link_wizard_form" model="ir.ui.view">
+        <field name="name">batch.cotisation.link.wizard.form</field>
+        <field name="model">batch.cotisation.link.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Configuration en lot">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Configuration des liens cotisations</h1>
+                        <h2>
+                            <field name="member_id" readonly="1" />
+                        </h2>
+                    </div>
+
+                    <group>
+                        <group string="Configuration">
+                            <field name="allocation_method" />
+                            <field name="link_strategy" />
+                            <field name="auto_allocate" />
+                        </group>
+                        <group string="Statistiques">
+                            <field name="total_installments_amount" />
+                            <field name="total_cotisations_due" />
+                            <field name="currency_id" invisible="1" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Échéances sélectionnées">
+                            <field name="installment_ids" readonly="1">
+                                <tree>
+                                    <field name="sequence" />
+                                    <field name="due_date" />
+                                    <field name="amount" />
+                                    <field name="state" widget="badge" />
+                                    <field name="cotisation_count" string="Cotisations liées" />
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Cotisations disponibles">
+                            <div class="oe_button_box">
+                                <button name="action_auto_select_cotisations"
+                                    string="Sélectionner toutes"
+                                    type="object"
+                                    class="oe_highlight" />
+                            </div>
+
+                            <field name="available_cotisations" readonly="1">
+                                <tree>
+                                    <field name="display_name" />
+                                    <field name="due_date" />
+                                    <field name="amount_due" />
+                                    <field name="amount_paid" />
+                                    <field name="state" widget="badge"
+                                        options="{'success': {'state': 'paid'}, 'warning': {'state': 'partial'}, 'danger': {'state': 'overdue'}}" />
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Sélection finale">
+                            <field name="selected_cotisations"
+                                domain="[('id', 'in', available_cotisations)]">
+                                <tree>
+                                    <field name="display_name" />
+                                    <field name="due_date" />
+                                    <field name="amount_due" />
+                                    <field name="amount_paid" />
+                                    <field name="state" widget="badge"
+                                        options="{'success': {'state': 'paid'}, 'warning': {'state': 'partial'}, 'danger': {'state': 'overdue'}}" />
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <footer>
+                    <button name="action_apply_links"
+                        string="Appliquer configuration"
+                        type="object"
+                        class="oe_highlight" />
+                    <button string="Annuler" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard d'aperçu d'impact -->
+    <record id="view_cotisation_impact_preview_wizard_form" model="ir.ui.view">
+        <field name="name">cotisation.impact.preview.wizard.form</field>
+        <field name="model">cotisation.impact.preview.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Aperçu impact cotisations">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Aperçu de l'impact sur les cotisations</h1>
+                        <h2>
+                            <field name="member_id" readonly="1" />
+                        </h2>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="payment_amount" />
+                            <field name="allocation_method" />
+                        </group>
+                        <group>
+                            <field name="total_impact" />
+                            <field name="currency_id" invisible="1" />
+                        </group>
+                    </group>
+
+                    <separator string="Détail de l'impact" />
+                    <field name="impact_lines" readonly="1">
+                        <tree>
+                            <field name="installment_id" />
+                            <field name="cotisation_name" />
+                            <field name="cotisation_due" />
+                            <field name="impact_amount" />
+                            <field name="remaining_after" />
+                            <field name="currency_id" invisible="1" />
+                        </tree>
+                    </field>
+                </sheet>
+
+                <footer>
+                    <button string="Fermer" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard de configuration globale membre -->
+    <record id="view_member_allocation_config_wizard_form" model="ir.ui.view">
+        <field name="name">member.allocation.config.wizard.form</field>
+        <field name="model">member.allocation.config.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Configuration allocation membre">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Configuration globale d'allocation</h1>
+                        <h2>
+                            <field name="member_id" readonly="1" />
+                        </h2>
+                    </div>
+
+                    <group string="Configuration par défaut">
+                        <group>
+                            <field name="default_allocation_method" />
+                            <field name="auto_allocate_new_installments" />
+                        </group>
+                        <group>
+                            <field name="existing_installments_count" />
+                            <field name="linked_installments_count" />
+                            <field name="pending_cotisations_count" />
+                        </group>
+                    </group>
+
+                    <group string="Actions sur les données existantes">
+                        <field name="update_existing_installments" />
+                        <field name="reset_existing_links"
+                            invisible="not update_existing_installments" />
+                    </group>
+
+                    <div class="alert alert-info"
+                        invisible="existing_installments_count == 0">
+                        <p>
+                            <strong>Information:</strong>
+                        </p>
+                        <ul>
+                            <li><field name="existing_installments_count" /> échéances non payées</li>
+                            <li><field name="linked_installments_count" /> échéances déjà
+                                configurées</li>
+                            <li><field name="pending_cotisations_count" /> cotisations en attente</li>
+                        </ul>
+                    </div>
+                </sheet>
+
+                <footer>
+                    <button name="action_apply_config"
+                        string="Appliquer configuration"
+                        type="object"
+                        class="oe_highlight" />
+                    <button string="Annuler" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue formulaire étendue du wizard de paiement rapide -->
+    <record id="view_quick_payment_wizard_form_extended" model="ir.ui.view">
+        <field name="name">quick.payment.wizard.form.extended</field>
+        <field name="model">quick.payment.wizard</field>
+        <field name="inherit_id" ref="contribution_management.view_quick_payment_wizard_form" />
+        <field name="arch" type="xml">
+            <!-- Ajouter des boutons -->
+            <xpath expr="//header" position="inside">
+                <button name="action_configure_cotisation_links"
+                    string="Configurer liens"
+                    type="object"
+                    class="btn-secondary"
+                    invisible="context_type not in ['installment', 'mixed']" />
+                <button name="action_preview_detailed_impact"
+                    string="Aperçu détaillé"
+                    type="object"
+                    class="btn-secondary"
+                    invisible="context_type not in ['installment', 'mixed'] or not impact_cotisations" />
+                <field name="context_type" invisible="1" />
+            </xpath>
+
+            <!-- Ajouter les options d'impact cotisations -->
+            <xpath expr="//field[@name='total_amount_to_pay']" position="after">
+                <field name="impact_cotisations"
+                    invisible="context_type not in ['installment', 'mixed']" />
+                <field name="cotisation_allocation_method"
+                    invisible="context_type not in ['installment', 'mixed'] or not impact_cotisations" />
+            </xpath>
+
+            <!-- Ajouter l'aperçu d'impact -->
+            <xpath expr="//group[@name='financial_summary']" position="after">
+                <field name="cotisation_impact_preview"
+                    widget="html"
+                    invisible="context_type not in ['installment', 'mixed'] or not impact_cotisations" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extension de la vue partenaire pour les statistiques -->
+    <record id="view_partner_form_cotisation_stats" model="ir.ui.view">
+        <field name="name">res.partner.form.cotisation.stats</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="contribution_management.view_partner_form_cotisations" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='total_amount_due']" position="after">
+                <field name="installment_cotisation_links" />
+                <field name="auto_allocated_amount" />
+            </xpath>
+
+            <!-- Ajouter un bouton pour la configuration -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_configure_installment_allocation"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-cogs"
+                    invisible="is_company">
+                    <field name="installment_cotisation_links" widget="statinfo"
+                        string="Liens échéances" />
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extension de la vue plan de paiement -->
+    <record id="view_payment_plan_form_extended" model="ir.ui.view">
+        <field name="name">member.payment.plan.form.extended</field>
+        <field name="model">member.payment.plan</field>
+        <field name="inherit_id" ref="contribution_management.view_member_payment_plan_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//notebook[1]" position="before">
+                <group string="Configuration allocation cotisations">
+                    <field name="auto_allocate_to_cotisations" />
+                    <field name="allocation_method"
+                        invisible="not auto_allocate_to_cotisations" />
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extension de la vue paiement cotisation -->
+    <record id="view_cotisation_payment_form_extended" model="ir.ui.view">
+        <field name="name">cotisation.payment.form.extended</field>
+        <field name="model">cotisation.payment</field>
+        <field name="inherit_id" ref="contribution_management.view_cotisation_payment_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='reference']" position="after">
+                <field name="installment_id" readonly="1"
+                    invisible="not installment_id" />
+                <field name="is_from_installment" invisible="1" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extension de la vue liste paiement cotisation -->
+    <record id="view_cotisation_payment_tree_extended" model="ir.ui.view">
+        <field name="name">cotisation.payment.tree.extended</field>
+        <field name="model">cotisation.payment</field>
+        <field name="inherit_id" ref="contribution_management.view_cotisation_payment_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_method']" position="after">
+                <field name="is_from_installment" widget="boolean_toggle" string="Via échéance" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Actions de menu -->
+
+    <!-- Action pour le wizard de configuration en lot -->
+    <record id="action_batch_cotisation_link_wizard" model="ir.actions.act_window">
+        <field name="name">Configuration liens cotisations</field>
+        <field name="res_model">batch.cotisation.link.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Action pour l'aperçu d'impact -->
+    <record id="action_cotisation_impact_preview" model="ir.actions.act_window">
+        <field name="name">Aperçu impact cotisations</field>
+        <field name="res_model">cotisation.impact.preview.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Action pour la configuration globale membre -->
+    <record id="action_member_allocation_config" model="ir.actions.act_window">
+        <field name="name">Configuration allocation membre</field>
+        <field name="res_model">member.allocation.config.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Vue de recherche étendue pour les échéances -->
+    <record id="view_payment_installment_search_extended" model="ir.ui.view">
+        <field name="name">member.payment.installment.search.extended</field>
+        <field name="model">member.payment.installment</field>
+        <field name="inherit_id"
+            ref="contribution_management.view_member_payment_installment_search" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="allocation_method" />
+                <!-- <field name="cotisation_ids" widget="many2many_tags" string="Cotisations liées" /> -->
+            </xpath>
+
+            <xpath expr="//filter[@name='overdue']" position="after">
+                <separator />
+                <filter name="with_cotisation_links" string="Avec liens cotisations"
+                    domain="[('cotisation_count', '>', 0)]" />
+                <filter name="auto_allocate" string="Allocation automatique"
+                    domain="[('auto_allocate', '=', True)]" />
+                <separator />
+                <filter name="allocation_auto" string="Répartition auto"
+                    domain="[('allocation_method', '=', 'auto')]" />
+                <filter name="allocation_oldest_first" string="Plus anciennes d'abord"
+                    domain="[('allocation_method', '=', 'oldest_first')]" />
+                <filter name="allocation_amount_priority" string="Par montant"
+                    domain="[('allocation_method', '=', 'amount_priority')]" />
+            </xpath>
+
+            <xpath expr="//group" position="inside">
+                <filter string="Méthode d'allocation"
+                    name="group_allocation_method"
+                    context="{'group_by': 'allocation_method'}" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Dashboard/Rapport pour le suivi des liens -->
+    <record id="view_installment_cotisation_dashboard" model="ir.ui.view">
+        <field name="name">installment.cotisation.dashboard</field>
+        <field name="model">member.payment.installment</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="sequence" />
+                <field name="due_date" />
+                <field name="amount" />
+                <field name="state" />
+                <field name="cotisation_count" />
+                <field name="allocation_method" />
+                <field name="member_id" />
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>
+                                        <field name="name" />
+                                    </strong>
+                                    <br />
+                                    <field name="member_id" />
+                                </div>
+                                <div class="col-6 text-right">
+                                    <field name="amount" widget="monetary" />
+                                    <br />
+                                    <field name="state" widget="label_selection" />
+                                </div>
+                            </div>
+
+                            <div class="row mt8">
+                                <div class="col-12">
+                                    <span class="fa fa-link" /> 
+                                    <field name="cotisation_count" />
+                                    cotisation(s) <t t-if="record.allocation_method.raw_value">
+                                        <br />
+                                        <span class="fa fa-cog" />
+                                        <field name="allocation_method" />
+                                    </t>
+                                </div>
+                            </div>
+
+                            <div class="oe_kanban_bottom_right">
+                                <field name="due_date" widget="date" />
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Action pour le dashboard -->
+    <record id="action_installment_cotisation_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard échéances-cotisations</field>
+        <field name="res_model">member.payment.installment</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_id" ref="view_installment_cotisation_dashboard" />
+        <field name="domain">[('cotisation_count', '>', 0)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune échéance avec des liens cotisations configurés
+            </p>
+            <p>
+                Les échéances liées aux cotisations permettent une gestion automatique
+                des paiements et une meilleure traçabilité.
+            </p>
+        </field>
+    </record>
+
+</odoo>

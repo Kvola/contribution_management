@@ -3,7 +3,7 @@
     <!-- ============================================ -->
     <!-- COTISATIONS DASHBOARD VIEWS -->
     <!-- ============================================ -->
-    
+
     <!-- Vue formulaire pour le tableau de bord des cotisations -->
     <record id="view_cotisations_dashboard_form" model="ir.ui.view">
         <field name="name">cotisations.dashboard.form</field>
@@ -11,150 +11,156 @@
         <field name="arch" type="xml">
             <form string="Tableau de bord des cotisations">
                 <header>
-                    <button name="action_refresh_data" 
-                            string="Actualiser" 
-                            type="object" 
-                            class="btn-primary"/>
-                    <button name="action_export_report" 
-                            string="Exporter le rapport" 
-                            type="object" 
-                            class="btn-secondary"/>
-                    <button name="action_send_mass_reminders" 
-                            string="Rappels en masse" 
-                            type="object" 
-                            class="btn-secondary"/>
+                    <button name="action_refresh_data"
+                        string="Actualiser"
+                        type="object"
+                        class="btn-primary" />
+                    <button name="action_export_report"
+                        string="Exporter le rapport"
+                        type="object"
+                        class="btn-secondary" />
+                    <button name="action_send_mass_reminders"
+                        string="Rappels en masse"
+                        type="object"
+                        class="btn-secondary" />
                 </header>
-                
+
                 <sheet>
                     <!-- Configuration du tableau de bord -->
                     <group>
                         <group string="Configuration">
-                            <field name="dashboard_type" widget="radio"/>
-                            <field name="member_id" 
-                                   invisible="dashboard_type != 'member'"
-                                   required="dashboard_type == 'member'"/>
-                            <field name="group_id" 
-                                   invisible="dashboard_type != 'group'"
-                                   required="dashboard_type == 'group'"/>
+                            <field name="dashboard_type" widget="radio" />
+                            <field name="member_id"
+                                invisible="dashboard_type != 'member'"
+                                required="dashboard_type == 'member'" />
+                            <field name="group_id"
+                                invisible="dashboard_type != 'group'"
+                                required="dashboard_type == 'group'" />
                         </group>
                         <group string="Période">
-                            <field name="date_from"/>
-                            <field name="date_to"/>
-                            <field name="currency_id"/>
+                            <field name="date_from" />
+                            <field name="date_to" />
+                            <field name="currency_id" />
                         </group>
                     </group>
-                    
+
                     <!-- Alertes -->
-                    <div class="alert alert-danger" 
-                         invisible="alerts_count == 0">
+                    <div class="alert alert-danger"
+                        invisible="alerts_count == 0">
                         <strong>Alertes actives: </strong>
-                        <field name="alerts_count"/> alerte(s) détectée(s)
-                    </div>
-                    
+                        <field name="alerts_count" /> alerte(s)
+                        détectée(s) </div>
+
                     <notebook>
                         <page string="Vue d'ensemble">
                             <div class="row">
                                 <div class="col-lg-6">
                                     <group string="Statistiques globales">
-                                        <field name="total_cotisations"/>
-                                        <field name="total_members"/>
-                                        <field name="total_groups"/>
-                                        <field name="total_amount_due" widget="monetary"/>
-                                        <field name="total_amount_paid" widget="monetary"/>
-                                        <field name="total_remaining" widget="monetary"/>
+                                        <field name="total_cotisations" />
+                                        <field name="total_members" />
+                                        <field name="total_groups" />
+                                        <field name="total_amount_due" widget="monetary" />
+                                        <field name="total_amount_paid" widget="monetary" />
+                                        <field name="total_remaining" widget="monetary" />
                                         <field name="global_collection_rate" />
                                     </group>
                                 </div>
                                 <div class="col-lg-6">
                                     <group string="Répartition par statut">
-                                        <field name="pending_count"/>
-                                        <field name="paid_count"/>
-                                        <field name="partial_count"/>
-                                        <field name="overdue_count"/>
-                                        <field name="cancelled_count"/>
-                                        <field name="pending_amount" widget="monetary"/>
-                                        <field name="overdue_amount" widget="monetary"/>
+                                        <field name="pending_count" />
+                                        <field name="paid_count" />
+                                        <field name="partial_count" />
+                                        <field name="overdue_count" />
+                                        <field name="cancelled_count" />
+                                        <field name="pending_amount" widget="monetary" />
+                                        <field name="overdue_amount" widget="monetary" />
                                     </group>
                                 </div>
                             </div>
-                            
+
                             <!-- Actions rapides -->
                             <div class="oe_button_box">
-                                <button name="action_view_all_cotisations" 
-                                        type="object" 
-                                        class="oe_stat_button" 
-                                        icon="fa-list">
+                                <button name="action_view_all_cotisations"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-list">
                                     <div class="o_field_widget o_stat_info">
-                                        <span class="o_stat_value"><field name="total_cotisations"/></span>
+                                        <span class="o_stat_value">
+                                            <field name="total_cotisations" />
+                                        </span>
                                         <span class="o_stat_text">Cotisations</span>
                                     </div>
                                 </button>
-                                <button name="action_view_overdue_cotisations" 
-                                        type="object" 
-                                        class="oe_stat_button" 
-                                        icon="fa-exclamation-triangle">
+                                <button name="action_view_overdue_cotisations"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-exclamation-triangle">
                                     <div class="o_field_widget o_stat_info">
-                                        <span class="o_stat_value"><field name="overdue_count"/></span>
+                                        <span class="o_stat_value">
+                                            <field name="overdue_count" />
+                                        </span>
                                         <span class="o_stat_text">En retard</span>
                                     </div>
                                 </button>
-                                <button name="action_view_pending_cotisations" 
-                                        type="object" 
-                                        class="oe_stat_button" 
-                                        icon="fa-clock-o">
+                                <button name="action_view_pending_cotisations"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-clock-o">
                                     <div class="o_field_widget o_stat_info">
-                                        <span class="o_stat_value"><field name="pending_count"/></span>
+                                        <span class="o_stat_value">
+                                            <field name="pending_count" />
+                                        </span>
                                         <span class="o_stat_text">En attente</span>
                                     </div>
                                 </button>
                             </div>
                         </page>
-                        
+
                         <page string="Performances">
                             <group>
                                 <group string="Indicateurs de performance">
-                                    <field name="avg_payment_delay"/>
-                                    <field name="critical_overdue_count"/>
+                                    <field name="avg_payment_delay" />
+                                    <field name="critical_overdue_count" />
                                     <field name="good_payers_rate" />
                                 </group>
                                 <group string="Prévisions">
-                                    <field name="expected_next_month" widget="monetary"/>
+                                    <field name="expected_next_month" widget="monetary" />
                                     <field name="forecast_collection_rate" />
                                 </group>
                             </group>
-                            
+
                             <group string="Répartition par type">
                                 <group>
-                                    <field name="activity_cotisations_count"/>
-                                    <field name="activity_amount" widget="monetary"/>
+                                    <field name="activity_cotisations_count" />
+                                    <field name="activity_amount" widget="monetary" />
                                 </group>
                                 <group>
-                                    <field name="monthly_cotisations_count"/>
-                                    <field name="monthly_amount" widget="monetary"/>
+                                    <field name="monthly_cotisations_count" />
+                                    <field name="monthly_amount" widget="monetary" />
                                 </group>
                             </group>
                         </page>
-                        
-                        <page string="Analyses" 
-                              invisible="dashboard_type == 'member'">
+
+                        <page string="Analyses"
+                            invisible="dashboard_type == 'member'">
                             <!-- Graphiques et analyses (données JSON) -->
-                            <field name="monthly_stats_json" invisible="1"/>
-                            <field name="top_contributors_json" invisible="1"/>
-                            <field name="bad_payers_json" invisible="1"/>
-                            
+                            <field name="monthly_stats_json" invisible="1" />
+                            <field name="top_contributors_json" invisible="1" />
+                            <field name="bad_payers_json" invisible="1" />
+
                             <div>
                                 <p>Données d'analyse disponibles via API JSON</p>
-                                <button name="action_view_monthly_chart" 
-                                        string="Voir l'évolution mensuelle" 
-                                        type="object" 
-                                        class="btn-primary"/>
+                                <button name="action_view_monthly_chart"
+                                    string="Voir l'évolution mensuelle"
+                                    type="object"
+                                    class="btn-primary" />
                             </div>
                         </page>
-                        
+
                         <page string="Alertes">
-                            <field name="alerts_json" invisible="1"/>
+                            <field name="alerts_json" invisible="1" />
                             <div invisible="alerts_count == 0">
-                                <p>Nombre d'alertes actives: <field name="alerts_count"/></p>
+                                <p>Nombre d'alertes actives: <field name="alerts_count" /></p>
                             </div>
                             <div invisible="alerts_count != 0">
                                 <p class="text-success">Aucune alerte active</p>
@@ -172,40 +178,38 @@
         <field name="model">cotisations.dashboard</field>
         <field name="arch" type="xml">
             <kanban>
-                <field name="dashboard_type"/>
-                <field name="total_cotisations"/>
-                <field name="global_collection_rate"/>
-                <field name="overdue_count"/>
+                <field name="dashboard_type" />
+                <field name="total_cotisations" />
+                <field name="global_collection_rate" />
+                <field name="overdue_count" />
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_card">
                             <div class="oe_kanban_content">
                                 <div class="row">
                                     <div class="col-6">
-                                        <field name="dashboard_type"/>
+                                        <field name="dashboard_type" />
                                     </div>
                                     <div class="col-6 text-right">
                                         <span class="badge badge-pill badge-info">
-                                            <field name="total_cotisations"/> cotisations
-                                        </span>
+                                            <field name="total_cotisations" /> cotisations </span>
                                     </div>
                                 </div>
                                 <div class="row mt-2">
                                     <div class="col-12">
                                         <div class="progress">
-                                            <div class="progress-bar" 
-                                                 t-att-style="'width: ' + record.global_collection_rate.value + '%'">
-                                                <t t-esc="record.global_collection_rate.value"/>%
-                                            </div>
+                                            <div class="progress-bar"
+                                                t-att-style="'width: ' + record.global_collection_rate.value + '%'">
+                                                <t t-esc="record.global_collection_rate.value" />% </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row mt-2" t-if="record.overdue_count.value > 0">
                                     <div class="col-12">
                                         <span class="badge badge-danger">
-                                            <i class="fa fa-exclamation-triangle"/>
-                                            <t t-esc="record.overdue_count.value"/> en retard
-                                        </span>
+                                            <i class="fa fa-exclamation-triangle" />
+                                            <t
+                                                t-esc="record.overdue_count.value" /> en retard </span>
                                     </div>
                                 </div>
                             </div>
@@ -227,7 +231,9 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <h3><field name="total_cotisations"/></h3>
+                                    <h3>
+                                        <field name="total_cotisations" />
+                                    </h3>
                                     <p>Cotisations totales</p>
                                 </div>
                             </div>
@@ -235,7 +241,9 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <h3><field name="global_collection_rate"/></h3>
+                                    <h3>
+                                        <field name="global_collection_rate" />
+                                    </h3>
                                     <p>Taux de collecte</p>
                                 </div>
                             </div>
@@ -243,25 +251,27 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <h3 class="text-danger"><field name="overdue_count"/></h3>
+                                    <h3 class="text-danger">
+                                        <field name="overdue_count" />
+                                    </h3>
                                     <p>En retard</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row mt-3">
                         <div class="col-md-6">
-                            <button name="action_view_all_cotisations" 
-                                    string="Voir toutes les cotisations" 
-                                    type="object" 
-                                    class="btn btn-primary btn-block"/>
+                            <button name="action_view_all_cotisations"
+                                string="Voir toutes les cotisations"
+                                type="object"
+                                class="btn btn-primary btn-block" />
                         </div>
                         <div class="col-md-6">
-                            <button name="action_send_mass_reminders" 
-                                    string="Envoyer des rappels" 
-                                    type="object" 
-                                    class="btn btn-warning btn-block"/>
+                            <button name="action_send_mass_reminders"
+                                string="Envoyer des rappels"
+                                type="object"
+                                class="btn btn-warning btn-block" />
                         </div>
                     </div>
                 </sheet>
@@ -272,24 +282,24 @@
     <!-- Action serveur pour créer un tableau de bord automatiquement -->
     <record id="action_server_create_dashboard" model="ir.actions.server">
         <field name="name">Créer tableau de bord</field>
-        <field name="model_id" ref="contribution_management.model_cotisations_dashboard"/>
+        <field name="model_id" ref="contribution_management.model_cotisations_dashboard" />
         <field name="state">code</field>
         <field name="code">
 dashboard = env['cotisations.dashboard'].create({
     'dashboard_type': 'global',
     'date_from': fields.Date.today().replace(month=1, day=1),
     'date_to': fields.Date.today()
-})
+    })
 action = {
     'type': 'ir.actions.act_window',
     'res_model': 'cotisations.dashboard',
     'res_id': dashboard.id,
     'view_mode': 'form',
     'target': 'new'
-}
+    }
         </field>
     </record>
-    
+
     <!-- Action pour le tableau de bord des cotisations -->
     <record id="action_cotisations_dashboard" model="ir.actions.act_window">
         <field name="name">Tableau de bord des cotisations</field>
