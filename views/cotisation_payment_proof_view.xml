@@ -1,0 +1,141 @@
+<odoo>
+    <!-- Form view for payment proof -->
+    <record id="view_cotisation_payment_proof_form" model="ir.ui.view">
+        <field name="name">cotisation.payment.proof.form</field>
+        <field name="model">cotisation.payment.proof</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_put_under_review" string="Mettre en révision" type="object"
+                        class="btn-secondary" invisible="state != 'submitted'" />
+                    <button name="action_validate" string="Valider" type="object"
+                        class="btn-primary" invisible="state not in ['submitted', 'under_review']" />
+                    <button name="action_reject" string="Rejeter" type="object" class="btn-danger"
+                        invisible="state not in ['submitted', 'under_review']" />
+                    <button name="action_download_proof" string="Télécharger" type="object"
+                        class="btn-info" />
+                    <button name="action_view_cotisation" string="Voir la cotisation" type="object"
+                        class="btn-link" />
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="submitted,under_review,validated,rejected"
+                        class="oe_statusbar_buttons" />
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="member_id" widget="res_partner_many2one"
+                                options="{'no_open': True}" />
+                            <field name="cotisation_id" domain="[('member_id', '=', member_id)]" />
+                            <field name="amount" />
+                            <field name="currency_id" invisible="1" />
+                            <field name="payment_method" />
+                            <field name="reference" />
+                            <field name="payment_date" />
+                        </group>
+                        <group>
+                            <field name="state" readonly="1" />
+                            <field name="submitted_date" readonly="1" />
+                            <field name="review_date" readonly="1" />
+                            <field name="validation_date" readonly="1" />
+                            <field name="rejection_date" readonly="1" />
+                            <field name="validator_id" readonly="1" />
+                            <field name="days_pending" readonly="1" />
+                            <field name="is_overdue_validation" invisible="1" />
+                        </group>
+                    </group>
+
+                    <group>
+                        <group>
+                            <field name="proof_filename" readonly="1" />
+                            <field name="proof_file" filename="proof_filename" readonly="1" />
+                            <field name="proof_mimetype" invisible="1" />
+                            <field name="file_size" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="notes" placeholder="Notes facultatives du membre..." />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Validation">
+                            <field name="validation_notes" placeholder="Notes pour la validation..." />
+                            <field name="rejection_reason" readonly="1" />
+                        </page>
+                        <page string="Historique">
+                            <field name="message_ids" mode="kanban">
+                                <tree>
+                                    <field name="author_id" />
+                                    <field name="body" />
+                                    <field name="date" />
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree view for payment proof -->
+    <record id="view_cotisation_payment_proof_tree" model="ir.ui.view">
+        <field name="name">cotisation.payment.proof.tree</field>
+        <field name="model">cotisation.payment.proof</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="display_name" />
+                <field name="member_id" widget="many2one_avatar" />
+                <field name="cotisation_id" />
+                <field name="amount" />
+                <field name="payment_method" />
+                <field name="payment_date" />
+                <field name="state" widget="badge" decoration-success="state == 'validated'"
+                    decoration-danger="state == 'rejected'"
+                    decoration-warning="state == 'under_review'" />
+                <field name="days_pending" invisible="context.get('hide_pending_days', False)" />
+                <field name="submitted_date" />
+            </tree>
+        </field>
+    </record>
+
+    <!-- Search view for payment proof -->
+    <record id="view_cotisation_payment_proof_search" model="ir.ui.view">
+        <field name="name">cotisation.payment.proof.search</field>
+        <field name="model">cotisation.payment.proof</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="member_id" filter_domain="[('member_id', 'ilike', self)]" />
+                <field name="cotisation_id" />
+                <field name="state" />
+                <field name="payment_method" />
+                <field name="payment_date" filter_domain="[('payment_date', '=', self)]" />
+
+                <filter string="En attente" name="pending"
+                    domain="[('state','in',['submitted','under_review'])]" />
+                <filter string="En retard" name="overdue"
+                    domain="[('is_overdue_validation','=',True)]" />
+                <filter string="Aujourd'hui" name="today"
+                    domain="[('submitted_date','>=',context_today().strftime('%Y-%m-%d 00:00:00'))]" />
+
+                <group expand="0" string="Group By">
+                    <filter string="Statut" name="group_by_state" context="{'group_by':'state'}" />
+                    <filter string="Méthode de paiement" name="group_by_method"
+                        context="{'group_by':'payment_method'}" />
+                    <filter string="Membre" name="group_by_member"
+                        context="{'group_by':'member_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action for payment proof -->
+    <record id="action_cotisation_payment_proof" model="ir.actions.act_window">
+        <field name="name">Justificatifs de paiement</field>
+        <field name="res_model">cotisation.payment.proof</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucun justificatif trouvé. Cliquez pour en créer un nouveau.
+            </p>
+        </field>
+    </record>
+</odoo>

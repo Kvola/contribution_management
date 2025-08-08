@@ -9,3 +9,4 @@ from . import cotisations_dashboard
 from . import report_generation_log
 from . import member_payment_plan
 from . import member_payment_installment
+from . import cotisation_payment_proof

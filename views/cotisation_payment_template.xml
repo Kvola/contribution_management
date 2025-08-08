@@ -1,0 +1,2051 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="404_custom" name="Page 404 Personnalisée" inherit_id="http_routing.404">
+        <xpath expr="//div[hasclass('container')]" position="replace">
+            <div class="container text-center py-5">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <!-- Image ou icône 404 -->
+                        <div class="mb-4">
+                            <i class="fa fa-exclamation-triangle fa-5x text-warning mb-3"></i>
+                            <h1 class="display-1 fw-bold text-primary">404</h1>
+                        </div>
+
+                        <!-- Message principal -->
+                        <h2 class="mb-4">Oups ! Page non trouvée</h2>
+                        <p class="lead mb-4">
+                            La page que vous recherchez n'existe pas ou a été déplacée.
+                            Ne vous inquiétez pas, nous pouvons vous aider à trouver ce que vous
+                            cherchez.
+                        </p>
+
+                        <!-- Boutons d'action -->
+                        <div class="mb-4">
+                            <a href="/" class="btn btn-primary btn-lg me-3">
+                                <i class="fa fa-home"></i> Retour à l'accueil </a>
+                            <a href="/contactus" class="btn btn-outline-secondary btn-lg">
+                                <i class="fa fa-envelope"></i> Nous contacter </a>
+                        </div>
+
+                        <!-- Suggestions de pages -->
+                        <div class="row mt-5">
+                            <div class="col-md-4">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="fa fa-shopping-cart fa-2x text-primary mb-3"></i>
+                                        <h5 class="card-title">Nos Produits</h5>
+                                        <p class="card-text">Découvrez notre gamme complète de
+                                            produits.</p>
+                                        <a href="/shop" class="btn btn-outline-primary">Voir les
+                                            produits</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="fa fa-info-circle fa-2x text-success mb-3"></i>
+                                        <h5 class="card-title">À propos</h5>
+                                        <p class="card-text">Apprenez-en plus sur notre entreprise.</p>
+                                        <a href="/aboutus" class="btn btn-outline-success">En savoir
+                                            plus</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="fa fa-blog fa-2x text-info mb-3"></i>
+                                        <h5 class="card-title">Blog</h5>
+                                        <p class="card-text">Lisez nos derniers articles et
+                                            actualités.</p>
+                                        <a href="/blog" class="btn btn-outline-info">Lire le blog</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Barre de recherche -->
+                        <div class="mt-5">
+                            <h4 class="mb-3">Ou utilisez la recherche :</h4>
+                            <form class="d-flex justify-content-center" action="/website/search"
+                                method="GET">
+                                <div class="input-group" style="max-width: 500px;">
+                                    <input type="text" class="form-control form-control-lg"
+                                        name="search" placeholder="Rechercher sur le site..."
+                                        aria-label="Recherche" />
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+    <!-- ============================================
+         TEMPLATE: Liste des cotisations
+         ============================================ -->
+    <template id="my_cotisations_list" name="Mes Cotisations">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Mes Cotisations</t>
+            </t>
+
+            <div class="o_portal_wrap">
+                <div class="o_portal_my_doc o_portal_my_cotisations">
+                    <div class="row">
+                        <div class="col-12">
+
+                            <!-- ===============================
+                                 SECTION: Tableau de bord
+                                 =============================== -->
+                            <div class="row mb-4">
+                                <!-- Carte: Total cotisations -->
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div
+                                            class="card-body text-center bg-primary text-white rounded">
+                                            <div class="o_portal_sidebar_card_icon">
+                                                <i class="fa fa-list-alt fa-2x mb-2" />
+                                            </div>
+                                            <h3 class="card-title mb-1" t-esc="total_cotisations" />
+                                            <p class="card-text small mb-0">Total Cotisations</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Carte: Cotisations payées -->
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div
+                                            class="card-body text-center bg-success text-white rounded">
+                                            <div class="o_portal_sidebar_card_icon">
+                                                <i class="fa fa-check-circle fa-2x mb-2" />
+                                            </div>
+                                            <h3 class="card-title mb-1" t-esc="paid_cotisations" />
+                                            <p class="card-text small mb-0">Payées</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Carte: Cotisations en attente -->
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div
+                                            class="card-body text-center bg-warning text-white rounded">
+                                            <div class="o_portal_sidebar_card_icon">
+                                                <i class="fa fa-clock-o fa-2x mb-2" />
+                                            </div>
+                                            <h3 class="card-title mb-1" t-esc="pending_cotisations" />
+                                            <p class="card-text small mb-0">En attente</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Carte: Montant dû - CORRECTION ICI -->
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div
+                                            class="card-body text-center bg-danger text-white rounded">
+                                            <div class="o_portal_sidebar_card_icon">
+                                                <i class="fa fa-exclamation-triangle fa-2x mb-2" />
+                                            </div>
+                                            <h3 class="card-title mb-1">
+                                                <!-- Option 1: Si total_amount_due est un objet avec
+                                                une valeur -->
+                                                <span t-esc="total_amount_due"
+                                                    t-options="{'widget': 'monetary', 'display_currency': currency_id}" />
+                                                <!-- Option 2: Si vous avez un recordset, utilisez
+                                                cette syntaxe à la place -->
+                                                <!-- <span t-field="record.total_amount_due"
+                                                t-options="{'widget': 'monetary',
+                                                'display_currency': currency_id}"/> -->
+                                            </h3>
+                                            <p class="card-text small mb-0">Montant dû</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===============================
+                                 SECTION: Navigation (Breadcrumb)
+                                 =============================== -->
+                            <nav aria-label="breadcrumb" class="mb-4">
+                                <ol class="breadcrumb bg-transparent p-0">
+                                    <li class="breadcrumb-item">
+                                        <a href="/my" class="text-decoration-none">
+                                            <i class="fa fa-home me-1" /> Mon Compte </a>
+                                    </li>
+                                    <li class="breadcrumb-item active" aria-current="page">
+                                        <i class="fa fa-list-alt me-1" /> Mes Cotisations </li>
+                                </ol>
+                            </nav>
+
+                            <!-- ===============================
+                                 SECTION: Actions rapides
+                                 =============================== -->
+                            <div class="d-flex flex-wrap align-items-center mb-4">
+                                <div class="btn-group me-3 mb-2" role="group">
+                                    <a href="/my/cotisations/history"
+                                        class="btn btn-outline-primary">
+                                        <i class="fa fa-history me-1" /> Historique des paiements </a>
+                                    <button class="btn btn-outline-secondary"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#filterCollapse"
+                                        aria-expanded="false">
+                                        <i class="fa fa-filter me-1" /> Filtrer </button>
+                                </div>
+                            </div>
+
+                            <!-- ===============================
+                                 SECTION: Filtres
+                                 =============================== -->
+                            <div class="collapse mb-4" id="filterCollapse">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form method="get" class="row g-3">
+                                            <input type="hidden" name="csrf_token"
+                                                t-att-value="request.csrf_token()" />
+
+                                            <div class="col-md-4">
+                                                <label class="form-label">Statut</label>
+                                                <select name="state" class="form-select">
+                                                    <option value="">Tous</option>
+                                                    <option value="pending"
+                                                        t-att-selected="'selected' if filterby == 'pending' else None">En
+                                                        attente</option>
+                                                    <option value="partial"
+                                                        t-att-selected="'selected' if filterby == 'partial' else None">
+                                                        Partiel</option>
+                                                    <option value="paid"
+                                                        t-att-selected="'selected' if filterby == 'paid' else None">
+                                                        Payé</option>
+                                                    <option value="overdue"
+                                                        t-att-selected="'selected' if filterby == 'overdue' else None">En
+                                                        retard</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Type</label>
+                                                <select name="type" class="form-select">
+                                                    <option value="">Tous</option>
+                                                    <option value="monthly"
+                                                        t-att-selected="'selected' if filterby == 'monthly' else None">
+                                                        Mensuelle</option>
+                                                    <option value="activity"
+                                                        t-att-selected="'selected' if filterby == 'activity' else None">
+                                                        Activité</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 d-flex align-items-end">
+                                                <button type="submit" class="btn btn-primary me-2">
+                                                    Appliquer</button>
+                                                <a href="/my/cotisations"
+                                                    class="btn btn-outline-secondary">Reset</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===============================
+                                 SECTION: Messages d'alerte
+                                 =============================== -->
+                            <t t-if="success_message">
+                                <div class="alert alert-success alert-dismissible" role="alert">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-check-circle me-2" />
+                                        <div class="flex-grow-1">
+                                            <strong>Succès !</strong>
+                                            <span t-esc="success_message" />
+                                        </div>
+                                        <button type="button" class="btn-close"
+                                            data-bs-dismiss="alert" aria-label="Fermer" />
+                                    </div>
+                                </div>
+                            </t>
+
+                            <t t-if="error_message">
+                                <div class="alert alert-danger alert-dismissible" role="alert">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-exclamation-triangle me-2" />
+                                        <div class="flex-grow-1">
+                                            <strong>Erreur !</strong>
+                                            <span t-esc="error_message" />
+                                        </div>
+                                        <button type="button" class="btn-close"
+                                            data-bs-dismiss="alert" aria-label="Fermer" />
+                                    </div>
+                                </div>
+                            </t>
+
+                            <!-- ===============================
+                                 SECTION: Liste des cotisations
+                                 =============================== -->
+                            <div class="card border-0 shadow-sm">
+                                <!-- En-tête de la carte -->
+                                <div class="card-header bg-white border-0 pb-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h4 class="mb-0 text-primary">
+                                            <i class="fa fa-list-alt me-2" /> Liste de mes
+                                            cotisations </h4>
+                                        <span class="badge bg-primary fs-6"
+                                            t-esc="cotisations_count" />
+                                    </div>
+                                </div>
+
+                                <!-- Corps de la carte -->
+                                <div class="card-body pt-3">
+                                    <!-- Cas: Aucune cotisation -->
+                                    <t t-if="not cotisations">
+                                        <t t-call="contribution_management.empty_state" />
+                                    </t>
+
+                                    <!-- Cas: Cotisations trouvées -->
+                                    <t t-else="">
+                                        <!-- Vue mobile -->
+                                        <t t-call="contribution_management.mobile_view" />
+                                        <!-- Vue desktop -->
+                                        <t t-call="contribution_management.desktop_view" />
+                                    </t>
+                                </div>
+                            </div>
+
+                            <!-- ===============================
+                                 SECTION: Pagination
+                                 =============================== -->
+                            <t t-if="pager and pager.get('page_count', 0) > 1">
+                                <t t-call="portal.pager" />
+                            </t>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: État vide
+         ============================================ -->
+    <template id="contribution_management.empty_state" name="État vide">
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fa fa-inbox fa-4x text-muted" />
+            </div>
+            <h5 class="text-muted mb-3">Aucune cotisation trouvée</h5>
+            <p class="text-muted">Vous n'avez actuellement aucune cotisation associée à votre
+                compte.</p>
+            <a href="/my" class="btn btn-primary">
+                <i class="fa fa-arrow-left me-1" /> Retour au tableau de bord </a>
+        </div>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Vue mobile
+         ============================================ -->
+    <template id="contribution_management.mobile_view" name="Vue mobile">
+        <div class="d-md-none">
+            <div class="row g-3">
+                <div class="col-12" t-foreach="cotisations" t-as="cotisation">
+                    <t t-call="contribution_management.mobile_card" />
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Carte mobile
+         ============================================ -->
+    <template id="contribution_management.mobile_card" name="Carte mobile">
+        <div class="card border-start border-4"
+            t-att-class="'border-success' if cotisation.state == 'paid' 
+                          else 'border-warning' if cotisation.state == 'partial' 
+                          else 'border-danger' if cotisation.state == 'overdue' 
+                          else 'border-secondary'">
+            <div class="card-body p-3">
+                <!-- En-tête de carte -->
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title mb-1"
+                        t-esc="cotisation.description or cotisation.display_name" />
+                    <t t-call="contribution_management.status_badge" />
+                </div>
+
+                <!-- Informations de la cotisation -->
+                <div class="row g-2 small text-muted">
+                    <div class="col-6">
+                        <strong>Groupe:</strong>
+                        <br />
+                        <span t-esc="cotisation.group_id.name" />
+                    </div>
+                    <div class="col-6">
+                        <strong>Échéance:</strong>
+                        <br />
+                        <span t-field="cotisation.due_date" t-options="{'widget': 'date'}" />
+                    </div>
+                    <div class="col-6">
+                        <strong>Montant dû:</strong>
+                        <br />
+                        <span t-field="cotisation.amount_due"
+                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                    </div>
+                    <div class="col-6">
+                        <strong>Restant:</strong>
+                        <br />
+                        <span t-field="cotisation.remaining_amount"
+                            t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"
+                            t-att-class="'text-success fw-bold' if cotisation.remaining_amount == 0 else 'text-warning fw-bold'" />
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-end mt-3">
+                    <t t-call="contribution_management.action_buttons" />
+                </div>
+
+                <!-- Indicateur de retard -->
+                <t t-call="contribution_management.overdue_indicator" />
+            </div>
+        </div>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Vue desktop
+         ============================================ -->
+    <template id="contribution_management.desktop_view" name="Vue desktop">
+        <div class="d-none d-md-block">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="border-0">
+                                <i class="fa fa-file-text-o me-1" /> Description </th>
+                            <th scope="col" class="border-0">
+                                <i class="fa fa-users me-1" /> Groupe </th>
+                            <th scope="col" class="border-0">
+                                <i class="fa fa-tag me-1" /> Type </th>
+                            <th scope="col" class="border-0 text-end">
+                                <i class="fa fa-money me-1" /> Montant dû </th>
+                            <th scope="col" class="border-0 text-end">
+                                <i class="fa fa-check me-1" /> Payé </th>
+                            <th scope="col" class="border-0 text-end">
+                                <i class="fa fa-balance-scale me-1" /> Restant </th>
+                            <th scope="col" class="border-0 text-center">
+                                <i class="fa fa-calendar me-1" /> Échéance </th>
+                            <th scope="col" class="border-0 text-center">
+                                <i class="fa fa-info-circle me-1" /> Statut </th>
+                            <th scope="col" class="border-0 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="cotisations" t-as="cotisation">
+                            <t t-call="contribution_management.desktop_row" />
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Ligne de tableau desktop
+         ============================================ -->
+    <template id="contribution_management.desktop_row" name="Ligne tableau desktop">
+        <!-- Description -->
+        <td class="align-middle">
+            <div>
+                <strong class="text-truncate d-block"
+                    t-esc="cotisation.description or cotisation.display_name"
+                    style="max-width: 200px;" />
+                <t t-if="cotisation.days_overdue and cotisation.days_overdue > 0">
+                    <small class="text-danger">
+                        <i class="fa fa-exclamation-triangle me-1" /> En retard de <span
+                            t-esc="cotisation.days_overdue" /> jour(s) </small>
+                </t>
+            </div>
+        </td>
+
+        <!-- Groupe -->
+        <td class="align-middle">
+            <span class="text-truncate d-block" t-esc="cotisation.group_id.name"
+                style="max-width: 150px;" />
+        </td>
+
+        <!-- Type -->
+        <td class="align-middle">
+            <t t-call="contribution_management.type_badge" />
+        </td>
+
+        <!-- Montant dû -->
+        <td class="align-middle text-end">
+            <span class="fw-bold"
+                t-field="cotisation.amount_due"
+                t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+        </td>
+
+        <!-- Montant payé -->
+        <td class="align-middle text-end">
+            <span class="text-success"
+                t-field="cotisation.amount_paid"
+                t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+        </td>
+
+        <!-- Montant restant -->
+        <td class="align-middle text-end">
+            <span class="fw-bold"
+                t-field="cotisation.remaining_amount"
+                t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}"
+                t-att-class="'text-success' if cotisation.remaining_amount == 0 else 'text-warning'" />
+        </td>
+
+        <!-- Échéance -->
+        <td class="align-middle text-center">
+            <div>
+                <span t-field="cotisation.due_date" t-options="{'widget': 'date'}" />
+                <t
+                    t-if="cotisation.due_date and cotisation.due_date &lt; current_date and cotisation.state != 'paid'">
+                    <br />
+                    <small class="badge bg-danger">Échue</small>
+                </t>
+            </div>
+        </td>
+
+        <!-- Statut -->
+        <td class="align-middle text-center">
+            <t t-call="contribution_management.status_badge_detailed" />
+        </td>
+
+        <!-- Actions -->
+        <td class="align-middle text-center">
+            <t t-call="contribution_management.action_buttons" />
+        </td>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Badge de statut
+         ============================================ -->
+    <template id="contribution_management.status_badge" name="Badge de statut">
+        <span class="badge"
+            t-att-class="'bg-success' if cotisation.state == 'paid' 
+                           else 'bg-warning' if cotisation.state == 'partial' 
+                           else 'bg-danger' if cotisation.state == 'overdue' 
+                           else 'bg-secondary'">
+            <t t-if="cotisation.state == 'paid'">Payé</t>
+            <t t-elif="cotisation.state == 'partial'">Partiel</t>
+            <t t-elif="cotisation.state == 'overdue'">En retard</t>
+            <t t-else="">En attente</t>
+        </span>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Badge de statut détaillé
+         ============================================ -->
+    <template id="contribution_management.status_badge_detailed" name="Badge de statut détaillé">
+        <span class="badge fs-6"
+            t-att-class="'bg-success' if cotisation.state == 'paid' 
+                           else 'bg-warning text-dark' if cotisation.state == 'partial' 
+                           else 'bg-danger' if cotisation.state == 'overdue' 
+                           else 'bg-secondary'">
+            <i class="fa fa-check me-1" t-if="cotisation.state == 'paid'" />
+            <i class="fa fa-clock-o me-1" t-elif="cotisation.state == 'partial'" />
+            <i class="fa fa-exclamation-triangle me-1" t-elif="cotisation.state == 'overdue'" />
+            <i class="fa fa-pause me-1" t-else="" />
+            <t t-if="cotisation.state == 'paid'">Payé</t>
+            <t t-elif="cotisation.state == 'partial'">Partiel</t>
+            <t t-elif="cotisation.state == 'overdue'">En retard</t>
+            <t t-else="">En attente</t>
+        </span>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Badge de type
+         ============================================ -->
+    <template id="contribution_management.type_badge" name="Badge de type">
+        <span class="badge"
+            t-att-class="'bg-info' if cotisation.cotisation_type == 'monthly' else 'bg-primary'">
+            <i class="fa fa-calendar me-1" t-if="cotisation.cotisation_type == 'monthly'" />
+            <i class="fa fa-star me-1" t-else="" />
+            <t t-if="cotisation.cotisation_type == 'monthly'">Mensuelle</t>
+            <t t-else="">Activité</t>
+        </span>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Boutons d'action (CORRIGÉ)
+         ============================================ -->
+    <template id="contribution_management.action_buttons" name="Boutons d'action">
+        <div class="btn-group btn-group-sm" role="group">
+            <t
+                t-if="cotisation.state in ['pending', 'partial', 'overdue'] and cotisation.remaining_amount > 0">
+                <a t-attf-href="/my/cotisation/#{cotisation.id}/pay"
+                    class="btn btn-primary">
+                    <i class="fa fa-credit-card me-1" /> Payer </a>
+            </t>
+            <a t-attf-href="/my/cotisation/#{cotisation.id}"
+                class="btn btn-outline-primary">
+                <i class="fa fa-eye me-1" /> Voir </a>
+        </div>
+    </template>
+
+    <!-- ============================================
+         SOUS-TEMPLATE: Indicateur de retard
+         ============================================ -->
+    <template id="contribution_management.overdue_indicator" name="Indicateur de retard">
+        <t t-if="cotisation.days_overdue and cotisation.days_overdue > 0">
+            <div class="alert alert-danger alert-sm mt-2 mb-0 py-1 px-2">
+                <i class="fa fa-exclamation-triangle me-1" />
+                <small>En retard de <span t-esc="cotisation.days_overdue" /> jour(s)</small>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================
+         TEMPLATE: Formulaire de paiement de cotisation (COMPLET)
+         ============================================ -->
+    <template id="cotisation_payment_form" name="Formulaire de Paiement">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+
+            <div class="o_portal_wrap">
+                <div class="o_portal_my_doc o_portal_payment_form">
+                    <div class="row">
+                        <div class="col-12">
+
+                            <!-- ===============================
+                                 SECTION: Navigation (Breadcrumb)
+                                 =============================== -->
+                            <nav aria-label="breadcrumb" class="mb-4">
+                                <ol class="breadcrumb bg-transparent p-0">
+                                    <li class="breadcrumb-item">
+                                        <a href="/my" class="text-decoration-none">
+                                            <i class="fa fa-home me-1" /> Mon Compte
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item">
+                                        <a href="/my/cotisations" class="text-decoration-none">
+                                            <i class="fa fa-list-alt me-1" /> Mes Cotisations
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item">
+                                        <a t-attf-href="/my/cotisation/#{cotisation.id}"
+                                            class="text-decoration-none">
+                                            <span t-esc="cotisation.display_name" />
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item active" aria-current="page">
+                                        <i class="fa fa-credit-card me-1" /> Paiement
+                                    </li>
+                                </ol>
+                            </nav>
+
+                            <!-- ===============================
+                                 SECTION: Messages d'alerte
+                                 =============================== -->
+                            <t t-if="success_message">
+                                <div class="alert alert-success alert-dismissible" role="alert">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-check-circle me-2" />
+                                        <div class="flex-grow-1">
+                                            <strong>Succès !</strong>
+                                            <span t-esc="success_message" />
+                                        </div>
+                                        <button type="button" class="btn-close"
+                                            data-bs-dismiss="alert" aria-label="Fermer" />
+                                    </div>
+                                </div>
+                            </t>
+
+                            <t t-if="error_message">
+                                <div class="alert alert-danger alert-dismissible" role="alert">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-exclamation-triangle me-2" />
+                                        <div class="flex-grow-1">
+                                            <strong>Erreur !</strong>
+                                            <span t-esc="error_message" />
+                                        </div>
+                                        <button type="button" class="btn-close"
+                                            data-bs-dismiss="alert" aria-label="Fermer" />
+                                    </div>
+                                </div>
+                            </t>
+
+                            <!-- ===============================
+                                 SECTION: En-tête du formulaire
+                                 =============================== -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body bg-primary text-white">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <h2 class="card-title mb-1">
+                                                        <i class="fa fa-credit-card me-2" />
+                                                        Paiement de cotisation
+                                                    </h2>
+                                                    <p class="card-text mb-0">
+                                                        <strong t-esc="cotisation.description or cotisation.display_name" />
+                                                    </p>
+                                                    <small class="opacity-75">
+                                                        Groupe: <span t-esc="cotisation.group_id.name" />
+                                                    </small>
+                                                </div>
+                                                <div class="col-md-4 text-end">
+                                                    <div class="mb-1">
+                                                        <small class="opacity-75">Montant restant</small>
+                                                        <div class="h4 mb-0">
+                                                            <span t-field="cotisation.remaining_amount"
+                                                                t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                        </div>
+                                                    </div>
+                                                    <small class="opacity-75">
+                                                        Échéance: <span t-field="cotisation.due_date" t-options="{'widget': 'date'}" />
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===============================
+                                 SECTION: Formulaire principal
+                                 =============================== -->
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0">
+                                            <h5 class="mb-0 text-primary">
+                                                <i class="fa fa-edit me-2" /> Informations de paiement
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form t-attf-action="/my/cotisation/#{cotisation.id}/submit_payment"
+                                                method="post" enctype="multipart/form-data"
+                                                class="needs-validation" novalidate="true">
+                                                
+                                                <!-- Token CSRF -->
+                                                <input type="hidden" name="csrf_token" 
+                                                    t-att-value="request.csrf_token()" />
+                                                <input type="hidden" name="access_token" 
+                                                    t-att-value="access_token" t-if="access_token" />
+
+                                                <!-- Montant du paiement -->
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label for="amount" class="form-label">
+                                                            <i class="fa fa-money me-1 text-success" />
+                                                            Montant du paiement <span class="text-danger">*</span>
+                                                        </label>
+                                                        <div class="input-group">
+                                                            <input type="number" step="0.01" min="0.01"
+                                                                t-att-max="cotisation.remaining_amount * 1.1"
+                                                                class="form-control form-control-lg"
+                                                                id="amount" name="amount"
+                                                                t-att-value="cotisation.remaining_amount"
+                                                                placeholder="0.00" required="true" />
+                                                            <span class="input-group-text">
+                                                                <span t-esc="cotisation.currency_id.symbol or 'FCFA'" />
+                                                            </span>
+                                                            <div class="invalid-feedback">
+                                                                Veuillez saisir un montant valide.
+                                                            </div>
+                                                        </div>
+                                                        <small class="form-text text-muted">
+                                                            Maximum autorisé: <span t-field="cotisation.remaining_amount"
+                                                                t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                            + 10%
+                                                        </small>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label for="payment_date" class="form-label">
+                                                            <i class="fa fa-calendar me-1 text-info" />
+                                                            Date de paiement <span class="text-danger">*</span>
+                                                        </label>
+                                                        <input type="date" class="form-control form-control-lg"
+                                                            id="payment_date" name="payment_date"
+                                                            t-att-value="current_date.strftime('%Y-%m-%d')"
+                                                            t-att-max="current_date.strftime('%Y-%m-%d')"
+                                                            required="true" />
+                                                        <div class="invalid-feedback">
+                                                            La date de paiement est requise et ne peut pas être future.
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Méthode de paiement -->
+                                                <div class="mb-3">
+                                                    <label for="payment_method" class="form-label">
+                                                        <i class="fa fa-credit-card me-1 text-primary" />
+                                                        Méthode de paiement <span class="text-danger">*</span>
+                                                    </label>
+                                                    <select class="form-select form-select-lg" 
+                                                        id="payment_method" name="payment_method" required="true">
+                                                        <option value="">-- Choisir une méthode --</option>
+                                                        <t t-foreach="payment_methods" t-as="method">
+                                                            <option t-att-value="method[0]" t-esc="method[1]" />
+                                                        </t>
+                                                    </select>
+                                                    <div class="invalid-feedback">
+                                                        Veuillez sélectionner une méthode de paiement.
+                                                    </div>
+                                                </div>
+
+                                                <!-- Référence -->
+                                                <div class="mb-3">
+                                                    <label for="reference" class="form-label">
+                                                        <i class="fa fa-hashtag me-1 text-secondary" />
+                                                        Référence/Numéro de transaction
+                                                    </label>
+                                                    <input type="text" class="form-control form-control-lg"
+                                                        id="reference" name="reference" maxlength="100"
+                                                        placeholder="Ex: TXN123456, REF-001..." />
+                                                    <small class="form-text text-muted">
+                                                        Numéro de transaction, référence de virement, etc. (optionnel)
+                                                    </small>
+                                                </div>
+
+                                                <!-- Justificatif -->
+                                                <div class="mb-3">
+                                                    <label for="proof_file" class="form-label">
+                                                        <i class="fa fa-file-image-o me-1 text-warning" />
+                                                        Justificatif de paiement (optionnel)
+                                                    </label>
+                                                    <input type="file" class="form-control form-control-lg"
+                                                        id="proof_file" name="proof_file"
+                                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" />
+                                                    <div class="form-text">
+                                                        <small class="text-muted">
+                                                            <strong>Formats acceptés:</strong> <span t-esc="allowed_file_types" />
+                                                            | <strong>Taille max:</strong> <span t-esc="max_file_size" />MB
+                                                        </small>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Notes -->
+                                                <div class="mb-4">
+                                                    <label for="notes" class="form-label">
+                                                        <i class="fa fa-comment me-1 text-muted" />
+                                                        Commentaires
+                                                    </label>
+                                                    <textarea class="form-control" id="notes" name="notes" rows="3"
+                                                        maxlength="500"
+                                                        placeholder="Ajoutez des commentaires sur ce paiement (optionnel)..."></textarea>
+                                                    <small class="form-text text-muted">
+                                                        Maximum 500 caractères
+                                                    </small>
+                                                </div>
+
+                                                <!-- Zone d'information importante -->
+                                                <div class="alert alert-info" role="alert">
+                                                    <div class="d-flex">
+                                                        <i class="fa fa-info-circle me-2 mt-1"></i>
+                                                        <div>
+                                                            <strong>Important :</strong>
+                                                            <ul class="mb-0 mt-1">
+                                                                <li>Votre justificatif sera vérifié par notre équipe</li>
+                                                                <li>Vous recevrez une notification de validation par email</li>
+                                                                <li>En cas de rejet, vous pourrez soumettre un nouveau justificatif</li>
+                                                                <li>Pour les paiements urgents, contactez-nous directement</li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Boutons d'action -->
+                                                <div class="d-flex justify-content-between">
+                                                    <a t-attf-href="/my/cotisation/#{cotisation.id}" 
+                                                        class="btn btn-outline-secondary btn-lg">
+                                                        <i class="fa fa-arrow-left me-1" /> Retour
+                                                    </a>
+                                                    <button type="submit" class="btn btn-primary btn-lg">
+                                                        <i class="fa fa-paper-plane me-1" /> Soumettre le paiement
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ===============================
+                                     SECTION: Informations latérales
+                                     =============================== -->
+                                <div class="col-lg-4">
+                                    <!-- Récapitulatif -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0">
+                                            <h6 class="mb-0 text-primary">
+                                                <i class="fa fa-summary me-2" /> Récapitulatif
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-12">
+                                                    <small class="text-muted">Description</small><br />
+                                                    <strong t-esc="cotisation.description or cotisation.display_name" />
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Montant total</small><br />
+                                                    <span t-field="cotisation.amount_due"
+                                                        t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Déjà payé</small><br />
+                                                    <span class="text-success" t-field="cotisation.amount_paid"
+                                                        t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                </div>
+                                                <div class="col-12">
+                                                    <hr class="my-2" />
+                                                    <small class="text-muted">Reste à payer</small><br />
+                                                    <strong class="text-primary h6" t-field="cotisation.remaining_amount"
+                                                        t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Méthodes de paiement acceptées -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0">
+                                            <h6 class="mb-0 text-primary">
+                                                <i class="fa fa-credit-card me-2" /> Méthodes acceptées
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fa fa-mobile text-success me-2" />
+                                                        <div>
+                                                            <small><strong>Mobile Money</strong></small><br />
+                                                            <small class="text-muted">Orange, MTN, etc.</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fa fa-university text-primary me-2" />
+                                                        <div>
+                                                            <small><strong>Virement</strong></small><br />
+                                                            <small class="text-muted">Transfert bancaire</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fa fa-money text-success me-2" />
+                                                        <div>
+                                                            <small><strong>Espèces</strong></small><br />
+                                                            <small class="text-muted">Paiement liquide</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fa fa-credit-card text-info me-2" />
+                                                        <div>
+                                                            <small><strong>Carte</strong></small><br />
+                                                            <small class="text-muted">Visa, Mastercard</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===============================
+                 SECTION: Scripts JavaScript
+                 =============================== -->
+            <script type="text/javascript">
+                document.addEventListener('DOMContentLoaded', function() {
+                    // ==============================
+                    // Validation Bootstrap
+                    // ==============================
+                    const forms = document.querySelectorAll('.needs-validation');
+                    Array.prototype.slice.call(forms).forEach(function(form) {
+                        form.addEventListener('submit', function(event) {
+                            if (!form.checkValidity()) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                            form.classList.add('was-validated');
+                        }, false);
+                    });
+
+                    // ==============================
+                    // Validation du montant
+                    // ==============================
+                    const amountInput = document.getElementById('amount');
+                    if (amountInput) {
+                        const maxAmount = parseFloat(amountInput.getAttribute('max'));
+                        const minAmount = parseFloat(amountInput.getAttribute('min'));
+                        
+                        amountInput.addEventListener('input', function() {
+                            const value = parseFloat(this.value);
+                            const feedbackElement = this.parentNode.querySelector('.invalid-feedback');
+                            
+                            if (isNaN(value) || value &lt;= 0) {
+                                this.setCustomValidity('Le montant doit être positif');
+                                feedbackElement.textContent = 'Le montant doit être positif';
+                            } else if (value > maxAmount) {
+                                this.setCustomValidity('Le montant ne peut pas dépasser le montant restant de plus de 10%');
+                                feedbackElement.textContent = 'Le montant ne peut pas dépasser le montant restant de plus de 10%';
+                            } else if (value &lt; minAmount) {
+                                this.setCustomValidity('Le montant minimum est de ' + minAmount);
+                                feedbackElement.textContent = 'Le montant minimum est de ' + minAmount;
+                            } else {
+                                this.setCustomValidity('');
+                                feedbackElement.textContent = 'Veuillez saisir un montant valide';
+                            }
+                        });
+                    }
+
+                    // ==============================
+                    // Validation de la date
+                    // ==============================
+                    const dateInput = document.getElementById('payment_date');
+                    if (dateInput) {
+                        const today = new Date().toISOString().split('T')[0];
+                        
+                        dateInput.addEventListener('change', function() {
+                            if (this.value > today) {
+                                this.setCustomValidity('La date de paiement ne peut pas être dans le futur');
+                            } else {
+                                this.setCustomValidity('');
+                            }
+                        });
+                    }
+
+                    // ==============================
+                    // Validation du fichier
+                    // ==============================
+                    const fileInput = document.getElementById('proof_file');
+                    if (fileInput) {
+                        const maxSizeMB = 10; // Size is passed from controller
+                        const allowedTypes = [
+                            'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            'application/vnd.ms-excel',
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        ];
+
+                        fileInput.addEventListener('change', function() {
+                            if (this.files.length > 0) {
+                                const file = this.files[0];
+                                const fileSizeMB = file.size / (1024 * 1024);
+
+                                // Vérification de la taille
+                                if (fileSizeMB > maxSizeMB) {
+                                    alert(`Le fichier est trop volumineux. Taille maximum: ${maxSizeMB}MB`);
+                                    this.value = '';
+                                    return;
+                                }
+
+                                // Vérification du type
+                                if (!allowedTypes.includes(file.type)) {
+                                    alert('Type de fichier non autorisé. Veuillez choisir un fichier JPG, PNG, PDF, DOC ou DOCX.');
+                                    this.value = '';
+                                    return;
+                                }
+                            }
+                        });
+                    }
+
+                    // ==============================
+                    // Compteur de caractères
+                    // ==============================
+                    const notesTextarea = document.getElementById('notes');
+                    if (notesTextarea) {
+                        const maxLength = parseInt(notesTextarea.getAttribute('maxlength'));
+                        
+                        // Créer l'élément de compteur
+                        const counterElement = document.createElement('small');
+                        counterElement.className = 'form-text text-muted float-end';
+                        counterElement.textContent = `0/${maxLength}`;
+                        notesTextarea.parentNode.appendChild(counterElement);
+
+                        notesTextarea.addEventListener('input', function() {
+                            const currentLength = this.value.length;
+                            counterElement.textContent = `${currentLength}/${maxLength}`;
+                            
+                            if (currentLength > maxLength * 0.9) {
+                                counterElement.classList.remove('text-muted');
+                                counterElement.classList.add('text-warning');
+                            } else {
+                                counterElement.classList.remove('text-warning');
+                                counterElement.classList.add('text-muted');
+                            }
+                        });
+                    }
+
+                    // ==============================
+                    // Animation de soumission
+                    // ==============================
+                    const submitButton = document.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        const form = submitButton.closest('form');
+                        const originalText = submitButton.innerHTML;
+                        
+                        form.addEventListener('submit', function(event) {
+                            if (this.checkValidity()) {
+                                submitButton.disabled = true;
+                                submitButton.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Traitement en cours...';
+                                
+                                // Afficher un message de patience
+                                const alertDiv = document.createElement('div');
+                                alertDiv.className = 'alert alert-info mt-3';
+                                alertDiv.innerHTML = '<i class="fa fa-info-circle me-2"></i>Traitement en cours, veuillez patienter...';
+                                this.appendChild(alertDiv);
+                                
+                                // Timeout de sécurité
+                                setTimeout(function() {
+                                    submitButton.disabled = false;
+                                    submitButton.innerHTML = originalText;
+                                    if (alertDiv.parentNode) {
+                                        alertDiv.remove();
+                                    }
+                                }, 30000); // 30 secondes
+                            }
+                        });
+                    }
+
+                    // ==============================
+                    // Amélioration UX: focus automatique
+                    // ==============================
+                    if (amountInput &amp;&amp; !amountInput.value) {
+                        amountInput.focus();
+                    }
+                });
+            </script>
+
+            <!-- ===============================
+                 SECTION: Styles CSS
+                 =============================== -->
+            <style>
+                /* ==============================
+                   States &amp; Focus
+                   ============================== */
+                .form-control:focus,
+                .form-select:focus {
+                    border-color: #0d6efd;
+                    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+                }
+
+                /* ==============================
+                   Validation States
+                   ============================== */
+                .was-validated .form-control:valid,
+                .was-validated .form-select:valid {
+                    border-color: #198754;
+                    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.94-.94 1.78 1.78L7.5 5.09l.94.94L5.5 8.5z'/%3e%3c/svg%3e");
+                    background-repeat: no-repeat;
+                    background-position: right calc(0.375em + 0.1875rem) center;
+                    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+                }
+
+                .was-validated .form-control:invalid,
+                .was-validated .form-select:invalid {
+                    border-color: #dc3545;
+                    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 4.6.7.7 1.4-1.4.7.7-1.4 1.4.7.7-1.4 1.4-.7-.7 1.4-1.4-.7-.7-1.4 1.4-.7-.7 1.4-1.4z'/%3e%3c/svg%3e");
+                    background-repeat: no-repeat;
+                    background-position: right calc(0.375em + 0.1875rem) center;
+                    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+                }
+
+                /* ==============================
+                   Input Groups
+                   ============================== */
+                .input-group .form-control:focus {
+                    z-index: 3;
+                }
+
+                .input-group-text {
+                    background-color: #f8f9fa;
+                    border-color: #ced4da;
+                }
+
+                /* ==============================
+                   File Input
+                   ============================== */
+                .form-control[type="file"] {
+                    padding: 0.5rem 0.75rem;
+                }
+
+                .form-control[type="file"]::-webkit-file-upload-button {
+                    padding: 0.375rem 0.75rem;
+                    margin: -0.375rem -0.75rem;
+                    margin-inline-end: 0.75rem;
+                    background-color: #e9ecef;
+                    border: 0;
+                    border-radius: 0.375rem 0 0 0.375rem;
+                }
+
+                /* ==============================
+                   Cards &amp; Animations
+                   ============================== */
+                .card {
+                    transition: box-shadow 0.15s ease-in-out;
+                }
+
+                .card:hover {
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+                }
+
+                .btn {
+                    transition: all 0.15s ease-in-out;
+                }
+
+                .btn:hover {
+                    transform: translateY(-1px);
+                }
+
+                /* ==============================
+                   Alert Improvements
+                   ============================== */
+                .alert {
+                    border: none;
+                    border-radius: 0.5rem;
+                }
+
+                .alert-info {
+                    background-color: #e7f3ff;
+                    color: #055160;
+                    border-left: 4px solid #0dcaf0;
+                }
+
+                /* ==============================
+                   Breadcrumb
+                   ============================== */
+                .breadcrumb-item + .breadcrumb-item::before {
+                    color: #6c757d;
+                }
+
+                .breadcrumb-item.active {
+                    color: #6c757d;
+                }
+
+                /* ==============================
+                   Progress &amp; Loading States
+                   ============================== */
+                .btn:disabled {
+                    opacity: 0.65;
+                    cursor: not-allowed;
+                }
+
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+
+                .fa-spin {
+                    animation: spin 1s linear infinite;
+                }
+
+                /* ==============================
+                   Form Enhancements
+                   ============================== */
+                .form-label {
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                }
+
+                .form-control-lg {
+                    font-size: 1.1rem;
+                }
+
+                /* ==============================
+                   Responsive Design
+                   ============================== */
+                @media (max-width: 768px) {
+                    .card-body {
+                        padding: 1rem;
+                    }
+
+                    .btn-lg {
+                        font-size: 1rem;
+                        padding: 0.75rem 1.5rem;
+                    }
+
+                    .h4 {
+                        font-size: 1.25rem;
+                    }
+
+                    .row.g-3 > .col-md-6 {
+                        margin-bottom: 1rem;
+                    }
+                }
+
+                /* ==============================
+                   Print Styles
+                   ============================== */
+                @media print {
+                    .btn, .alert-dismissible .btn-close {
+                        display: none;
+                    }
+                    
+                    .card {
+                        box-shadow: none;
+                        border: 1px solid #ddd;
+                    }
+                }
+            </style>
+        </t>
+    </template>
+
+    <!-- ============================================
+         TEMPLATE: Page de confirmation après soumission
+         ============================================ -->
+    <template id="payment_confirmation" name="Confirmation de Paiement">
+        <t t-call="portal.portal_layout">
+            <div class="o_portal_wrap">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <!-- Message de succès -->
+                            <div class="text-center py-5">
+                                <div class="mb-4">
+                                    <i class="fa fa-check-circle fa-5x text-success"></i>
+                                </div>
+                                
+                                <h1 class="display-6 text-success mb-3">Paiement soumis !</h1>
+                                
+                                <p class="lead mb-4">
+                                    Votre justificatif de paiement a été soumis avec succès. 
+                                    Notre équipe le validera dans les plus brefs délais.
+                                </p>
+
+                                <!-- Informations sur le paiement -->
+                                <div class="card border-0 shadow-sm mb-4">
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Cotisation</small><br />
+                                                <strong t-esc="cotisation.display_name" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Montant soumis</small><br />
+                                                <strong class="text-success" t-field="payment_proof.amount"
+                                                    t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Méthode</small><br />
+                                                <span t-esc="dict(payment_methods).get(payment_proof.payment_method, payment_proof.payment_method)" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Date de soumission</small><br />
+                                                <span t-field="payment_proof.create_date" t-options="{'widget': 'datetime'}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Prochaines étapes -->
+                                <div class="alert alert-info text-start">
+                                    <h6><i class="fa fa-info-circle me-2"></i>Que se passe-t-il maintenant ?</h6>
+                                    <ol class="mb-0">
+                                        <li>Notre équipe va vérifier votre justificatif</li>
+                                        <li>Vous recevrez un email de confirmation ou de demande de clarification</li>
+                                        <li>Une fois validé, votre cotisation sera mise à jour</li>
+                                        <li>En cas de problème, vous pourrez soumettre un nouveau justificatif</li>
+                                    </ol>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="d-flex flex-wrap justify-content-center gap-3">
+                                    <a t-attf-href="/my/cotisation/#{cotisation.id}" class="btn btn-primary">
+                                        <i class="fa fa-eye me-1"></i> Voir la cotisation
+                                    </a>
+                                    <a href="/my/cotisations" class="btn btn-outline-secondary">
+                                        <i class="fa fa-list me-1"></i> Mes cotisations
+                                    </a>
+                                    <a href="/my/cotisations/history" class="btn btn-outline-info">
+                                        <i class="fa fa-history me-1"></i> Historique des paiements
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================
+         TEMPLATE: Page d'erreur d'accès
+         ============================================ -->
+    <template id="cotisation_access_denied" name="Accès refusé">
+        <t t-call="portal.portal_layout">
+            <div class="o_portal_wrap">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-6">
+                            <div class="text-center py-5">
+                                <div class="mb-4">
+                                    <i class="fa fa-lock fa-5x text-warning"></i>
+                                </div>
+                                
+                                <h1 class="display-6 text-warning mb-3">Accès refusé</h1>
+                                
+                                <p class="lead mb-4">
+                                    Vous n'avez pas l'autorisation d'accéder à cette cotisation.
+                                </p>
+
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="/my/cotisations" class="btn btn-primary">
+                                        <i class="fa fa-list me-1"></i> Mes cotisations
+                                    </a>
+                                    <a href="/my" class="btn btn-outline-secondary">
+                                        <i class="fa fa-home me-1"></i> Mon compte
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================
+         TEMPLATE: Cotisation non trouvée
+         ============================================ -->
+    <template id="cotisation_not_found" name="Cotisation non trouvée">
+        <t t-call="portal.portal_layout">
+            <div class="o_portal_wrap">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-6">
+                            <div class="text-center py-5">
+                                <div class="mb-4">
+                                    <i class="fa fa-search fa-5x text-muted"></i>
+                                </div>
+                                
+                                <h1 class="display-6 text-muted mb-3">Cotisation non trouvée</h1>
+                                
+                                <p class="lead mb-4">
+                                    La cotisation que vous recherchez n'existe pas ou n'est plus disponible.
+                                </p>
+
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="/my/cotisations" class="btn btn-primary">
+                                        <i class="fa fa-list me-1"></i> Mes cotisations
+                                    </a>
+                                    <a href="/my" class="btn btn-outline-secondary">
+                                        <i class="fa fa-home me-1"></i> Mon compte
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================
+         TEMPLATE: Historique des paiements
+         ============================================ -->
+    <template id="payment_history" name="Historique des Paiements">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Historique des Paiements</t>
+            </t>
+
+            <div class="o_portal_wrap">
+                <div class="o_portal_my_doc o_portal_payment_history">
+                    <div class="row">
+                        <div class="col-12">
+
+                            <!-- Navigation -->
+                            <nav aria-label="breadcrumb" class="mb-4">
+                                <ol class="breadcrumb bg-transparent p-0">
+                                    <li class="breadcrumb-item">
+                                        <a href="/my" class="text-decoration-none">
+                                            <i class="fa fa-home me-1" /> Mon Compte
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item">
+                                        <a href="/my/cotisations" class="text-decoration-none">
+                                            <i class="fa fa-list-alt me-1" /> Mes Cotisations
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item active" aria-current="page">
+                                        <i class="fa fa-history me-1" /> Historique des paiements
+                                    </li>
+                                </ol>
+                            </nav>
+
+                            <!-- Statistiques -->
+                            <div class="row mb-4">
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center bg-primary text-white rounded">
+                                            <i class="fa fa-paper-plane fa-2x mb-2" />
+                                            <h3 class="card-title mb-1" t-esc="total_submitted" />
+                                            <p class="card-text small mb-0">Total soumis</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center bg-success text-white rounded">
+                                            <i class="fa fa-check-circle fa-2x mb-2" />
+                                            <h3 class="card-title mb-1" t-esc="validated_payments" />
+                                            <p class="card-text small mb-0">Validés</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center bg-warning text-white rounded">
+                                            <i class="fa fa-clock-o fa-2x mb-2" />
+                                            <h3 class="card-title mb-1" t-esc="pending_payments" />
+                                            <p class="card-text small mb-0">En attente</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center bg-danger text-white rounded">
+                                            <i class="fa fa-times-circle fa-2x mb-2" />
+                                            <h3 class="card-title mb-1" t-esc="rejected_payments" />
+                                            <p class="card-text small mb-0">Rejetés</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Liste des paiements -->
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h4 class="mb-0 text-primary">
+                                            <i class="fa fa-history me-2" /> Historique des justificatifs
+                                        </h4>
+                                    </div>
+                                </div>
+
+                                <div class="card-body">
+                                    <t t-if="not payment_proofs">
+                                        <div class="text-center py-5">
+                                            <i class="fa fa-inbox fa-4x text-muted" />
+                                            <h5 class="text-muted mb-3 mt-3">Aucun paiement trouvé</h5>
+                                            <p class="text-muted">Vous n'avez encore soumis aucun justificatif de paiement.</p>
+                                            <a href="/my/cotisations" class="btn btn-primary">
+                                                <i class="fa fa-plus me-1" /> Soumettre un paiement
+                                            </a>
+                                        </div>
+                                    </t>
+
+                                    <t t-else="">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Date de soumission</th>
+                                                        <th>Cotisation</th>
+                                                        <th>Montant</th>
+                                                        <th>Méthode</th>
+                                                        <th>Référence</th>
+                                                        <th>Statut</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr t-foreach="payment_proofs" t-as="proof">
+                                                        <td>
+                                                            <span t-field="proof.create_date" t-options="{'widget': 'datetime'}" />
+                                                        </td>
+                                                        <td>
+                                                            <strong t-esc="proof.cotisation_id.display_name" />
+                                                            <br />
+                                                            <small class="text-muted" t-esc="proof.cotisation_id.group_id.name" />
+                                                        </td>
+                                                        <td>
+                                                            <span t-field="proof.amount"
+                                                                t-options="{'widget': 'monetary', 'display_currency': proof.cotisation_id.currency_id}" />
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="proof.payment_method == 'mobile_money'">
+                                                                <i class="fa fa-mobile text-success me-1" />Mobile Money
+                                                            </t>
+                                                            <t t-elif="proof.payment_method == 'bank_transfer'">
+                                                                <i class="fa fa-university text-primary me-1" />Virement
+                                                            </t>
+                                                            <t t-elif="proof.payment_method == 'cash'">
+                                                                <i class="fa fa-money text-success me-1" />Espèces
+                                                            </t>
+                                                            <t t-elif="proof.payment_method == 'card'">
+                                                                <i class="fa fa-credit-card text-info me-1" />Carte
+                                                            </t>
+                                                            <t t-else="">
+                                                                <i class="fa fa-question-circle text-muted me-1" />Autre
+                                                            </t>
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-monospace" t-esc="proof.reference or '-'" />
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge"
+                                                                t-att-class="'bg-success' if proof.state == 'validated' 
+                                                                           else 'bg-danger' if proof.state == 'rejected' 
+                                                                           else 'bg-warning text-dark'">
+                                                                <t t-if="proof.state == 'validated'">
+                                                                    <i class="fa fa-check me-1" />Validé
+                                                                </t>
+                                                                <t t-elif="proof.state == 'rejected'">
+                                                                    <i class="fa fa-times me-1" />Rejeté
+                                                                </t>
+                                                                <t t-else="">
+                                                                    <i class="fa fa-clock-o me-1" />En attente
+                                                                </t>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <a t-attf-href="/my/cotisation/#{proof.cotisation_id.id}"
+                                                                    class="btn btn-outline-primary" title="Voir la cotisation">
+                                                                    <i class="fa fa-eye" />
+                                                                </a>
+                                                                <t t-if="proof.proof_file">
+                                                                    <a t-attf-href="/my/cotisation/proof/#{proof.id}/download"
+                                                                        class="btn btn-outline-secondary" title="Télécharger le justificatif">
+                                                                        <i class="fa fa-download" />
+                                                                    </a>
+                                                                </t>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+
+                            <!-- Pagination -->
+                            <t t-if="pager and pager.get('page_count', 0) > 1">
+                                <t t-call="portal.pager" />
+                            </t>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================
+         TEMPLATE: Page de détail de cotisation
+         ============================================ -->
+    <!-- ============================================
+     TEMPLATE: Page de détail de cotisation (CORRIGÉ)
+     ============================================ -->
+    <template id="cotisation_detail" name="Détail de Cotisation">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+
+            <div class="o_portal_wrap">
+                <div class="o_portal_my_doc o_portal_cotisation_detail">
+                    <div class="row">
+                        <div class="col-12">
+
+                            <!-- ===============================
+                             SECTION: Navigation (Breadcrumb)
+                             =============================== -->
+                            <nav aria-label="breadcrumb" class="mb-4">
+                                <ol class="breadcrumb bg-transparent p-0">
+                                    <li class="breadcrumb-item">
+                                        <a href="/my" class="text-decoration-none">
+                                            <i class="fa fa-home me-1" /> Mon Compte </a>
+                                    </li>
+                                    <li class="breadcrumb-item">
+                                        <a href="/my/cotisations" class="text-decoration-none">
+                                            <i class="fa fa-list-alt me-1" /> Mes Cotisations </a>
+                                    </li>
+                                    <li class="breadcrumb-item active" aria-current="page">
+                                        <span t-esc="cotisation.display_name" />
+                                    </li>
+                                </ol>
+                            </nav>
+
+                            <!-- ===============================
+                             SECTION: Messages d'alerte
+                             =============================== -->
+                            <t t-if="success_message">
+                                <div class="alert alert-success alert-dismissible" role="alert">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-check-circle me-2" />
+                                        <div class="flex-grow-1">
+                                            <strong>Succès !</strong>
+                                            <span t-esc="success_message" />
+                                        </div>
+                                        <button type="button" class="btn-close"
+                                            data-bs-dismiss="alert" aria-label="Fermer" />
+                                    </div>
+                                </div>
+                            </t>
+
+                            <t t-if="error_message">
+                                <div class="alert alert-danger alert-dismissible" role="alert">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-exclamation-triangle me-2" />
+                                        <div class="flex-grow-1">
+                                            <strong>Erreur !</strong>
+                                            <span t-esc="error_message" />
+                                        </div>
+                                        <button type="button" class="btn-close"
+                                            data-bs-dismiss="alert" aria-label="Fermer" />
+                                    </div>
+                                </div>
+                            </t>
+
+                            <!-- ===============================
+                             SECTION: En-tête de la cotisation
+                             =============================== -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+
+                                                <!-- Informations principales -->
+                                                <div class="col-md-8">
+                                                    <h2 class="card-title text-primary mb-1">
+                                                        <i class="fa fa-file-text-o me-2" />
+                                                        <span
+                                                            t-esc="cotisation.description or cotisation.display_name" />
+                                                    </h2>
+
+                                                    <p class="card-text text-muted mb-2"> Groupe: <strong
+                                                            t-esc="cotisation.group_id.name" />
+                                                    </p>
+
+                                                    <div class="d-flex align-items-center">
+                                                        <!-- Badge de statut -->
+                                                        <span class="badge me-2"
+                                                            t-att-class="'bg-success' if cotisation.state == 'paid' 
+                                                                       else 'bg-warning text-dark' if cotisation.state == 'partial' 
+                                                                       else 'bg-danger' if cotisation.state == 'overdue' 
+                                                                       else 'bg-secondary'">
+                                                            <t t-if="cotisation.state == 'paid'">
+                                                                Payé</t>
+                                                            <t
+                                                                t-elif="cotisation.state == 'partial'">
+                                                                Partiel</t>
+                                                            <t
+                                                                t-elif="cotisation.state == 'overdue'">En
+                                                                retard</t>
+                                                            <t t-else="">En attente</t>
+                                                        </span>
+
+                                                        <!-- Date d'échéance -->
+                                                        <small class="text-muted"> Échéance: <span
+                                                                t-field="cotisation.due_date"
+                                                                t-options="{'widget': 'date'}" />
+                                                        </small>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Montant et actions -->
+                                                <div class="col-md-4 text-end">
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Montant restant</small>
+                                                        <div class="h4 mb-0"
+                                                            t-att-class="'text-success' if cotisation.remaining_amount == 0 else 'text-warning'">
+                                                            <span
+                                                                t-field="cotisation.remaining_amount"
+                                                                t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                        </div>
+                                                    </div>
+
+                                                    <t t-if="can_pay">
+                                                        <a
+                                                            t-attf-href="/my/cotisation/#{cotisation.id}/pay"
+                                                            class="btn btn-primary">
+                                                            <i class="fa fa-credit-card me-1" />
+                                                            Payer maintenant </a>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===============================
+                             SECTION: Détails et Actions
+                             =============================== -->
+                            <div class="row">
+
+                                <!-- Colonne gauche: Détails -->
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0">
+                                            <h5 class="mb-0 text-primary">
+                                                <i class="fa fa-info-circle me-2" /> Détails </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-6">
+                                                    <small class="text-muted">Montant total</small>
+                                                    <br />
+                                                    <strong t-field="cotisation.amount_due"
+                                                        t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                </div>
+
+                                                <div class="col-6">
+                                                    <small class="text-muted">Déjà payé</small>
+                                                    <br />
+                                                    <strong class="text-success"
+                                                        t-field="cotisation.amount_paid"
+                                                        t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                </div>
+
+                                                <div class="col-6">
+                                                    <small class="text-muted">Type</small>
+                                                    <br />
+                                                    <span class="badge"
+                                                        t-att-class="'bg-info' if cotisation.cotisation_type == 'monthly' else 'bg-primary'">
+                                                        <t
+                                                            t-if="cotisation.cotisation_type == 'monthly'">
+                                                            Mensuelle</t>
+                                                        <t t-else="">Activité</t>
+                                                    </span>
+                                                </div>
+
+                                                <div class="col-6">
+                                                    <small class="text-muted">Date d'échéance</small>
+                                                    <br />
+                                                    <strong t-field="cotisation.due_date"
+                                                        t-options="{'widget': 'date'}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Colonne droite: Actions -->
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0">
+                                            <h5 class="mb-0 text-primary">
+                                                <i class="fa fa-cogs me-2" /> Actions </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-grid gap-2">
+                                                <t t-if="can_pay">
+                                                    <a
+                                                        t-attf-href="/my/cotisation/#{cotisation.id}/pay"
+                                                        class="btn btn-primary">
+                                                        <i class="fa fa-credit-card me-1" />
+                                                        Effectuer un paiement </a>
+                                                </t>
+
+                                                <a href="/my/cotisations/history"
+                                                    class="btn btn-outline-secondary">
+                                                    <i class="fa fa-history me-1" /> Voir
+                                                    l'historique </a>
+
+                                                <a href="/my/cotisations"
+                                                    class="btn btn-outline-primary">
+                                                    <i class="fa fa-list-alt me-1" /> Toutes mes
+                                                    cotisations </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===============================
+                             SECTION: Historique des paiements (CORRIGÉ)
+                             =============================== -->
+                            <t t-if="payment_history">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header bg-white border-0">
+                                                <h5 class="mb-0 text-primary">
+                                                    <i class="fa fa-history me-2" /> Historique des
+                                                    paiements validés </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Date</th>
+                                                                <th>Montant</th>
+                                                                <th>Méthode</th>
+                                                                <th>Référence</th>
+                                                                <th>Statut</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr t-foreach="payment_history"
+                                                                t-as="payment">
+                                                                <!-- CORRECTION: Utilisation de span
+                                                                avec t-field -->
+                                                                <td>
+                                                                    <span
+                                                                        t-field="payment.validation_date"
+                                                                        t-options="{'widget': 'date'}" />
+                                                                </td>
+
+                                                                <td>
+                                                                    <span t-field="payment.amount"
+                                                                        t-options="{'widget': 'monetary', 'display_currency': cotisation.currency_id}" />
+                                                                </td>
+
+                                                                <td>
+                                                                    <t
+                                                                        t-if="payment.payment_method == 'mobile_money'">Mobile
+                                                                        Money</t>
+                                                                    <t
+                                                                        t-elif="payment.payment_method == 'bank_transfer'">
+                                                                        Virement</t>
+                                                                    <t
+                                                                        t-elif="payment.payment_method == 'cash'">
+                                                                        Espèces</t>
+                                                                    <t
+                                                                        t-elif="payment.payment_method == 'card'">
+                                                                        Carte</t>
+                                                                    <t t-else="">Autre</t>
+                                                                </td>
+
+                                                                <td>
+                                                                    <span
+                                                                        t-esc="payment.reference or '-'" />
+                                                                </td>
+
+                                                                <td>
+                                                                    <span class="badge bg-success">
+                                                                        Validé</span>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================
+     ALTERNATIVE: Template avec formatage manuel des dates
+     ============================================ -->
+    <template id="cotisation_detail_alternative" name="Détail de Cotisation (Alternative)">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+
+            <div class="o_portal_wrap">
+                <!-- ... reste du contenu identique ... -->
+
+                <!-- SECTION: Historique des paiements avec formatage manuel -->
+                <t t-if="payment_history">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-0">
+                                    <h5 class="mb-0 text-primary">
+                                        <i class="fa fa-history me-2" /> Historique des paiements
+                                        validés </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Montant</th>
+                                                    <th>Méthode</th>
+                                                    <th>Référence</th>
+                                                    <th>Statut</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr t-foreach="payment_history" t-as="payment">
+                                                    <!-- MÉTHODE 1: Formatage manuel de la date -->
+                                                    <td
+                                                        t-esc="payment.validation_date.strftime('%d/%m/%Y') if payment.validation_date else '-'" />
+
+                                                    <!-- MÉTHODE 2: Formatage manuel du montant -->
+                                                    <td>
+                                                        <t t-set="currency_symbol"
+                                                            t-value="cotisation.currency_id.symbol or ''" />
+                                                        <span
+                                                            t-esc="'%.2f %s' % (payment.amount, currency_symbol)" />
+                                                    </td>
+
+                                                    <td>
+                                                        <t
+                                                            t-if="payment.payment_method == 'mobile_money'">
+                                                            <i
+                                                                class="fa fa-mobile text-success me-1" />Mobile
+                                                            Money </t>
+                                                        <t
+                                                            t-elif="payment.payment_method == 'bank_transfer'">
+                                                            <i
+                                                                class="fa fa-university text-primary me-1" />
+                                                            Virement
+                                                    </t>
+                                                        <t t-elif="payment.payment_method == 'cash'">
+                                                            <i class="fa fa-money text-success me-1" />
+                                                            Espèces
+                                                    </t>
+                                                        <t t-elif="payment.payment_method == 'card'">
+                                                            <i
+                                                                class="fa fa-credit-card text-info me-1" />
+                                                            Carte
+                                                    </t>
+                                                        <t t-else="">
+                                                            <i
+                                                                class="fa fa-question-circle text-muted me-1" />
+                                                            Autre
+                                                    </t>
+                                                    </td>
+
+                                                    <td>
+                                                        <span class="text-monospace"
+                                                            t-esc="payment.reference or '-'" />
+                                                    </td>
+
+                                                    <td>
+                                                        <span class="badge bg-success">
+                                                            <i class="fa fa-check me-1" />Validé </span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+</odoo>

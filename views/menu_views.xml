@@ -202,4 +202,11 @@
         parent="menu_activity_config"
         action="action_installment_cotisation_dashboard"
         sequence="50" />
+
+    <!-- Menu item -->
+    <menuitem id="menu_cotisation_payment_proof_root" name="Justificatifs de paiement"
+        parent="menu_cotisations_main" sequence="20" />
+    <menuitem id="menu_cotisation_payment_proof" name="Tous les justificatifs"
+        parent="menu_cotisation_payment_proof_root" action="action_cotisation_payment_proof"
+        sequence="10" />
 </odoo>

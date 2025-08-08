@@ -90,6 +90,7 @@ Sécurité et contrôles :
         'views/cotisation_linked_to_installment_views.xml',
         'data/data.xml',
         'data/installment_data.xml',
+        'views/cotisation_payment_proof_view.xml',
 
         # Cron
         'data/ir_cron_data.xml',
@@ -116,6 +117,8 @@ Sécurité et contrôles :
         'wizards/merge_cotisation_wizard_views.xml',
         'wizards/activity_budget_analysis_wizard_views.xml',
         'views/menu_views.xml',
+        'views/cotisation_payment_template.xml',
+        'wizards/cotisation_payment_proof_reject_views.xml',
     ],
     "assets": {
         'web.assets_backend': [

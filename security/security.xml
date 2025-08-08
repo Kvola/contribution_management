@@ -562,6 +562,56 @@
         <field name="perm_unlink" eval="1"/>
     </record>
 
+        <!-- ================= RÈGLES POUR LES JUSTIFICATIFS DE PAIEMENT ================= -->
+    
+    <!-- Règle pour les membres - peuvent voir uniquement leurs propres justificatifs -->
+    <record id="cotisation_payment_proof_rule_user" model="ir.rule">
+        <field name="name">Justificatifs paiement: membres (leurs propres justificatifs)</field>
+        <field name="model_id" ref="model_cotisation_payment_proof"/>
+        <field name="domain_force">[('member_id.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- Règle pour l'accès global aux justificatifs (pour les gestionnaires) -->
+    <record id="cotisation_payment_proof_rule_manager" model="ir.rule">
+        <field name="name">Justificatifs paiement: accès global</field>
+        <field name="model_id" ref="model_cotisation_payment_proof"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règle pour empêcher la modification des justificatifs validés -->
+    <record id="cotisation_payment_proof_rule_validated_readonly" model="ir.rule">
+        <field name="name">Justificatifs validés: lecture seule</field>
+        <field name="model_id" ref="model_cotisation_payment_proof"/>
+        <field name="domain_force">[('state', '!=', 'validated')]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="0"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règle pour le wizard de rejet de justificatif -->
+    <record id="cotisation_payment_proof_reject_wizard_rule_global" model="ir.rule">
+        <field name="name">Wizard rejet justificatif: accès global</field>
+        <field name="model_id" ref="model_cotisation_payment_proof_reject_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
 
 
 

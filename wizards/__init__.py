@@ -9,3 +9,4 @@ from . import payment_plan_wizard
 from . import quick_payment_wizard
 from . import merge_cotisation_wizard
 from . import activity_budget_analysis_wizard
+from . import cotisation_proof_wizard

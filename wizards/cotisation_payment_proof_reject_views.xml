@@ -1,0 +1,35 @@
+<odoo>
+    <!-- Form view for reject wizard -->
+    <record id="view_cotisation_payment_proof_reject_wizard_form" model="ir.ui.view">
+        <field name="name">cotisation.payment.proof.reject.wizard.form</field>
+        <field name="model">cotisation.payment.proof.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rejeter le justificatif">
+                <sheet>
+                    <group>
+                        <field name="proof_id" invisible="1" />
+                        <field name="rejection_reason" />
+                        <field name="rejection_notes"
+                            placeholder="Expliquez en détail pourquoi ce justificatif est rejeté..." />
+                        <field name="send_notification" />
+                    </group>
+
+                    <footer>
+                        <button name="action_confirm_reject" string="Confirmer le rejet"
+                            type="object" class="btn-danger" />
+                        <button string="Annuler" class="btn-secondary" special="cancel" />
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for reject wizard -->
+    <record id="action_cotisation_payment_proof_reject_wizard" model="ir.actions.act_window">
+        <field name="name">Rejeter le justificatif</field>
+        <field name="res_model">cotisation.payment.proof.reject.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_cotisation_payment_proof" />
+    </record>
+</odoo>
