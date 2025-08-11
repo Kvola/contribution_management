@@ -96,6 +96,7 @@ class MemberCotisation(models.Model):
         ('partial', 'Paiement partiel'),
         ('paid', 'Payé'),
         ('overdue', 'En retard'),
+        ('under_review', 'En vérification'),  # Ajoutez cette ligne
         ('cancelled', 'Annulé')
     ], string="Statut", default='pending', compute="_compute_state", store=True, index=True, tracking=True)
     
@@ -134,6 +135,15 @@ class MemberCotisation(models.Model):
         compute="_compute_has_payment_plan",
         search="_search_has_payment_plan"
     )
+
+    payment_method = fields.Selection([
+        ('cash', 'Espèces'),
+        ('card', 'Carte bancaire'),
+        ('transfer', 'Virement'),
+        ('check', 'Chèque'),
+        ('mobile_money', 'Mobile Money'),
+        ('other', 'Autre')
+    ], string="Méthode de paiement")
 
     @api.depends("payment_plan_id")
     def _compute_has_payment_plan(self):

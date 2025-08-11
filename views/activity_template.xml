@@ -1,0 +1,1539 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu principal du site web -->
+    <!-- <record id="menu_activities_main" model="website.menu">
+        <field name="name">Activités</field>
+        <field name="url">/activities</field>
+        <field name="parent_id" ref="website.main_menu" />
+        <field name="sequence">20</field>
+        <field name="website_id" ref="website.default_website" />
+    </record> -->
+
+    <!-- Sous-menu pour l'espace membre -->
+    <!-- <record id="menu_my_account_activities" model="website.menu">
+        <field name="name">Mes activités</field>
+        <field name="url">/my/activities</field>
+        <field name="parent_id" ref="portal.portal_menu" />
+        <field name="sequence">10</field>
+        <field name="website_id" ref="website.default_website" />
+    </record>
+
+    <record id="menu_my_account_cotisations" model="website.menu">
+        <field name="name">Mes cotisations</field>
+        <field name="url">/my/cotisations</field>
+        <field name="parent_id" ref="portal.portal_menu" />
+        <field name="sequence">11</field>
+        <field name="website_id" ref="website.default_website" />
+    </record> -->
+
+    <!-- Page de succès après paiement -->
+    <template id="payment_success_template" name="Paiement réussi">
+        <t t-call="website.layout">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card mt-4">
+                            <div class="card-body text-center">
+                                <div class="mb-4">
+                                    <i class="fa fa-check-circle fa-5x text-success mb-3" />
+                                    <h2 class="text-success">
+                                        <t t-if="request.params.get('already_paid')">
+                                            Paiement déjà effectué
+                                        </t>
+                                        <t t-else="">
+                                            Paiement confirmé !
+                                        </t>
+                                    </h2>
+                                    <p class="lead">
+                                        <t t-if="request.params.get('already_paid')">
+                                            Votre paiement a déjà été enregistré.
+                                        </t>
+                                        <t t-else="">
+                                            Votre paiement a été enregistré avec succès.
+                                        </t>
+                                    </p>
+                                </div>
+
+                                <div class="alert alert-info text-left">
+                                    <h6><i class="fa fa-info-circle" /> Prochaines étapes</h6>
+                                    <ul class="mb-0">
+                                        <li>Vous recevrez une confirmation par email</li>
+                                        <t t-if="activity">
+                                            <li>Préparez-vous pour l'activité du <t
+                                                    t-esc="activity.date_start"
+                                                    t-options="{'widget': 'datetime'}" /></li>
+                                        </t>
+                                        <li>Consultez vos cotisations pour suivre le statut</li>
+                                    </ul>
+                                </div>
+
+                                <div class="mt-4">
+                                    <a href="/my/cotisations" class="btn btn-primary">
+                                        <i class="fa fa-list" /> Mes cotisations </a>
+                                    <t t-if="activity">
+                                        <a t-attf-href="/activity/#{activity.id}"
+                                            class="btn btn-outline-secondary ml-2">
+                                            <i class="fa fa-eye" /> Voir l'activité </a>
+                                    </t>
+                                    <a href="/my/activities" class="btn btn-outline-primary ml-2">
+                                        <i class="fa fa-calendar" /> Mes activités </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Page de succès après inscription -->
+    <template id="registration_success_template" name="Confirmation d'inscription">
+        <t t-call="website.layout">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card mt-4">
+                            <div class="card-body text-center">
+                                <div class="mb-4">
+                                    <i class="fa fa-check-circle fa-5x text-success mb-3" />
+                                    <h2 class="text-success">Inscription confirmée !</h2>
+                                    <p class="lead">
+                                        Votre inscription a été enregistrée avec succès.
+                                    </p>
+                                </div>
+
+                                <div class="alert alert-info text-left">
+                                    <h6><i class="fa fa-info-circle" /> Prochaines étapes</h6>
+                                    <ul class="mb-0">
+                                        <li>Effectuez le paiement de la cotisation</li>
+                                        <li>Vous recevrez une confirmation par email</li>
+                                        <li>Consultez les détails de l'activité</li>
+                                    </ul>
+                                </div>
+
+                                <div class="mt-4">
+                                    <t t-if="cotisation">
+                                        <a t-attf-href="/my/cotisation/#{cotisation.id}/payment"
+                                            class="btn btn-primary">
+                                            <i class="fa fa-credit-card" /> Payer maintenant </a>
+                                    </t>
+                                    <a t-attf-href="/activity/#{activity.id}"
+                                        class="btn btn-outline-secondary ml-2">
+                                        <i class="fa fa-eye" /> Voir l'activité </a>
+                                    <a href="/my/activities" class="btn btn-outline-primary ml-2">
+                                        <i class="fa fa-calendar" /> Mes activités </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Template de conditions de participation -->
+    <template id="conditions_participation_template" name="Conditions de participation">
+        <t t-call="website.layout">
+            <div class="container py-4">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Conditions de participation</h2>
+                            </div>
+                            <div class="card-body">
+                                <!-- Insérez ici le contenu de vos conditions -->
+                                <p>1. En vous inscrivant à cette activité, vous vous engagez à...</p>
+                                <!-- etc. -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Template de base pour les pages d'activités -->
+    <template id="activity_base_layout" name="Activity Base Layout">
+        <t t-call="website.layout">
+            <div id="wrap" class="oe_structure oe_empty">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <!-- Breadcrumb -->
+                            <ol class="breadcrumb mt-3">
+                                <li class="breadcrumb-item">
+                                    <a href="/">Accueil</a>
+                                </li>
+                                <li class="breadcrumb-item">
+                                    <a href="/activities">Activités</a>
+                                </li>
+                                <t t-if="activity">
+                                    <li class="breadcrumb-item active" t-esc="activity.name" />
+                                </t>
+                            </ol>
+
+                            <!-- Contenu principal -->
+                            <t t-raw="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Page de liste des activités adaptée pour Odoo 17 -->
+    <template id="activity_list_template" name="Liste des activités">
+        <t t-call="website.layout">
+            <div id="wrap" class="oe_structure oe_empty">
+                <div class="container py-4">
+                    <!-- En-tête avec recherche et filtres -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h1 class="mb-0">Activités disponibles</h1>
+                                <span class="badge bg-info rounded-pill">
+                                    <t t-esc="total_activities" /> activité<t
+                                        t-if="total_activities != 1">s</t>
+                                </span>
+                            </div>
+
+                            <!-- Barre de recherche et filtres - Bootstrap 5 -->
+                            <form method="get" action="/activities" class="row g-3"
+                                id="activity-filters">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" name="search" class="form-control"
+                                            placeholder="Rechercher une activité..."
+                                            t-att-value="search" />
+                                        <button class="btn btn-primary" type="submit">
+                                            <i class="fa fa-search me-1"></i>Rechercher </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <select name="group_id" class="form-select">
+                                        <option value="">Tous les groupes</option>
+                                        <t t-foreach="groups" t-as="group">
+                                            <option t-att-value="group.id"
+                                                t-att-selected="'selected' if group.id == group_id else None"
+                                                t-esc="group.name" />
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select name="state" class="form-select">
+                                        <option value="">Tous les statuts</option>
+                                        <option value="confirmed"
+                                            t-att-selected="'selected' if state == 'confirmed' else None">
+                                            Confirmées
+                                        </option>
+                                        <option value="ongoing"
+                                            t-att-selected="'selected' if state == 'ongoing' else None">
+                                            En cours
+                                        </option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Liste des activités - Grille Bootstrap 5 -->
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        <t t-foreach="activities" t-as="activity">
+                            <div class="col">
+                                <div class="card h-100">
+                                    <!-- En-tête de carte avec badges -->
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between">
+                                            <span t-attf-class="badge bg-#{activity.state}">
+                                                <t t-if="activity.state == 'confirmed'">Confirmée</t>
+                                                <t t-elif="activity.state == 'ongoing'">En cours</t>
+                                            </span>
+                                            <t
+                                                t-if="activity.available_spots > 0 and activity.available_spots &lt;= 5">
+                                                <span class="badge bg-info">
+                                                    <t t-esc="activity.available_spots" /> place<t
+                                                        t-if="activity.available_spots > 1">s</t>
+                                                </span>
+                                            </t>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body">
+                                        <h5 class="card-title" t-esc="activity.name" />
+                                        <p class="card-text text-muted">
+                                            <i class="fa fa-users me-1"></i>
+                                            <t t-esc="activity.group_id.name" />
+                                        </p>
+
+                                        <!-- Métadonnées de l'activité -->
+                                        <div class="activity-meta mb-3">
+                                            <div class="d-flex flex-wrap gap-2 text-sm">
+                                                <span>
+                                                    <i class="fa fa-calendar text-primary me-1"></i>
+                                                    <t t-if="activity.date_start">
+                                                        <span t-esc="activity.date_start"
+                                                            t-options="{'widget': 'datetime', 'format': 'dd/MM/yyyy HH:mm'}" />
+                                                    </t>
+                                                    <t t-else="">À définir</t>
+                                                </span>
+                                                <span>
+                                                    <i class="fa fa-map-marker text-success me-1"></i>
+                                                    <span
+                                                        t-esc="activity.location or 'Lieu à définir'" />
+                                                </span>
+                                                <span>
+                                                    <i class="fa fa-money text-warning me-1"></i>
+                                                    <span t-esc="activity.cotisation_amount" />
+                                                    <t t-esc="activity.currency_id.symbol" />
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Description courte -->
+                                        <t t-if="activity.description">
+                                            <div class="card-text"
+                                                t-raw="activity.description[:150] + ('...' if len(activity.description) > 150 else '')" />
+                                        </t>
+                                    </div>
+
+                                    <!-- Pied de carte avec actions -->
+                                    <div class="card-footer bg-transparent">
+                                        <div
+                                            class="d-flex justify-content-between align-items-center">
+                                            <a t-attf-href="/activity/#{activity.id}"
+                                                class="btn btn-outline-primary btn-sm">
+                                                <i class="fa fa-eye me-1"></i>Détails </a>
+
+                                            <t t-if="not request.env.user._is_public()">
+                                                <t t-set="user_registration"
+                                                    t-value="user_registrations.get(activity.id)" />
+                                                <t t-if="user_registration">
+                                                    <span class="badge bg-success">
+                                                        <i class="fa fa-check me-1"></i>Inscrit </span>
+                                                </t>
+                                                <t
+                                                    t-elif="activity.state in ['confirmed', 'ongoing']">
+                                                    <a
+                                                        t-attf-href="/activity/#{activity.id}/register"
+                                                        class="btn btn-success btn-sm">
+                                                        <i class="fa fa-plus me-1"></i>S'inscrire </a>
+                                                </t>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- Pagination -->
+                    <t t-if="pager and total_activities > 12">
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-center">
+                                        <t t-raw="pager" />
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Message si aucune activité -->
+                    <t t-if="not activities">
+                        <div class="text-center py-5">
+                            <i class="fa fa-calendar-o fa-4x text-muted mb-3"></i>
+                            <h3 class="text-muted">Aucune activité trouvée</h3>
+                            <p class="text-muted">
+                                <t t-if="search or group_id or state">
+                                    Essayez de modifier vos critères de recherche.
+                                </t>
+                                <t t-else="">
+                                    Il n'y a actuellement aucune activité disponible.
+                                </t>
+                            </p>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Page de détail d'une activité -->
+    <template id="activity_detail_template" name="Détail d'une activité">
+        <t t-call="contribution_management.activity_base_layout">
+            <div class="activity-detail-page">
+                <!-- En-tête de l'activité -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h1 class="mb-2" t-esc="activity.name" />
+                                        <p class="text-muted mb-0">
+                                            <i class="fa fa-users" /> Organisé par <strong
+                                                t-esc="activity.group_id.name" />
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span
+                                            t-attf-class="badge badge-lg badge-#{activity.state} mb-2">
+                                            <t t-if="activity.state == 'confirmed'">Confirmée</t>
+                                            <t t-elif="activity.state == 'ongoing'">En cours</t>
+                                            <t t-elif="activity.state == 'completed'">Terminée</t>
+                                        </span>
+                                        <t t-if="activity.is_full">
+                                            <br />
+                                            <span class="badge badge-warning">Complet</span>
+                                        </t>
+                                    </div>
+                                </div>
+
+                                <!-- Informations principales -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fa fa-calendar text-primary" /> Date et heure</h6>
+                                        <p>
+                                            <t t-if="activity.date_start">
+                                                <strong>Début:</strong>
+                                                <span t-esc="activity.date_start"
+                                                    t-options="{'widget': 'datetime'}" />
+                                            </t>
+                                            <t t-if="activity.date_end">
+                                                <br />
+                                                <strong>Fin:</strong>
+                                                <span t-esc="activity.date_end"
+                                                    t-options="{'widget': 'datetime'}" />
+                                            </t>
+                                            <t t-if="activity.duration_hours > 0">
+                                                <br />
+                                                <small class="text-muted"> Durée: <t
+                                                        t-esc="activity.duration_hours" /> heures </small>
+                                            </t>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fa fa-map-marker text-success" /> Lieu</h6>
+                                        <p t-esc="activity.location or 'Lieu à définir'" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fa fa-money text-warning" /> Cotisation</h6>
+                                        <p>
+                                            <strong t-esc="activity.cotisation_amount" />
+                                            <t t-esc="activity.currency_id.symbol" />
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fa fa-users text-info" /> Participants</h6>
+                                        <p>
+                                            <strong t-esc="activity.participant_count"></strong>
+                                            <t
+                                                t-if="activity.max_participants > 0"> / <t
+                                                    t-esc="activity.max_participants" />
+                                            </t>
+                                            participant<t t-if="activity.participant_count != 1">s</t>
+                                            
+                                            <t
+                                                t-if="activity.available_spots > 0">
+                                                <br />
+                                                <small class="text-success">
+                                                    <t t-esc="activity.available_spots" /> place<t
+                                                        t-if="activity.available_spots > 1">s</t>
+                                            disponible<t t-if="activity.available_spots > 1">s</t>
+                                                </small>
+                                            </t>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description détaillée -->
+                <t t-if="activity.description">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fa fa-info-circle" /> Description</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div t-raw="activity.description" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Statut d'inscription utilisateur -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fa fa-user-plus" /> Inscription</h5>
+                            </div>
+                            <div class="card-body">
+                                <t t-if="request.env.user._is_public()">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle" /> Vous devez vous connecter
+                                        pour vous inscrire à cette activité. <a href="/web/login"
+                                            class="btn btn-primary btn-sm ml-2">
+                                            <i class="fa fa-sign-in" /> Se connecter </a>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <t t-if="user_registration">
+                                        <div class="alert alert-success">
+                                            <i class="fa fa-check-circle" />
+                                            <strong>Vous êtes inscrit à cette activité</strong>
+                                            <div class="mt-2">
+                                                <small> Cotisation: <t
+                                                        t-esc="user_registration.amount_due" /> <t
+                                                        t-esc="user_registration.currency_id.symbol" />
+                                                    - Statut: <span
+                                                        t-attf-class="badge badge-#{user_registration.state}">
+                                                        <t t-if="user_registration.state == 'paid'">
+                                                    Payée</t>
+                                                        <t
+                                                            t-elif="user_registration.state == 'partial'">Partiellement
+                                                    payée</t>
+                                                        <t
+                                                            t-elif="user_registration.state == 'pending'">En
+                                                    attente</t>
+                                                        <t
+                                                            t-elif="user_registration.state == 'overdue'">En
+                                                    retard</t>
+                                                    </span>
+                                                </small>
+                                                <br />
+                                                <t t-if="user_registration.state != 'paid'">
+                                                    <a
+                                                        t-attf-href="/my/cotisation/#{user_registration.id}/payment"
+                                                        class="btn btn-warning btn-sm mt-2">
+                                                        <i class="fa fa-credit-card" /> Compléter le
+                                                        paiement </a>
+                                                </t>
+                                                <a
+                                                    t-attf-href="/my/cotisation/#{user_registration.id}"
+                                                    class="btn btn-outline-primary btn-sm mt-2">
+                                                    <i class="fa fa-eye" /> Voir ma cotisation </a>
+                                            </div>
+                                        </div>
+                                    </t>
+                                    <t t-else="">
+                                        <t t-if="can_register">
+                                            <div class="alert alert-success">
+                                                <i class="fa fa-check-circle" /> Vous pouvez vous
+                                                inscrire à cette activité. <a
+                                                    t-attf-href="/activity/#{activity.id}/register"
+                                                    class="btn btn-success btn-sm ml-2">
+                                                    <i class="fa fa-plus" /> S'inscrire maintenant </a>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="alert alert-warning">
+                                                <i class="fa fa-exclamation-triangle" />
+                                                <t t-esc="registration_message" />
+                                            </div>
+                                        </t>
+                                    </t>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des participants (si autorisée) -->
+                <t t-if="participants and len(participants) > 0">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-users" /> Participants (<t
+                                            t-esc="len(participants)" />) </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <t t-foreach="participants[:12]" t-as="participant">
+                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fa fa-user-circle text-primary mr-2" />
+                                                    <span t-esc="participant.name" />
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </div>
+                                    <t t-if="len(participants) > 12">
+                                        <small class="text-muted"> Et <t
+                                                t-esc="len(participants) - 12" /> autre<t
+                                                t-if="len(participants) - 12 > 1">s</t> participant<t
+                                                t-if="len(participants) - 12 > 1">s</t>... </small>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Boutons d'action -->
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <a href="/activities" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left" /> Retour aux activités </a>
+                        <t t-if="not request.env.user._is_public() and can_register">
+                            <a t-attf-href="/activity/#{activity.id}/register"
+                                class="btn btn-success ml-2">
+                                <i class="fa fa-user-plus" /> S'inscrire à cette activité </a>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Page d'inscription à une activité -->
+    <template id="activity_register_template" name="Inscription à une activité">
+        <t t-call="contribution_management.activity_base_layout">
+            <div class="activity-register-page">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-user-plus" /> Inscription à l'activité </h4>
+                                <small class="text-muted" t-esc="activity.name" />
+                            </div>
+                            <div class="card-body">
+                                <!-- Affichage des erreurs -->
+                                <t t-if="error">
+                                    <div class="alert alert-danger">
+                                        <i class="fa fa-exclamation-circle" />
+                                        <t t-esc="error" />
+                                    </div>
+                                </t>
+
+                                <!-- Résumé de l'activité -->
+                                <div class="alert alert-info mb-4">
+                                    <h6><i class="fa fa-info-circle" /> Récapitulatif</h6>
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <strong>Activité:</strong>
+                                            <t t-esc="activity.name" />
+                                            <br />
+                                            <strong>Organisateur:</strong>
+                                            <t t-esc="activity.group_id.name" />
+                                            <br />
+                                            <strong>Cotisation:</strong>
+                                            <t t-esc="activity.cotisation_amount" />
+                                            <t t-esc="activity.currency_id.symbol" />
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <t t-if="activity.date_start">
+                                                <strong>Date:</strong>
+                                                <span t-esc="activity.date_start"
+                                                    t-options="{'widget': 'datetime'}" />
+                                                <br />
+                                            </t>
+                                            <t t-if="activity.location">
+                                                <strong>Lieu:</strong>
+                                                <t t-esc="activity.location" />
+                                                <br />
+                                            </t>
+                                            <strong>Participants:</strong>
+                                            <t t-esc="activity.participant_count + 1" />
+                                            <t t-if="activity.max_participants > 0">/ <t
+                                                    t-esc="activity.max_participants" /></t>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Formulaire d'inscription -->
+                                <form method="post"
+                                    t-attf-action="/activity/#{activity.id}/register">
+                                    <input type="hidden" name="csrf_token"
+                                        t-att-value="request.csrf_token()" />
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6><i class="fa fa-user" /> Vos informations</h6>
+                                            <div class="form-group">
+                                                <label>Nom complet</label>
+                                                <input type="text" class="form-control"
+                                                    t-att-value="partner.name" readonly="readonly" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Email</label>
+                                                <input type="email" class="form-control"
+                                                    t-att-value="partner.email" readonly="readonly" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6><i class="fa fa-comment" /> Notes (optionnel)</h6>
+                                            <div class="form-group">
+                                                <label for="notes">Commentaires ou demandes
+                                                    particulières</label>
+                                                <textarea name="notes" id="notes"
+                                                    class="form-control" rows="4"
+                                                    maxlength="500"
+                                                    placeholder="Régime alimentaire, allergies, etc."
+                                                    t-out="form_data.get('notes', '') if form_data else ''" />
+                                                <small class="form-text text-muted">
+                                                    Maximum 500 caractères
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Conditions -->
+                                    <!-- Dans le formulaire d'inscription -->
+                                    <div class="form-group mt-4">
+                                        <div class="form-check">
+                                            <input type="checkbox"
+                                                class="form-check-input"
+                                                id="accept_conditions"
+                                                name="accept_conditions"
+                                                required="required" />
+                                            <label class="form-check-label" for="accept_conditions">
+                                                J'accepte les <a href="/conditions-participation"
+                                                    target="_blank">conditions de participation</a>
+                                                et je m'engage à régler la cotisation de <strong>
+                                                    <t t-esc="activity.cotisation_amount" />
+                                                    <t t-esc="activity.currency_id.symbol" />
+                                                </strong>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Boutons -->
+                                    <div class="form-group text-center">
+                                        <a t-attf-href="/activity/#{activity.id}"
+                                            class="btn btn-outline-secondary">
+                                            <i class="fa fa-arrow-left" /> Annuler </a>
+                                        <button type="submit" class="btn btn-success ml-2">
+                                            <i class="fa fa-check" /> Confirmer l'inscription </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                const form = document.querySelector('form[action*="/register"]');
+                if (form) {
+                form.addEventListener('submit', function(e) {
+                const checkbox = document.getElementById('accept_conditions');
+                if (!checkbox.checked) {
+                e.preventDefault();
+                alert('Veuillez accepter les conditions de participation pour continuer.');
+                checkbox.focus();
+                }
+                });
+                }
+                });
+            </script>
+        </t>
+    </template>
+
+    <!-- Page de paiement d'une cotisation -->
+    <template id="cotisation_payment_template" name="Paiement de cotisation">
+        <t t-call="website.layout">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-credit-card" /> Justificatif de paiement </h4>
+                                <small class="text-muted">
+                                    <t t-if="activity">Activité: <t t-esc="activity.name" /></t>
+                                </small>
+                            </div>
+                            <div class="card-body">
+                                <!-- Affichage des erreurs -->
+                                <t t-if="error">
+                                    <div class="alert alert-danger">
+                                        <i class="fa fa-exclamation-circle" />
+                                        <t t-esc="error" />
+                                    </div>
+                                </t>
+
+                                <!-- Informations sur la cotisation -->
+                                <div class="alert alert-info mb-4">
+                                    <h6><i class="fa fa-info-circle" /> Détails de la cotisation</h6>
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <strong>Montant dû:</strong>
+                                            <t t-esc="cotisation.amount_due" />
+                                            <t t-esc="cotisation.currency_id.symbol" />
+                                            <br />
+                                            <strong>Montant payé:</strong>
+                                            <t t-esc="cotisation.amount_paid" />
+                                            <t t-esc="cotisation.currency_id.symbol" />
+                                            <br />
+                                            <strong>Montant restant:</strong>
+                                            <t t-esc="cotisation.remaining_amount" />
+                                            <t t-esc="cotisation.currency_id.symbol" />
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <strong>Date d'échéance:</strong>
+                                            <t t-esc="cotisation.due_date" />
+                                            <br />
+                                            <strong>Statut:</strong>
+                                            <span t-attf-class="badge badge-#{cotisation.state}">
+                                                <t t-if="cotisation.state == 'pending'">En attente</t>
+                                                <t t-elif="cotisation.state == 'partial'">Partiellement
+                                                    payée</t>
+                                                <t t-elif="cotisation.state == 'overdue'">En retard</t>
+                                                <t t-elif="cotisation.state == 'paid'">Payée</t>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Instructions de paiement -->
+                                <div class="alert alert-warning">
+                                    <h6><i class="fa fa-exclamation-triangle" /> Instructions
+                                        importantes</h6>
+                                    <ul class="mb-0">
+                                        <li>Effectuez le paiement selon la méthode de votre choix</li>
+                                        <li>Conservez le reçu ou la preuve de transaction</li>
+                                        <li>Soumettez une photo/scan du justificatif ci-dessous</li>
+                                        <li>Votre inscription sera validée après vérification
+                                            administrative</li>
+                                        <li>Formats acceptés: JPG, PNG, PDF (5MB maximum)</li>
+                                    </ul>
+                                </div>
+
+                                <!-- Formulaire de soumission de preuve -->
+                                <form method="post" enctype="multipart/form-data"
+                                    t-attf-action="/my/cotisation/#{cotisation.id}/payment">
+                                    <input type="hidden" name="csrf_token"
+                                        t-att-value="request.csrf_token()" />
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="amount" class="required">Montant payé</label>
+                                                <div class="input-group">
+                                                    <input type="number" name="amount" id="amount"
+                                                        class="form-control" step="0.01" min="0.01"
+                                                        required="required"
+                                                        t-att-value="form_data.get('amount', cotisation.remaining_amount) if form_data else cotisation.remaining_amount" />
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text"
+                                                            t-esc="cotisation.currency_id.symbol" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="payment_method" class="required">Méthode
+                                                    de paiement</label>
+                                                <select name="payment_method" id="payment_method"
+                                                    class="form-control" required="required">
+                                                    <option value="">Sélectionner une méthode</option>
+                                                    <option value="mobile_money"
+                                                        t-att-selected="form_data.get('payment_method') == 'mobile_money' if form_data else False">
+                                                        Mobile Money
+                                                    </option>
+                                                    <option value="bank_transfer"
+                                                        t-att-selected="form_data.get('payment_method') == 'bank_transfer' if form_data else False">
+                                                        Virement bancaire
+                                                    </option>
+                                                    <option value="cash"
+                                                        t-att-selected="form_data.get('payment_method') == 'cash' if form_data else False">
+                                                        Espèces
+                                                    </option>
+                                                    <option value="check"
+                                                        t-att-selected="form_data.get('payment_method') == 'check' if form_data else False">
+                                                        Chèque
+                                                    </option>
+                                                    <option value="card"
+                                                        t-att-selected="form_data.get('payment_method') == 'card' if form_data else False">
+                                                        Carte bancaire
+                                                    </option>
+                                                    <option value="online"
+                                                        t-att-selected="form_data.get('payment_method') == 'online' if form_data else False">
+                                                        Paiement en ligne
+                                                    </option>
+                                                    <option value="other"
+                                                        t-att-selected="form_data.get('payment_method') == 'other' if form_data else False">
+                                                        Autre
+                                                    </option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="payment_date" class="required">Date de
+                                                    paiement</label>
+                                                <input type="date" name="payment_date"
+                                                    id="payment_date"
+                                                    class="form-control" required="required"
+                                                    t-att-max="datetime.date.today().isoformat()"
+                                                    t-att-value="form_data.get('payment_date', datetime.date.today().isoformat()) if form_data else datetime.date.today().isoformat()" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="reference">Référence de transaction</label>
+                                                <input type="text" name="reference" id="reference"
+                                                    class="form-control" maxlength="100"
+                                                    placeholder="Numéro de transaction, référence..."
+                                                    t-att-value="form_data.get('reference', '') if form_data else ''" />
+                                                <small class="form-text text-muted">
+                                                    Requis pour Mobile Money, virement bancaire et
+                                                    paiement en ligne
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="proof_file" class="required">Justificatif de
+                                            paiement</label>
+                                        <input type="file" name="proof_file" id="proof_file"
+                                            class="form-control-file" required="required"
+                                            accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx" />
+                                        <small class="form-text text-muted">
+                                            Formats acceptés: JPG, PNG, PDF, DOC, DOCX (5MB maximum)
+                                        </small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="notes">Notes complémentaires</label>
+                                        <textarea name="notes" id="notes" class="form-control"
+                                            rows="3"
+                                            maxlength="1000"
+                                            placeholder="Informations supplémentaires..."
+                                            t-out="form_data.get('notes', '') if form_data else ''" />
+                                        <small class="form-text text-muted">Maximum 1000 caractères</small>
+                                    </div>
+
+                                    <!-- Boutons -->
+                                    <div class="form-group text-center mt-4">
+                                        <a t-attf-href="/my/cotisations"
+                                            class="btn btn-outline-secondary">
+                                            <i class="fa fa-arrow-left" /> Retour </a>
+                                        <button type="submit" class="btn btn-primary ml-2">
+                                            <i class="fa fa-upload" /> Soumettre le justificatif </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Page de succès après soumission -->
+    <template id="payment_success_template" name="Justificatif soumis">
+        <t t-call="website.layout">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card mt-4">
+                            <div class="card-body text-center">
+                                <div class="mb-4">
+                                    <i class="fa fa-check-circle fa-5x text-success mb-3" />
+                                    <h2 class="text-success">Justificatif soumis avec succès !</h2>
+                                    <p class="lead">
+                                        Votre justificatif de paiement a été envoyé pour validation
+                                        administrative.
+                                    </p>
+                                </div>
+
+                                <div class="alert alert-info text-left">
+                                    <h6><i class="fa fa-info-circle" /> Prochaines étapes</h6>
+                                    <ul class="mb-0">
+                                        <li>Votre justificatif sera examiné par notre équipe</li>
+                                        <li>Vous recevrez une notification par email du résultat</li>
+                                        <li>Le délai de traitement est généralement de 1-3 jours
+                                            ouvrables</li>
+                                        <li>Vous pouvez suivre le statut dans votre espace personnel</li>
+                                    </ul>
+                                </div>
+
+                                <div class="mt-4">
+                                    <a href="/my/cotisations" class="btn btn-primary">
+                                        <i class="fa fa-list" /> Mes cotisations </a>
+                                    <a t-attf-href="/activity/#{activity.id}"
+                                        class="btn btn-outline-secondary ml-2">
+                                        <i class="fa fa-eye" /> Voir l'activité </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Page des cotisations utilisateur -->
+    <template id="my_cotisations_template" name="Mes cotisations">
+        <t t-call="website.layout">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+                            <h1><i class="fa fa-list" /> Mes cotisations</h1>
+                            <a href="/activities" class="btn btn-primary">
+                                <i class="fa fa-plus" /> Voir les activités </a>
+                        </div>
+
+                        <!-- Onglets Bootstrap 5 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" data-bs-toggle="tab"
+                                            href="#cotisations-tab" role="tab">
+                                            <i class="fa fa-file-text-o me-1" /> Cotisations (<t
+                                                t-esc="len(cotisations)" />) </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#proofs-tab"
+                                            role="tab">
+                                            <i class="fa fa-upload me-1" /> Justificatifs (<t
+                                                t-esc="len(proofs)" />) </a>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="tab-content">
+                                    <!-- Onglet Cotisations -->
+                                    <div class="tab-pane fade show active" id="cotisations-tab"
+                                        role="tabpanel">
+                                        <t t-if="cotisations">
+                                            <div class="row">
+                                                <t t-foreach="cotisations" t-as="cotisation">
+                                                    <div class="col-lg-6 col-12 mb-4">
+                                                        <div class="card">
+                                                            <div
+                                                                class="card-header d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <h6 class="mb-0">
+                                                                        <t
+                                                                            t-if="cotisation.activity_id">
+                                                                            <i
+                                                                                class="fa fa-calendar" />
+                                                                            <t
+                                                                                t-esc="cotisation.activity_id.name" />
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            <i
+                                                                                class="fa fa-file-text" />
+                                                                            Cotisation générale </t>
+                                                                    </h6>
+                                                                    <small class="text-muted">
+                                                                        <t
+                                                                            t-if="cotisation.activity_id">
+                                                                            <t
+                                                                                t-esc="cotisation.activity_id.group_id.name" />
+                                                                        </t>
+                                                                    </small>
+                                                                </div>
+                                                                <span
+                                                                    t-attf-class="badge bg-#{cotisation.state}">
+                                                                    <t
+                                                                        t-if="cotisation.state == 'paid'">
+                                                                        Payée</t>
+                                                                    <t
+                                                                        t-elif="cotisation.state == 'partial'">
+                                                                        Partielle</t>
+                                                                    <t
+                                                                        t-elif="cotisation.state == 'pending'">En
+                                                                        attente</t>
+                                                                    <t
+                                                                        t-elif="cotisation.state == 'overdue'">En
+                                                                        retard</t>
+                                                                </span>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <div class="row">
+                                                                    <div class="col-6">
+                                                                        <small class="text-muted">Montant
+                                                                            dû</small>
+                                                                        <div>
+                                                                            <strong>
+                                                                                <t
+                                                                                    t-esc="cotisation.amount_due" />
+                                                                                <t
+                                                                                    t-esc="cotisation.currency_id.symbol" />
+                                                                            </strong>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <small class="text-muted">Montant
+                                                                            payé</small>
+                                                                        <div>
+                                                                            <strong>
+                                                                                <t
+                                                                                    t-esc="cotisation.amount_paid" />
+                                                                                <t
+                                                                                    t-esc="cotisation.currency_id.symbol" />
+                                                                            </strong>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row mt-2">
+                                                                    <div class="col-6">
+                                                                        <small class="text-muted">Date
+                                                                            d'échéance</small>
+                                                                        <div>
+                                                                            <t
+                                                                                t-esc="cotisation.due_date" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <small class="text-muted">Montant
+                                                                            restant</small>
+                                                                        <div>
+                                                                            <strong
+                                                                                class="text-warning">
+                                                                                <t
+                                                                                    t-esc="cotisation.remaining_amount" />
+                                                                                <t
+                                                                                    t-esc="cotisation.currency_id.symbol" />
+                                                                            </strong>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <t
+                                                                    t-if="cotisation.activity_id and cotisation.activity_id.date_start">
+                                                                    <hr />
+                                                                    <small class="text-muted">
+                                                                        <i class="fa fa-calendar" />
+                                                                        <t
+                                                                            t-esc="cotisation.activity_id.date_start"
+                                                                            t-options="{'widget': 'datetime'}" />
+                                                                        <t
+                                                                            t-if="cotisation.activity_id.location">
+                                                                            <i
+                                                                                class="fa fa-map-marker ms-2" />
+                                                                            <t
+                                                                                t-esc="cotisation.activity_id.location" />
+                                                                        </t>
+                                                                    </small>
+                                                                </t>
+                                                            </div>
+                                                            <div class="card-footer">
+                                                                <t t-if="cotisation.state != 'paid'">
+                                                                    <a
+                                                                        t-attf-href="/my/cotisation/#{cotisation.id}/payment"
+                                                                        class="btn btn-warning btn-sm">
+                                                                        <i class="fa fa-credit-card" />
+                                                                        Payer </a>
+                                                                </t>
+                                                                <t t-if="cotisation.activity_id">
+                                                                    <a
+                                                                        t-attf-href="/activity/#{cotisation.activity_id.id}"
+                                                                        class="btn btn-outline-primary btn-sm ms-1">
+                                                                        <i class="fa fa-eye" /> Voir
+                                                                        activité </a>
+                                                                </t>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="text-center mt-5">
+                                                <i class="fa fa-file-text-o fa-3x text-muted mb-3" />
+                                                <h4 class="text-muted">Aucune cotisation</h4>
+                                                <p class="text-muted">
+                                                    Vous n'avez pas encore de cotisation
+                                                    enregistrée.
+                                                </p>
+                                                <a href="/activities" class="btn btn-primary">
+                                                    <i class="fa fa-plus" /> Découvrir les activités </a>
+                                            </div>
+                                        </t>
+                                    </div>
+
+                                    <!-- Onglet Justificatifs -->
+                                    <div class="tab-pane fade" id="proofs-tab" role="tabpanel">
+                                        <t t-if="proofs">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date soumission</th>
+                                                            <th>Activité</th>
+                                                            <th>Montant</th>
+                                                            <th>Méthode</th>
+                                                            <th>Statut</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="proofs" t-as="proof">
+                                                            <tr>
+                                                                <td>
+                                                                    <t t-esc="proof.submitted_date"
+                                                                        t-options="{'widget': 'datetime', 'format': 'dd/MM/yyyy HH:mm'}" />
+                                                                </td>
+                                                                <td>
+                                                                    <t
+                                                                        t-if="proof.cotisation_id.activity_id">
+                                                                        <t
+                                                                            t-esc="proof.cotisation_id.activity_id.name" />
+                                                                    </t>
+                                                                    <t t-else="">Cotisation générale</t>
+                                                                </td>
+                                                                <td>
+                                                                    <strong>
+                                                                        <t t-esc="proof.amount" />
+                                                                        <t
+                                                                            t-esc="proof.currency_id.symbol" />
+                                                                    </strong>
+                                                                </td>
+                                                                <td>
+                                                                    <t
+                                                                        t-if="proof.payment_method == 'mobile_money'">Mobile
+                                                                        Money</t>
+                                                                    <t
+                                                                        t-elif="proof.payment_method == 'bank_transfer'">
+                                                                        Virement</t>
+                                                                    <t
+                                                                        t-elif="proof.payment_method == 'cash'">
+                                                                        Espèces</t>
+                                                                    <t
+                                                                        t-elif="proof.payment_method == 'check'">
+                                                                        Chèque</t>
+                                                                    <t
+                                                                        t-elif="proof.payment_method == 'card'">
+                                                                        Carte</t>
+                                                                    <t
+                                                                        t-elif="proof.payment_method == 'online'">En
+                                                                        ligne</t>
+                                                                    <t t-else="">Autre</t>
+                                                                </td>
+                                                                <td>
+                                                                    <span
+                                                                        t-attf-class="badge bg-#{proof.state}">
+                                                                        <t
+                                                                            t-if="proof.state == 'submitted'">
+                                                                            Soumis</t>
+                                                                        <t
+                                                                            t-elif="proof.state == 'under_review'">En
+                                                                            révision</t>
+                                                                        <t
+                                                                            t-elif="proof.state == 'validated'">
+                                                                            Validé</t>
+                                                                        <t
+                                                                            t-elif="proof.state == 'rejected'">
+                                                                            Rejeté</t>
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <div
+                                                                        class="btn-group btn-group-sm">
+                                                                        <t t-if="proof.proof_file">
+                                                                            <a
+                                                                                t-attf-href="/web/content/cotisation.payment.proof/#{proof.id}/proof_file/#{proof.proof_filename}"
+                                                                                class="btn btn-outline-primary btn-sm"
+                                                                                target="_blank">
+                                                                                <i
+                                                                                    class="fa fa-download" />
+                                                                                Télécharger </a>
+                                                                        </t>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                            <t
+                                                                t-if="proof.state == 'rejected' and proof.validation_notes">
+                                                                <tr class="bg-light">
+                                                                    <td colspan="6">
+                                                                        <small class="text-danger">
+                                                                            <i
+                                                                                class="fa fa-exclamation-circle" />
+                                                                            <strong>Motif du rejet:</strong>
+                                                                            <t
+                                                                                t-esc="proof.validation_notes" />
+                                                                        </small>
+                                                                    </td>
+                                                                </tr>
+                                                            </t>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="text-center mt-5">
+                                                <i class="fa fa-upload fa-3x text-muted mb-3" />
+                                                <h4 class="text-muted">Aucun justificatif</h4>
+                                                <p class="text-muted">
+                                                    Vous n'avez pas encore soumis de justificatif de
+                                                    paiement.
+                                                </p>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+
+        <!-- Fixed JavaScript for the tabs functionality -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+            // Alternative implementation without Bootstrap 5 JS dependency
+            var tabLinks = document.querySelectorAll('a[data-bs-toggle="tab"]');
+            var tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabLinks.forEach(function(tabLink) {
+            tabLink.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Remove active class from all tabs and panes
+            tabLinks.forEach(function(link) {
+            link.classList.remove('active');
+            });
+            tabPanes.forEach(function(pane) {
+            pane.classList.remove('show', 'active');
+            });
+
+            // Add active class to clicked tab
+            this.classList.add('active');
+
+            // Show corresponding pane
+            var targetId = this.getAttribute('href');
+            var targetPane = document.querySelector(targetId);
+            if (targetPane) {
+            targetPane.classList.add('show', 'active');
+            }
+
+            // Update URL hash
+            window.history.replaceState(null, null, targetId);
+            });
+            });
+
+            // Handle URL hash on page load
+            if (window.location.hash) {
+            var activeTabLink = document.querySelector('a[href="' + window.location.hash + '"]');
+            if (activeTabLink) {
+            activeTabLink.click();
+            }
+            }
+            });
+        </script>
+    </template>
+
+    <!-- Page des activités utilisateur -->
+    <template id="my_activities_template" name="Mes activités">
+        <t t-call="website.layout">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+                            <h1><i class="fa fa-calendar" /> Mes activités</h1>
+                            <a href="/activities" class="btn btn-primary">
+                                <i class="fa fa-search" /> Découvrir d'autres activités </a>
+                        </div>
+
+                        <t t-if="activities">
+                            <div class="row">
+                                <t t-foreach="activities" t-as="activity">
+                                    <t t-set="cotisation"
+                                        t-value="cotisations.filtered(lambda c: c.activity_id == activity)" />
+                                    <div class="col-lg-6 col-12 mb-4">
+                                        <div class="card h-100">
+                                            <div
+                                                class="card-header d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-0" t-esc="activity.name" />
+                                                    <small class="text-muted"
+                                                        t-esc="activity.group_id.name" />
+                                                </div>
+                                                <div>
+                                                    <span
+                                                        t-attf-class="badge badge-#{activity.state}">
+                                                        <t t-if="activity.state == 'confirmed'">
+                                                            Confirmée</t>
+                                                        <t t-elif="activity.state == 'ongoing'">En
+                                                            cours</t>
+                                                        <t t-elif="activity.state == 'completed'">
+                                                            Terminée</t>
+                                                    </span>
+                                                    <t t-if="cotisation">
+                                                        <br />
+                                                        <span
+                                                            t-attf-class="badge badge-#{cotisation.state} mt-1">
+                                                            <t t-if="cotisation.state == 'paid'">
+                                                                Payée</t>
+                                                            <t
+                                                                t-elif="cotisation.state == 'partial'">
+                                                                Partielle</t>
+                                                            <t
+                                                                t-elif="cotisation.state == 'pending'">En
+                                                                attente</t>
+                                                            <t
+                                                                t-elif="cotisation.state == 'overdue'">En
+                                                                retard</t>
+                                                        </span>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <t t-if="activity.date_start">
+                                                            <small class="text-muted">Date</small>
+                                                            <div>
+                                                                <i class="fa fa-calendar" />
+                                                                <t t-esc="activity.date_start"
+                                                                    t-options="{'widget': 'datetime'}" />
+                                                            </div>
+                                                        </t>
+                                                        <t t-if="activity.location">
+                                                            <small class="text-muted">Lieu</small>
+                                                            <div>
+                                                                <i class="fa fa-map-marker" />
+                                                                <t t-esc="activity.location" />
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </div>
+
+                                                <t t-if="cotisation">
+                                                    <hr />
+                                                    <div class="row">
+                                                        <div class="col-6">
+                                                            <small class="text-muted">Cotisation</small>
+                                                            <div>
+                                                                <strong>
+                                                                    <t t-esc="cotisation.amount_due" />
+                                                                    <t
+                                                                        t-esc="cotisation.currency_id.symbol" />
+                                                                </strong>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <small class="text-muted">Payé</small>
+                                                            <div>
+                                                                <strong>
+                                                                    <t
+                                                                        t-esc="cotisation.amount_paid" />
+                                                                    <t
+                                                                        t-esc="cotisation.currency_id.symbol" />
+                                                                </strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                            <div class="card-footer">
+                                                <a t-attf-href="/activity/#{activity.id}"
+                                                    class="btn btn-outline-primary btn-sm">
+                                                    <i class="fa fa-eye" /> Voir détails </a>
+                                                <t t-if="cotisation and cotisation.state != 'paid'">
+                                                    <a
+                                                        t-attf-href="/my/cotisation/#{cotisation.id}/payment"
+                                                        class="btn btn-warning btn-sm ml-1">
+                                                        <i class="fa fa-credit-card" /> Payer </a>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="text-center mt-5">
+                                <i class="fa fa-calendar-o fa-3x text-muted mb-3" />
+                                <h4 class="text-muted">Aucune activité</h4>
+                                <p class="text-muted">
+                                    Vous n'êtes inscrit à aucune activité pour le moment.
+                                </p>
+                                <a href="/activities" class="btn btn-primary">
+                                    <i class="fa fa-search" /> Découvrir les activités </a>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Intégration des assets CSS et JS -->
+    <template id="activity_registration_assets" name="Activity Registration Assets">
+        <link rel="stylesheet" type="text/css"
+            href="/contribution_management/static/src/css/activity_website.css" />
+        <script type="text/javascript"
+            src="/contribution_management/static/src/js/activity_website.js"></script>
+    </template>
+
+    <!-- Inclure les assets dans les pages du site -->
+    <!-- <template id="assets_frontend" inherit_id="website.assets_frontend">
+        <xpath expr="." position="inside">
+            <t t-call="contribution_management.activity_registration_assets"/>
+        </xpath>
+    </template> -->
+
+    <!-- Configuration des snippets pour l'éditeur de site web -->
+    <template id="activity_list_snippet" name="Liste d'activités">
+        <section class="s_activity_list">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 class="text-center mb-4">Nos activités</h2>
+                        <div class="activity-grid" data-limit="6" data-filter="confirmed,ongoing">
+                            <!-- Les activités seront chargées dynamiquement -->
+                        </div>
+                        <div class="text-center mt-4">
+                            <a href="/activities" class="btn btn-primary">
+                                Voir toutes les activités
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Configuration du snippet dans l'éditeur -->
+    <record model="ir.ui.view" id="snippet_activity_list">
+        <field name="name">Snippet: Liste d'activités</field>
+        <field name="type">qweb</field>
+        <field name="key">website.s_activity_list</field>
+        <field name="arch" type="xml">
+            <div data-snippet="s_activity_list"
+                data-name="Liste d'activités"
+                data-category="Content">
+                <t t-call="contribution_management.activity_list_snippet" />
+            </div>
+        </field>
+    </record>
+
+    <!-- Configuration des pages dans le sitemap -->
+    <record id="sitemap_activities" model="website.page">
+        <field name="url">/activities</field>
+        <field name="view_id" ref="contribution_management.activity_list_template" />
+        <field name="website_published">True</field>
+        <field name="website_indexed">True</field>
+        <field name="is_seo_optimized">True</field>
+    </record>
+
+</odoo>

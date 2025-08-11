@@ -213,8 +213,12 @@ class CotisationPaymentProof(models.Model):
         """Calcule les informations du fichier"""
         for record in self:
             if record.proof_file:
-                file_content = base64.b64decode(record.proof_file)
-                record.file_size = len(file_content)
+                try:
+                    file_content = base64.b64decode(record.proof_file)
+                    record.file_size = len(file_content)
+                except (base64.binascii.Error, ValueError) as e:
+                    _logger.warning(f"Erreur lors du décodage du fichier pour l'enregistrement {record.id}: {e}")
+                    record.file_size = 0
             else:
                 record.file_size = 0
 
@@ -268,17 +272,21 @@ class CotisationPaymentProof(models.Model):
         
         for record in self:
             if record.proof_file:
-                # Vérifier la taille (5MB max)
-                file_content = base64.b64decode(record.proof_file)
-                if len(file_content) > 5 * 1024 * 1024:
-                    raise ValidationError("Le fichier ne peut pas dépasser 5MB.")
-                
-                # Vérifier le type
-                if record.proof_mimetype and record.proof_mimetype not in allowed_types:
-                    raise ValidationError(
-                        "Type de fichier non autorisé. "
-                        "Formats acceptés: JPG, PNG, PDF, DOC, DOCX"
-                    )
+                try:
+                    # Vérifier la taille (5MB max)
+                    file_content = base64.b64decode(record.proof_file)
+                    if len(file_content) > 5 * 1024 * 1024:
+                        raise ValidationError("Le fichier ne peut pas dépasser 5MB.")
+                    
+                    # Vérifier le type
+                    if record.proof_mimetype and record.proof_mimetype not in allowed_types:
+                        raise ValidationError(
+                            "Type de fichier non autorisé. "
+                            "Formats acceptés: JPG, PNG, PDF, DOC, DOCX"
+                        )
+                except (base64.binascii.Error, ValueError) as e:
+                    _logger.error(f"Fichier corrompu pour l'enregistrement {record.id}: {e}")
+                    raise ValidationError("Le fichier semble être corrompu. Veuillez uploader un nouveau fichier.")
 
     def action_put_under_review(self):
         """Met le justificatif en cours de révision"""

@@ -104,6 +104,12 @@ class GroupActivity(models.Model):
         "activity_id",
         string="Dépenses de l'activité"
     )
+
+    participant_ids = fields.One2many(
+        "member.cotisation",  # or whatever your participant model is
+        "activity_id",
+        string="Participants"
+    )
     
     # Budget prévisionnel
     budget_amount = fields.Monetary(

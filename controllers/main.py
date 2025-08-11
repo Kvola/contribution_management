@@ -471,6 +471,53 @@ class CotisationPaymentController(CustomerPortal):
     # ROUTES AJAX / API
     # ================================
 
+    @http.route(['/my/cotisations/history', '/my/cotisations/history/page/<int:page>'], 
+                type='http', auth="user", website=True)
+    def portal_payment_history(self, page=1, **kw):
+        """Historique des paiements"""
+        
+        partner = request.env.user.partner_id
+        PaymentProofSudo = request.env['contribution.payment.proof'].sudo()
+
+        # Récupérer tous les justificatifs de paiement de l'utilisateur
+        domain = [('cotisation_id.member_id', '=', partner.id)]
+        
+        payment_proofs_count = PaymentProofSudo.search_count(domain)
+
+        # Pagination
+        pager = portal_pager(
+            url="/my/cotisations/history",
+            total=payment_proofs_count,
+            page=page,
+            step=self._items_per_page
+        )
+
+        payment_proofs = PaymentProofSudo.search(
+            domain, 
+            order='create_date desc',
+            limit=self._items_per_page, 
+            offset=pager['offset']
+        )
+
+        # Statistiques
+        total_submitted = len(payment_proofs)
+        validated_payments = len(payment_proofs.filtered(lambda p: p.state == 'validated'))
+        pending_payments = len(payment_proofs.filtered(lambda p: p.state == 'pending'))
+        rejected_payments = len(payment_proofs.filtered(lambda p: p.state == 'rejected'))
+
+        values = {
+            'payment_proofs': payment_proofs,
+            'page_name': 'payment_history',
+            'pager': pager,
+            'default_url': '/my/cotisations/history',
+            'total_submitted': total_submitted,
+            'validated_payments': validated_payments,
+            'pending_payments': pending_payments,
+            'rejected_payments': rejected_payments,
+        }
+
+        return request.render("contribution_management.payment_history", values)
+
     @http.route('/my/cotisation/<int:cotisation_id>/status', 
                 type='json', auth='user', methods=['POST'], csrf=True)
     def get_cotisation_status(self, cotisation_id: int, **kwargs):
@@ -494,9 +541,200 @@ class CotisationPaymentController(CustomerPortal):
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
+    @http.route(['/my/cotisation/<int:cotisation_id>'], type='http', auth="user", website=True)
+    def portal_cotisation_page(self, cotisation_id, access_token=None, **kw):
+        """Page de détail d'une cotisation"""
+        
+        try:
+            cotisation_sudo = self._document_check_access('contribution.member', 
+                                                         cotisation_id, access_token)
+        except (AccessError, MissingError):
+            return request.redirect('/my')
+
+        # Vérifier que la cotisation appartient bien à l'utilisateur
+        if cotisation_sudo.member_id.id != request.env.user.partner_id.id:
+            return request.render("contribution_management.cotisation_access_denied")
+
+        values = self._cotisation_get_page_view_values(cotisation_sudo, access_token, **kw)
+        return request.render("contribution_management.cotisation_detail", values)
+
+    @http.route(['/my/cotisations', '/my/cotisations/page/<int:page>'], 
+                type='http', auth="user", website=True)
+    def portal_my_cotisations(self, page=1, date_begin=None, date_end=None, 
+                             sortby=None, filterby=None, search=None, search_in='content', **kw):
+        """Page principale des cotisations"""
+        
+        partner = request.env.user.partner_id
+        CotisationSudo = request.env['contribution.member'].sudo()
+
+        # Domaine de base
+        domain = [('member_id', '=', partner.id)]
+
+        # Recherche
+        if search and search_in:
+            search_domain = []
+            if search_in in ('content', 'all'):
+                search_domain = ['|', ('description', 'ilike', search), 
+                               ('display_name', 'ilike', search)]
+            domain += search_domain
+
+        # Filtres
+        if filterby:
+            if filterby == 'pending':
+                domain += [('state', '=', 'pending')]
+            elif filterby == 'paid':
+                domain += [('state', '=', 'paid')]
+            elif filterby == 'partial':
+                domain += [('state', '=', 'partial')]
+            elif filterby == 'overdue':
+                domain += [('state', '=', 'overdue')]
+            elif filterby == 'monthly':
+                domain += [('cotisation_type', '=', 'monthly')]
+            elif filterby == 'activity':
+                domain += [('cotisation_type', '=', 'activity')]
+
+        # Filtres par date
+        if date_begin and date_end:
+            domain += [('due_date', '>=', date_begin), ('due_date', '<=', date_end)]
+        elif date_begin:
+            domain += [('due_date', '>=', date_begin)]
+        elif date_end:
+            domain += [('due_date', '<=', date_end)]
+
+        # Options de tri
+        searchbar_sortings = {
+            'date': {'label': _('Date d\'échéance'), 'order': 'due_date desc'},
+            'name': {'label': _('Description'), 'order': 'description'},
+            'amount': {'label': _('Montant'), 'order': 'amount_due desc'},
+            'state': {'label': _('Statut'), 'order': 'state'},
+        }
+
+        if not sortby:
+            sortby = 'date'
+        order = searchbar_sortings[sortby]['order']
+
+        # Comptage total
+        cotisations_count = CotisationSudo.search_count(domain)
+
+        # Pagination
+        pager = portal_pager(
+            url="/my/cotisations",
+            url_args={'date_begin': date_begin, 'date_end': date_end, 
+                     'sortby': sortby, 'filterby': filterby, 'search_in': search_in, 'search': search},
+            total=cotisations_count,
+            page=page,
+            step=self._items_per_page
+        )
+
+        # Récupération des cotisations
+        cotisations = CotisationSudo.search(domain, order=order, 
+                                          limit=self._items_per_page, 
+                                          offset=pager['offset'])
+
+        # Statistiques du tableau de bord
+        dashboard_stats = self._get_dashboard_statistics(partner.id)
+
+        # Barres de recherche et filtres
+        searchbar_filters = {
+            'all': {'label': _('Toutes'), 'domain': []},
+            'pending': {'label': _('En attente'), 'domain': [('state', '=', 'pending')]},
+            'paid': {'label': _('Payées'), 'domain': [('state', '=', 'paid')]},
+            'partial': {'label': _('Partielles'), 'domain': [('state', '=', 'partial')]},
+            'overdue': {'label': _('En retard'), 'domain': [('state', '=', 'overdue')]},
+            'monthly': {'label': _('Mensuelles'), 'domain': [('cotisation_type', '=', 'monthly')]},
+            'activity': {'label': _('Activités'), 'domain': [('cotisation_type', '=', 'activity')]},
+        }
+
+        searchbar_inputs = {
+            'content': {'input': 'content', 'label': _('Rechercher dans le contenu')},
+            'all': {'input': 'all', 'label': _('Rechercher dans tout')},
+        }
+
+        # Préparation des valeurs
+        values = {
+            'date': date_begin,
+            'cotisations': cotisations,
+            'page_name': 'cotisation',
+            'pager': pager,
+            'archive_groups': [],
+            'default_url': '/my/cotisations',
+            'searchbar_sortings': searchbar_sortings,
+            'searchbar_filters': OrderedDict(sorted(searchbar_filters.items())),
+            'searchbar_inputs': searchbar_inputs,
+            'search_in': search_in,
+            'search': search,
+            'sortby': sortby,
+            'filterby': filterby,
+            'cotisations_count': cotisations_count,
+            'current_date': fields.Date.today(),
+            
+            # AJOUT DES STATISTIQUES DU TABLEAU DE BORD
+            **dashboard_stats
+        }
+
+        return request.render("contribution_management.my_cotisations_list", values)
+
     # ================================
     # MÉTHODES UTILITAIRES - ACCÈS
     # ================================
+
+    def _prepare_home_portal_values(self, counters):
+        """Ajouter le compteur de cotisations sur la page d'accueil du portail"""
+        values = super()._prepare_home_portal_values(counters)
+        if 'cotisation_count' in counters:
+            partner = request.env.user.partner_id
+            cotisations = request.env['contribution.member'].search([
+                ('member_id', '=', partner.id)
+            ])
+            values['cotisation_count'] = len(cotisations)
+        return values
+
+    def _get_dashboard_statistics(self, partner_id):
+        """Calculer les statistiques pour le tableau de bord"""
+        # Récupérer les cotisations du partenaire
+        cotisations = request.env['contribution.member'].search([
+            ('member_id', '=', partner_id)
+        ])
+
+        # Calculs de base
+        total_cotisations = len(cotisations)
+        paid_cotisations = len(cotisations.filtered(lambda c: c.state == 'paid'))
+        pending_cotisations = len(cotisations.filtered(lambda c: c.state in ['pending', 'partial', 'overdue']))
+
+        # Calcul du montant total dû (somme des montants restants)
+        total_amount_due = sum(cotisations.mapped('remaining_amount'))
+
+        # Récupération de la devise (prendre la première trouvée ou devise par défaut)
+        currency_id = cotisations[0].currency_id if cotisations else request.env.company.currency_id
+
+        return {
+            'total_cotisations': total_cotisations,
+            'paid_cotisations': paid_cotisations,
+            'pending_cotisations': pending_cotisations,
+            'total_amount_due': total_amount_due,
+            'currency_id': currency_id,
+        }
+
+    def _cotisation_get_page_view_values(self, cotisation, access_token, **kwargs):
+        """Préparer les valeurs pour la vue détail d'une cotisation"""
+        values = {
+            'cotisation': cotisation,
+            'user': request.env.user,
+            'can_pay': cotisation.state in ['pending', 'partial', 'overdue'] and cotisation.remaining_amount > 0,
+        }
+        
+        # Ajouter l'historique des paiements validés pour cette cotisation
+        payment_history = request.env['contribution.payment.proof'].search([
+            ('cotisation_id', '=', cotisation.id),
+            ('state', '=', 'validated')
+        ], order='validation_date desc')
+        
+        values['payment_history'] = payment_history
+        
+        return self._get_page_view_values(
+            cotisation, access_token, values,
+            'my_cotisations_history', False, **kwargs
+        )
 
     def _get_current_partner(self):
         """Récupère le partenaire actuel avec vérifications."""

@@ -73,6 +73,11 @@ Sécurité et contrôles :
         'random_team_generator',
         'website',
     ],
+    'external_dependencies': {
+        'python': [
+            'Pillow',  # Pour le traitement des images
+        ],
+    },
     'data': [
         # Sécurité - ordre important : d'abord les groupes de sécurité
         'security/security.xml',
@@ -90,6 +95,7 @@ Sécurité et contrôles :
         'views/cotisation_linked_to_installment_views.xml',
         'data/data.xml',
         'data/installment_data.xml',
+        'data/activity_email.xml',
         'views/cotisation_payment_proof_view.xml',
 
         # Cron
@@ -119,11 +125,15 @@ Sécurité et contrôles :
         'views/menu_views.xml',
         'views/cotisation_payment_template.xml',
         'wizards/cotisation_payment_proof_reject_views.xml',
+        'views/activity_template.xml',
     ],
     "assets": {
         'web.assets_backend': [
             'contribution_management/static/src/css/kanban_styles.css',
         ],
+        # 'web.assets_frontend': [
+        #     'contribution_management/static/src/css/activity_tyles.css',
+        # ],
     },
     'demo': [
         'demo/demo.xml',
