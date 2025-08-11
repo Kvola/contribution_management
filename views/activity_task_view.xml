@@ -1,0 +1,821 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== VUES POUR GROUP.ACTIVITY (Ajouts/Modifications) ========== -->
+    
+    <!-- Vue formulaire étendue pour Group Activity -->
+    <record id="view_group_activity_form_organization" model="ir.ui.view">
+        <field name="name">group.activity.form.organization</field>
+        <field name="model">group.activity</field>
+        <field name="inherit_id" ref="contribution_management.view_group_activity_form"/>
+        <field name="arch" type="xml">
+            <!-- Ajouter les nouveaux champs dans l'en-tête -->
+            <xpath expr="//header" position="inside">
+                <button name="action_organization_dashboard" string="Tableau de Bord" type="object" class="oe_highlight" invisible="state == 'draft'"/>
+                <button name="action_check_organization_readiness" string="Vérifier Organisation" type="object" class="btn-warning" invisible="not state in ['confirmed', 'ongoing']"/>
+                <button name="action_create_default_tasks" string="Créer Tâches Par Défaut" type="object" invisible="state != 'draft'"/>
+            </xpath>
+            
+            <!-- Ajouter le statut d'organisation après le statut principal -->
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="organization_status" widget="badge" 
+                       decoration-success="organization_status == 'ready'" 
+                       decoration-info="organization_status == 'completed'" 
+                       decoration-warning="organization_status in ['in_progress', 'well_advanced']" 
+                       decoration-danger="organization_status == 'not_started'"/>
+            </xpath>
+            
+            <!-- Ajouter une page pour l'organisation -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Organisation" name="organization">
+                    <group>
+                        <group string="Organisateur Principal">
+                            <field name="main_organizer_id" options="{'no_create': True, 'no_edit': True}"/>
+                        </group>
+                        <group string="Statistiques d'Organisation">
+                            <field name="organizer_count"/>
+                            <field name="task_count"/>
+                            <field name="completed_task_count"/>
+                            <field name="task_completion_rate" widget="percentage"/>
+                            <field name="overdue_task_count" invisible="overdue_task_count == 0"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="Organisateurs"/>
+                    <field name="organizer_ids" nolabel="1">
+                        <tree>
+                            <field name="partner_id"/>
+                            <field name="role"/>
+                            <field name="is_main" widget="boolean_toggle"/>
+                            <field name="date_joined"/>
+                            <field name="assigned_task_count"/>
+                            <field name="task_completion_rate" widget="percentage"/>
+                            <field name="overdue_task_count" invisible="overdue_task_count == 0"/>
+                            <field name="availability"/>
+                        </tree>
+                        <form>
+                            <sheet>
+                                <div class="oe_button_box" name="button_box">
+                                    <button name="action_view_my_tasks" type="object" class="oe_stat_button" icon="fa-tasks">
+                                        <field name="assigned_task_count" widget="statinfo" string="Tâches"/>
+                                    </button>
+                                </div>
+                                <group>
+                                    <group>
+                                        <field name="partner_id" options="{'no_create': True}"/>
+                                        <field name="role"/>
+                                        <field name="is_main"/>
+                                        <field name="experience_level"/>
+                                    </group>
+                                    <group>
+                                        <field name="date_joined"/>
+                                        <field name="date_left"/>
+                                        <field name="availability"/>
+                                        <field name="phone" readonly="1"/>
+                                        <field name="email" readonly="1"/>
+                                    </group>
+                                </group>
+                                <notebook>
+                                    <page string="Responsabilités">
+                                        <field name="responsibilities"/>
+                                    </page>
+                                    <page string="Disponibilité">
+                                        <field name="availability_notes"/>
+                                        <field name="previous_roles"/>
+                                    </page>
+                                    <page string="Statistiques">
+                                        <group>
+                                            <group>
+                                                <field name="assigned_task_count"/>
+                                                <field name="completed_task_count"/>
+                                                <field name="task_completion_rate" widget="percentage"/>
+                                            </group>
+                                            <group>
+                                                <field name="overdue_task_count"/>
+                                            </group>
+                                        </group>
+                                    </page>
+                                </notebook>
+                            </sheet>
+                        </form>
+                    </field>
+                    
+                    <div class="mt16">
+                        <button name="action_add_organizer" string="Ajouter Organisateur" type="object" class="btn-primary"/>
+                        <button name="action_view_organizers" string="Voir Tous" type="object" class="btn-secondary"/>
+                    </div>
+                </page>
+                
+                <page string="Tâches" name="tasks">
+                    <div class="o_kanban_dashboard">
+                        <div class="row">
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <button class="btn btn-primary" name="action_view_tasks" type="object">
+                                            <field name="task_count"/>
+                                        </button>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>Total Tâches</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <button class="btn btn-success" name="action_view_tasks" type="object" context="{'search_default_completed': 1}">
+                                            <field name="completed_task_count"/>
+                                        </button>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>Terminées</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <button class="btn btn-warning" name="action_view_tasks" type="object" context="{'search_default_overdue': 1}" invisible="overdue_task_count == 0">
+                                            <field name="overdue_task_count"/>
+                                        </button>
+                                        <span invisible="overdue_task_count != 0">0</span>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>En Retard</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <field name="task_completion_rate" widget="percentage"/>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>Avancement</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <field name="task_ids" nolabel="1">
+                        <tree decoration-danger="is_overdue" decoration-warning="is_urgent">
+                            <field name="name"/>
+                            <field name="assigned_to"/>
+                            <field name="task_type"/>
+                            <field name="priority" widget="priority"/>
+                            <field name="deadline"/>
+                            <field name="state" widget="badge" 
+                                   decoration-success="state == 'completed'" 
+                                   decoration-warning="state == 'in_progress'" 
+                                   decoration-info="state == 'todo'" 
+                                   decoration-danger="state == 'cancelled'"/>
+                            <field name="is_overdue" invisible="1"/>
+                            <field name="is_urgent" invisible="1"/>
+                        </tree>
+                        <kanban>
+                            <field name="id"/>
+                            <field name="name"/>
+                            <field name="assigned_to"/>
+                            <field name="priority"/>
+                            <field name="deadline"/>
+                            <field name="state"/>
+                            <field name="is_overdue"/>
+                            <field name="is_urgent"/>
+                            <field name="task_type"/>
+                            <templates>
+                                <t t-name="kanban-box">
+                                    <div t-attf-class="oe_kanban_card oe_kanban_global_click #{record.is_overdue.raw_value ? 'oe_kanban_color_2' : ''} #{record.is_urgent.raw_value ? 'oe_kanban_color_8' : ''}">
+                                        <div class="oe_kanban_content">
+                                            <div class="o_kanban_record_subtitle">
+                                                <field name="activity_name"/>
+                                            </div>
+                                        </div>
+                                        <div class="o_kanban_record_body">
+                                            <div t-if="record.assigned_to.raw_value">
+                                                <i class="fa fa-user"/> <field name="assigned_to"/>
+                                            </div>
+                                            <div t-if="record.deadline.raw_value">
+                                                <i class="fa fa-calendar"/> <field name="deadline"/>
+                                            </div>
+                                            <div t-if="record.estimated_hours.raw_value">
+                                                <i class="fa fa-clock-o"/> <field name="estimated_hours"/>h
+                                            </div>
+                                        </div>
+                                        <div class="o_kanban_record_bottom">
+                                            <div class="oe_kanban_bottom_left">
+                                                <field name="priority" widget="priority"/>
+                                                <field name="task_type" widget="label_selection"/>
+                                            </div>
+                                            <div class="oe_kanban_bottom_right">
+                                                <t t-if="record.state.raw_value == 'todo' and record.can_start.raw_value">
+                                                    <button name="action_start" type="object" class="btn btn-primary btn-sm">
+                                                        <i class="fa fa-play"/> Démarrer
+                                                    </button>
+                                                </t>
+                                                <t t-if="record.state.raw_value == 'in_progress'">
+                                                    <button name="action_complete" type="object" class="btn btn-success btn-sm">
+                                                        <i class="fa fa-check"/> Terminer
+                                                    </button>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                    </field>
+                    
+                    <div class="mt16">
+                        <button name="action_add_task" string="Nouvelle Tâche" type="object" class="btn-primary"/>
+                        <button name="action_assign_tasks_wizard" string="Assigner Tâches" type="object" class="btn-secondary"/>
+                        <button name="action_view_tasks" string="Voir Toutes" type="object" class="btn-secondary"/>
+                    </div>
+                </page>
+            </xpath>
+            
+            <!-- Ajouter les champs de budget dans la page financière existante -->
+            <xpath expr="//page[@name='statistics']" position="inside">
+                <separator string="Budget et Dépenses"/>
+                <group>
+                    <group string="Budget">
+                        <field name="budget_amount"/>
+                        <field name="budget_remaining" invisible="budget_amount == 0"/>
+                        <field name="budget_used_percentage" widget="percentage" invisible="budget_amount == 0"/>
+                        <field name="is_over_budget" widget="boolean_toggle" invisible="budget_amount == 0"/>
+                    </group>
+                    <group string="Analyse Financière">
+                        <field name="total_expenses"/>
+                        <field name="net_result"/>
+                        <field name="break_even_participants"/>
+                        <field name="profitability_rate" widget="percentage"/>
+                    </group>
+                </group>
+                
+                <div class="mt16">
+                    <button name="action_view_expenses" string="Voir Dépenses" type="object" class="btn-primary"/>
+                    <button name="action_add_expense" string="Nouvelle Dépense" type="object" class="btn-secondary"/>
+                    <button name="action_check_budget_status" string="Vérifier Budget" type="object" class="btn-info"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue Liste des Organisateurs -->
+    <record id="view_activity_organizer_tree" model="ir.ui.view">
+        <field name="name">activity.organizer.tree</field>
+        <field name="model">activity.organizer</field>
+        <field name="arch" type="xml">
+            <tree string="Organisateurs" decoration-danger="overdue_task_count > 0" decoration-success="task_completion_rate == 100">
+                <field name="partner_id" widget="many2one_avatar"/>
+                <field name="role"/>
+                <field name="is_main" invisible="1"/>
+                <field name="is_main" invisible="not is_main" widget="boolean_favorite"/>
+                <field name="assigned_task_count"/>
+                <field name="completed_task_count"/>
+                <field name="task_completion_rate" widget="progressbar" options="{'editable': false}"/>
+                <field name="overdue_task_count"/>
+                <field name="availability"/>
+                <field name="date_joined"/>
+                <field name="date_left"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire des Organisateurs -->
+    <record id="view_activity_organizer_form" model="ir.ui.view">
+        <field name="name">activity.organizer.form</field>
+        <field name="model">activity.organizer</field>
+        <field name="arch" type="xml">
+            <form string="Organisateur d'activité">
+                <header>
+                    <button name="action_view_my_tasks" string="Voir mes tâches" type="object" class="btn-primary"/>
+                    <button name="action_send_task_reminder" string="Envoyer un rappel" type="object" class="btn-secondary"/>
+                    <field name="active" widget="boolean_button" options='{"terminology": "archive"}'/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="partner_id" placeholder="Sélectionner un organisateur" class="oe_inline"/>
+                        </h1>
+                        <h2>
+                            <field name="role" class="oe_inline"/>
+                            <field name="is_main" string="Principal" widget="boolean_favorite" class="oe_inline"/>
+                        </h2>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="activity_id" options="{'no_create': True}"/>
+                            <field name="partner_id" domain="[('is_company', '=', False), ('active', '=', True)]"/>
+                            <field name="role"/>
+                            <field name="is_main"/>
+                            <field name="date_joined"/>
+                            <field name="date_left"/>
+                        </group>
+                        <group>
+                            <field name="availability"/>
+                            <field name="experience_level"/>
+                            <field name="assigned_task_count" widget="statinfo" string="Tâches assignées"/>
+                            <field name="completed_task_count" widget="statinfo" string="Tâches terminées"/>
+                            <field name="task_completion_rate" widget="progressbar" options="{'editable': false}"/>
+                            <field name="overdue_task_count" widget="statinfo" string="Tâches en retard"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Responsabilités">
+                            <field name="responsibilities"/>
+                        </page>
+                        <page string="Disponibilité">
+                            <field name="availability_notes"/>
+                        </page>
+                        <page string="Expérience">
+                            <field name="previous_roles"/>
+                        </page>
+                        <page string="Tâches">
+                            <field name="assigned_task_ids" mode="kanban,tree,form">
+                                <kanban>
+                                    <field name="state"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_global_click">
+                                                <div class="oe_kanban_content">
+                                                    <div class="oe_kanban_card">
+                                                        <strong><field name="name"/></strong>
+                                                        <div>
+                                                            <span>Priorité: </span>
+                                                            <field name="priority" widget="priority"/>
+                                                        </div>
+                                                        <div>
+                                                            <span>État: </span>
+                                                            <field name="state"/>
+                                                        </div>
+                                                        <div>
+                                                            <span>Échéance: </span>
+                                                            <field name="deadline"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                        </page>
+                        <page string="Suivi">
+                            <field name="message_ids" widget="mail_thread"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue Recherche des Organisateurs -->
+    <record id="view_activity_organizer_search" model="ir.ui.view">
+        <field name="name">activity.organizer.search</field>
+        <field name="model">activity.organizer</field>
+        <field name="arch" type="xml">
+            <search string="Recherche d'organisateurs">
+                <field name="partner_id" string="Organisateur" filter_domain="['|', ('partner_id.name', 'ilike', self), ('partner_id.email', 'ilike', self)]"/>
+                <field name="role"/>
+                <field name="is_main" string="Principal uniquement"/>
+                <field name="activity_id"/>
+                <field name="availability"/>
+                
+                <filter string="Tâches en retard" name="overdue_tasks" domain="[('overdue_task_count', '>', 0)]"/>
+                <filter string="100% complété" name="fully_completed" domain="[('task_completion_rate', '=', 100)]"/>
+                <filter string="Actifs" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactifs" name="inactive" domain="[('active', '=', False)]"/>
+                
+                <group expand="0" string="Group By">
+                    <filter string="Rôle" name="group_by_role" context="{'group_by': 'role'}"/>
+                    <filter string="Disponibilité" name="group_by_availability" context="{'group_by': 'availability'}"/>
+                    <filter string="Activité" name="group_by_activity" context="{'group_by': 'activity_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vue Kanban des Organisateurs -->
+    <record id="view_activity_organizer_kanban" model="ir.ui.view">
+        <field name="name">activity.organizer.kanban</field>
+        <field name="model">activity.organizer</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="role">
+                <field name="id"/>
+                <field name="partner_id"/>
+                <field name="role"/>
+                <field name="is_main"/>
+                <field name="assigned_task_count"/>
+                <field name="overdue_task_count"/>
+                <field name="task_completion_rate"/>
+                
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click oe_kanban_card oe_activity_organizer" t-att-class="{'oe_kanban_card_main': record.is_main.value}">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <div class="oe_kanban_details">
+                                            <strong><field name="partner_id" widget="many2one_avatar"/></strong>
+                                            <div>
+                                                <field name="role"/>
+                                                <field name="is_main" invisible="1"/>
+                                                <t t-if="record.is_main.value">
+                                                    <span class="badge badge-primary">Principal</span>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <div class="oe_kanban_text_left">
+                                            <div>Tâches: <field name="assigned_task_count"/></div>
+                                            <div>En retard: <field name="overdue_task_count"/></div>
+                                        </div>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="task_completion_rate" widget="progressbar" options="{'editable': false, 'animated': true}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+                <progressbar field="availability" colors='{"full": "success", "partial": "warning", "limited": "danger", "unavailable": "muted"}'/>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Action pour ouvrir la liste des organisateurs -->
+    <record id="action_activity_organizer" model="ir.actions.act_window">
+        <field name="name">Organisateurs d'activités</field>
+        <field name="res_model">activity.organizer</field>
+        <field name="view_mode">tree,form,kanban</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Ajoutez des organisateurs pour vos activités
+            </p>
+        </field>
+    </record>
+
+    <!-- ========== VUES POUR TASK.CATEGORY ========== -->
+    
+    <!-- Vue liste des catégories de tâches -->
+    <record id="view_task_category_tree" model="ir.ui.view">
+        <field name="name">task.category.tree</field>
+        <field name="model">task.category</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="default_priority" widget="priority"/>
+                <field name="default_estimated_hours"/>
+                <field name="color" widget="color"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue formulaire des catégories de tâches -->
+    <record id="view_task_category_form" model="ir.ui.view">
+        <field name="name">task.category.form</field>
+        <field name="model">task.category</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="color" widget="color"/>
+                            <field name="default_priority"/>
+                            <field name="default_estimated_hours"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Description de la catégorie..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour les catégories de tâches -->
+    <record id="action_task_category" model="ir.actions.act_window">
+        <field name="name">Catégories de Tâches</field>
+        <field name="res_model">task.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- ========== VUES POUR LES WIZARDS ========== -->
+
+    <!-- ========== VUES DASHBOARD ========== -->
+
+    <!-- ========== ACTIONS SUPPLÉMENTAIRES ========== -->
+    
+    
+    <!-- Vue Liste des Tâches -->
+    <record id="view_activity_task_tree" model="ir.ui.view">
+        <field name="name">activity.task.tree</field>
+        <field name="model">activity.task</field>
+        <field name="arch" type="xml">
+            <tree string="Tâches" decoration-danger="is_overdue" decoration-warning="is_urgent" decoration-success="state == 'completed'">
+                <field name="priority" widget="priority"/>
+                <field name="name"/>
+                <field name="activity_id" invisible="1"/>
+                <field name="activity_name"/>
+                <field name="state" widget="selection_badge"/>
+                <field name="assigned_to" widget="many2one_avatar"/>
+                <field name="organizer_id" invisible="1"/>
+                <field name="deadline"/>
+                <field name="estimated_hours"/>
+                <field name="actual_hours"/>
+                <field name="task_type"/>
+                <field name="can_start" invisible="1"/>
+                <field name="blocked_by_count" invisible="1"/>
+                <field name="is_overdue" invisible="1"/>
+                <field name="is_urgent" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire des Tâches -->
+    <record id="view_activity_task_form" model="ir.ui.view">
+        <field name="name">activity.task.form</field>
+        <field name="model">activity.task</field>
+        <field name="arch" type="xml">
+            <form string="Tâche d'organisation">
+                <header>
+                    <button name="action_start" string="Démarrer" type="object" class="btn-primary" invisible="state != 'todo'"/>
+                    <button name="action_complete" string="Terminer" type="object" class="btn-primary" invisible="state not in ['todo', 'in_progress']"/>
+                    <button name="action_put_on_hold" string="Mettre en attente" type="object" class="btn-secondary" invisible="state not in ['todo', 'in_progress']"/>
+                    <button name="action_cancel" string="Annuler" type="object" class="btn-danger" invisible="state in ['completed', 'cancelled']"/>
+                    <button name="action_reset_to_todo" string="Remettre à faire" type="object" class="btn-secondary" invisible="state not in ['in_progress', 'on_hold', 'cancelled']"/>
+                    <button name="action_duplicate_task" string="Dupliquer" type="object" class="btn-secondary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="todo,in_progress,completed,on_hold,cancelled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nom de la tâche"/>
+                        </h1>
+                        <h2>
+                            <field name="activity_id" placeholder="Activité associée"/>
+                        </h2>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="priority" widget="priority"/>
+                            <field name="state"/>
+                            <field name="task_type"/>
+                            <field name="category_id"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="assigned_to" domain="[('is_company', '=', False), ('active', '=', True)]"/>
+                            <field name="organizer_id" domain="[('activity_id', '=', activity_id)]"/>
+                            <field name="deadline"/>
+                            <field name="estimated_hours"/>
+                            <field name="actual_hours"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Dépendances">
+                            <field name="depends_on_task_ids" mode="kanban,tree,form">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="state"/>
+                                    <field name="deadline"/>
+                                    <field name="assigned_to" widget="many2one_avatar"/>
+                                    <field name="priority" widget="priority"/>
+                                </tree>
+                            </field>
+                            <field name="blocking_task_ids" mode="kanban,tree,form">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="state"/>
+                                    <field name="deadline"/>
+                                    <field name="assigned_to" widget="many2one_avatar"/>
+                                    <field name="priority" widget="priority"/>
+                                </tree>
+                            </field>
+                            <group>
+                                <field name="can_start" widget="boolean_button" options='{"terminology": "can_start"}' readonly="1"/>
+                                <field name="blocked_by_count" widget="statinfo" string="Tâches bloquantes"/>
+                            </group>
+                        </page>
+                        <page string="Ressources">
+                            <field name="required_resources"/>
+                            <field name="deliverables"/>
+                            <field name="attachment_ids" string="Fichiers joints">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="create_date"/>
+                                    <field name="mimetype"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Suivi">
+                            <group>
+                                <field name="start_date"/>
+                                <field name="completion_date"/>
+                                <field name="completion_notes"/>
+                            </group>
+                            <field name="message_ids" widget="mail_thread"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue Recherche des Tâches -->
+    <record id="view_activity_task_search" model="ir.ui.view">
+        <field name="name">activity.task.search</field>
+        <field name="model">activity.task</field>
+        <field name="arch" type="xml">
+            <search string="Recherche de tâches">
+                <field name="name" string="Nom" filter_domain="[('name', 'ilike', self)]"/>
+                <field name="activity_id"/>
+                <field name="assigned_to" string="Assigné à" filter_domain="['|', ('assigned_to.name', 'ilike', self), ('organizer_id.partner_id.name', 'ilike', self)]"/>
+                <field name="organizer_id" string="Organisateur" invisible="1"/>
+                <field name="state"/>
+                <field name="priority"/>
+                <field name="task_type"/>
+                
+                <filter string="Mes tâches" name="my_tasks" domain="[('assigned_to', '=', uid)]"/>
+                <filter string="En retard" name="overdue" domain="[('is_overdue', '=', True)]"/>
+                <filter string="Urgentes" name="urgent" domain="[('is_urgent', '=', True)]"/>
+                <filter string="Bloquées" name="blocked" domain="[('can_start', '=', False)]"/>
+                <filter string="À faire" name="todo" domain="[('state', '=', 'todo')]"/>
+                <filter string="En cours" name="in_progress" domain="[('state', '=', 'in_progress')]"/>
+                <filter string="Terminées" name="completed" domain="[('state', '=', 'completed')]"/>
+                
+                <group expand="0" string="Group By">
+                    <filter string="Activité" name="group_by_activity" context="{'group_by': 'activity_id'}"/>
+                    <filter string="Statut" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Type" name="group_by_type" context="{'group_by': 'task_type'}"/>
+                    <filter string="Priorité" name="group_by_priority" context="{'group_by': 'priority'}"/>
+                    <filter string="Assigné à" name="group_by_assigned" context="{'group_by': 'assigned_to'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vue Kanban des Tâches -->
+    <record id="view_activity_task_kanban" model="ir.ui.view">
+        <field name="name">activity.task.kanban</field>
+        <field name="model">activity.task</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="priority"/>
+                <field name="state"/>
+                <field name="assigned_to"/>
+                <field name="deadline"/>
+                <field name="is_overdue"/>
+                <field name="is_urgent"/>
+                <field name="can_start"/>
+                <field name="estimated_hours"/>
+                
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click oe_kanban_card" t-att-class="{
+                            'oe_kanban_card_overdue': record.is_overdue.value,
+                            'oe_kanban_card_urgent': record.is_urgent.value,
+                            'oe_kanban_card_blocked': !record.can_start.value &amp;&amp; record.state.value != 'completed'
+                        }">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong><field name="name"/></strong>
+                                        <div>
+                                            <field name="priority" widget="priority"/>
+                                            <field name="state" widget="selection_badge"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="o_kanban_record_middle">
+                                    <div>
+                                        <field name="assigned_to" widget="many2one_avatar"/>
+                                        <field name="activity_id" invisible="1"/>
+                                        <span t-if="record.activity_id.value">
+                                            (<field name="activity_name"/>)
+                                        </span>
+                                    </div>
+                                    <div t-if="record.deadline.value">
+                                        Échéance: <field name="deadline"/>
+                                    </div>
+                                    <div t-if="record.estimated_hours.value">
+                                        Durée: <field name="estimated_hours"/>h
+                                    </div>
+                                </div>
+                                
+                                <div class="o_kanban_record_bottom">
+                                    <div t-if="!record.can_start.value &amp;&amp; record.state.value != 'completed'">
+                                        <i class="fa fa-lock"/> Bloquée par <field name="blocked_by_count"/> tâche(s)
+                                    </div>
+                                    <div t-if="record.is_overdue.value">
+                                        <i class="fa fa-warning"/> En retard!
+                                    </div>
+                                    <div t-if="record.is_urgent.value &amp;&amp; !record.is_overdue.value">
+                                        <i class="fa fa-exclamation"/> Urgent!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+                <progressbar field="state" colors='{"todo": "warning", "in_progress": "info", "completed": "success", "on_hold": "muted", "cancelled": "danger"}'/>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vue Calendrier des Tâches -->
+    <record id="view_activity_task_calendar" model="ir.ui.view">
+        <field name="name">activity.task.calendar</field>
+        <field name="model">activity.task</field>
+        <field name="arch" type="xml">
+            <calendar string="Calendrier des tâches" date_start="start_date" date_stop="deadline" color="priority" mode="month">
+                <field name="name"/>
+                <field name="assigned_to"/>
+                <field name="state"/>
+                <field name="priority"/>
+                <field name="activity_id"/>
+                <field name="is_overdue"/>
+                <field name="is_urgent"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Vue Graphique des Tâches -->
+    <record id="view_activity_task_graph" model="ir.ui.view">
+        <field name="name">activity.task.graph</field>
+        <field name="model">activity.task</field>
+        <field name="arch" type="xml">
+            <graph string="Statistiques des tâches" type="bar">
+                <field name="state" type="row"/>
+                <field name="priority" type="row"/>
+                <field name="task_type" type="row"/>
+                <field name="activity_id" type="row"/>
+                <field name="id" type="measure"/>
+                <field name="estimated_hours" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vue Pivot des Tâches -->
+    <record id="view_activity_task_pivot" model="ir.ui.view">
+        <field name="name">activity.task.pivot</field>
+        <field name="model">activity.task</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des tâches">
+                <field name="state" type="col"/>
+                <field name="priority" type="row"/>
+                <field name="task_type" type="row"/>
+                <field name="activity_id" type="row"/>
+                <field name="assigned_to" type="row"/>
+                <field name="id" type="measure"/>
+                <field name="estimated_hours" type="measure"/>
+                <field name="actual_hours" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Action pour ouvrir la liste des tâches -->
+    <record id="action_activity_task" model="ir.actions.act_window">
+        <field name="name">Tâches d'organisation</field>
+        <field name="res_model">activity.task</field>
+        <field name="view_mode">tree,form,kanban,calendar,pivot,graph</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez des tâches pour organiser vos activités
+            </p>
+        </field>
+    </record>
+</odoo>

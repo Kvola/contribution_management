@@ -1535,5 +1535,4 @@
         <field name="website_indexed">True</field>
         <field name="is_seo_optimized">True</field>
     </record>
-
 </odoo>

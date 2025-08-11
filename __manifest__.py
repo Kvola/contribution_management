@@ -97,6 +97,7 @@ Sécurité et contrôles :
         'data/installment_data.xml',
         'data/activity_email.xml',
         'views/cotisation_payment_proof_view.xml',
+        'views/activity_task_view.xml',
 
         # Cron
         'data/ir_cron_data.xml',
@@ -126,6 +127,7 @@ Sécurité et contrôles :
         'views/cotisation_payment_template.xml',
         'wizards/cotisation_payment_proof_reject_views.xml',
         'views/activity_template.xml',
+        'wizards/activity_task_wizard_view.xml',
     ],
     "assets": {
         'web.assets_backend': [

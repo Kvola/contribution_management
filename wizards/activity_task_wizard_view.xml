@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard de complétion de tâche -->
+    <record id="view_task_completion_wizard_form" model="ir.ui.view">
+        <field name="name">task.completion.wizard.form</field>
+        <field name="model">task.completion.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Terminer la tâche">
+                <sheet>
+                    <group>
+                        <field name="task_id" readonly="1"/>
+                        <field name="actual_hours" required="1"/>
+                        <field name="completion_notes"/>
+                        <field name="deliverable_attachments" string="Fichiers de livrables"/>
+                    </group>
+                    <footer>
+                        <button name="action_complete_task" string="Confirmer la completion" type="object" class="btn-primary"/>
+                        <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!-- Vue formulaire du wizard de completion de tâche -->
+    <!-- <record id="view_task_completion_wizard_form" model="ir.ui.view">
+        <field name="name">task.completion.wizard.form</field>
+        <field name="model">task.completion.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="task_id" readonly="1"/>
+                    <field name="actual_hours"/>
+                </group>
+                <field name="completion_notes" placeholder="Notes sur la completion de la tâche..."/>
+                <separator string="Livrables (Optionnel)"/>
+                <field name="deliverable_attachments" widget="many2many_binary"/>
+                <footer>
+                    <button name="action_complete_task" string="Terminer la Tâche" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record> -->
+
+    <record id="action_task_completion_wizard" model="ir.actions.act_window">
+        <field name="name">Terminer la tâche</field>
+        <field name="res_model">task.completion.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_activity_task"/>
+    </record>
+
+    <!-- Wizard de mise en attente de tâche -->
+    <record id="view_task_hold_wizard_form" model="ir.ui.view">
+        <field name="name">task.hold.wizard.form</field>
+        <field name="model">task.hold.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Mettre la tâche en attente">
+                <sheet>
+                    <group>
+                        <field name="task_id" readonly="1"/>
+                        <field name="hold_reason" required="1"/>
+                        <field name="expected_resume_date"/>
+                    </group>
+                    <footer>
+                        <button name="action_put_on_hold" string="Confirmer la mise en attente" type="object" class="btn-primary"/>
+                        <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!-- Vue formulaire du wizard de mise en attente -->
+    <!-- <record id="view_task_hold_wizard_form" model="ir.ui.view">
+        <field name="name">task.hold.wizard.form</field>
+        <field name="model">task.hold.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="task_id" readonly="1"/>
+                    <field name="expected_resume_date"/>
+                </group>
+                <field name="hold_reason" placeholder="Expliquez pourquoi la tâche est mise en attente..."/>
+                <footer>
+                    <button name="action_put_on_hold" string="Mettre en Attente" type="object" class="btn-warning"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record> -->
+
+    <record id="action_task_hold_wizard" model="ir.actions.act_window">
+        <field name="name">Mettre en attente</field>
+        <field name="res_model">task.hold.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_activity_task"/>
+    </record>
+
+    <!-- Wizard d'assignation de tâches -->
+    <record id="view_task_assignment_wizard_form" model="ir.ui.view">
+        <field name="name">task.assignment.wizard.form</field>
+        <field name="model">task.assignment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assigner des tâches">
+                <sheet>
+                    <group>
+                        <field name="activity_id" readonly="1"/>
+                        <field name="task_ids" domain="[('activity_id', '=', activity_id), ('assigned_to', '=', False)]" context="{'tree_view_ref': 'group_activity.view_activity_task_tree'}">
+                            <tree>
+                                <field name="name"/>
+                                <field name="deadline"/>
+                                <field name="priority"/>
+                                <field name="state"/>
+                            </tree>
+                        </field>
+                        <field name="organizer_id" required="1"/>
+                    </group>
+                    <footer>
+                        <button name="action_assign_tasks" string="Assigner les tâches" type="object" class="btn-primary"/>
+                        <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!-- Vue formulaire du wizard d'assignation de tâches -->
+    <!-- <record id="view_task_assignment_wizard_form" model="ir.ui.view">
+        <field name="name">task.assignment.wizard.form</field>
+        <field name="model">task.assignment.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="activity_id" readonly="1"/>
+                    <field name="organizer_id" options="{'no_create': True}"/>
+                </group>
+                <field name="task_ids">
+                    <tree>
+                        <field name="name"/>
+                        <field name="task_type"/>
+                        <field name="priority" widget="priority"/>
+                        <field name="deadline"/>
+                        <field name="estimated_hours"/>
+                    </tree>
+                </field>
+                <footer>
+                    <button name="action_assign_tasks" string="Assigner les Tâches" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record> -->
+
+    <record id="action_task_assignment_wizard" model="ir.actions.act_window">
+        <field name="name">Assigner des tâches</field>
+        <field name="res_model">task.assignment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_group_activity"/>
+    </record>
+
+    <!-- Vue dashboard pour l'organisation des activités -->
+    <record id="view_activity_organization_dashboard" model="ir.ui.view">
+        <field name="name">activity.organization.dashboard</field>
+        <field name="model">activity.organization.dashboard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="activity_id" readonly="1"/>
+                        </h1>
+                        <h2>Tableau de Bord d'Organisation</h2>
+                    </div>
+                    
+                    <div class="o_kanban_dashboard">
+                        <div class="row">
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <div class="o_kanban_gauge">
+                                            <field name="organizer_count" class="o_kanban_primary_bottom"/>
+                                        </div>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>Organisateurs</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <div class="o_kanban_gauge">
+                                            <field name="task_count" class="o_kanban_primary_bottom"/>
+                                        </div>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>Total Tâches</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <div class="o_kanban_gauge">
+                                            <field name="completed_task_count" class="o_kanban_primary_bottom"/>
+                                        </div>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>Tâches Terminées</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-6">
+                                <div class="o_kanban_card_content">
+                                    <div class="o_kanban_primary_left">
+                                        <div class="o_kanban_gauge">
+                                            <field name="task_completion_rate" widget="percentage" class="o_kanban_primary_bottom"/>
+                                        </div>
+                                    </div>
+                                    <div class="o_kanban_primary_right">
+                                        <div class="mb4">
+                                            <strong>Avancement</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row" invisible="overdue_task_count == 0">
+                            <div class="col-lg-12">
+                                <div class="alert alert-warning" role="alert">
+                                    <strong>⚠️ Attention: </strong>
+                                    <field name="overdue_task_count"/> tâche(s) en retard !
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt32">
+                            <div class="col-lg-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Statut d'Organisation</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <field name="organization_status" widget="badge" 
+                                               decoration-success="organization_status == 'ready'" 
+                                               decoration-info="organization_status == 'completed'" 
+                                               decoration-warning="organization_status in ['in_progress', 'well_advanced']" 
+                                               decoration-danger="organization_status == 'not_started'"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_activity_organization_dashboard" model="ir.actions.act_window">
+        <field name="name">Tableau de bord d'Organisation</field>
+        <field name="res_model">activity.organization.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_activity_organization_dashboard"/>
+    </record>
+</odoo>

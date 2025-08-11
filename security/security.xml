@@ -850,4 +850,174 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_installment_allocation_manager'))]"/>
         </record>
+
+    <!-- ================= RÈGLES POUR LES ACTIVITÉS DE GROUPE ================= -->
+    <record id="group_activity_rule_user" model="ir.rule">
+        <field name="name">Activités de groupe: accès utilisateur</field>
+        <field name="model_id" ref="model_group_activity"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="group_activity_rule_portal" model="ir.rule">
+        <field name="name">Activités de groupe: portail</field>
+        <field name="model_id" ref="model_group_activity"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <record id="group_activity_rule_public" model="ir.rule">
+        <field name="name">Activités de groupe: public</field>
+        <field name="model_id" ref="model_group_activity"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_public'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- Règle pour empêcher la modification des activités terminées -->
+    <record id="group_activity_rule_completed_readonly" model="ir.rule">
+        <field name="name">Activités terminées: lecture seule</field>
+        <field name="model_id" ref="model_group_activity"/>
+        <field name="domain_force">[('state', '!=', 'completed')]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="0"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- ================= RÈGLES POUR LES ORGANISATEURS ================= -->
+    <record id="activity_organizer_rule_user" model="ir.rule">
+        <field name="name">Organisateurs: accès utilisateur</field>
+        <field name="model_id" ref="model_activity_organizer"/>
+        <field name="domain_force">[('activity_id', 'in', user.activity_ids.ids)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- ================= RÈGLES POUR LES TÂCHES ================= -->
+    <record id="activity_task_rule_user" model="ir.rule">
+        <field name="name">Tâches: accès utilisateur</field>
+        <field name="model_id" ref="model_activity_task"/>
+        <field name="domain_force">[
+            '|',
+            ('activity_id', 'in', user.activity_ids.ids),
+            ('assigned_to', '=', user.partner_id.id)
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- ================= RÈGLES POUR LES DÉPENSES ================= -->
+    <record id="activity_expense_rule_user" model="ir.rule">
+        <field name="name">Dépenses: accès utilisateur</field>
+        <field name="model_id" ref="model_activity_expense"/>
+        <field name="domain_force">[
+            '|',
+            ('activity_id', 'in', user.activity_ids.ids),
+            ('requested_by.partner_id', '=', user.partner_id.id)
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- Règle pour empêcher la modification des dépenses payées -->
+    <record id="activity_expense_rule_paid_readonly" model="ir.rule">
+        <field name="name">Dépenses payées: lecture seule</field>
+        <field name="model_id" ref="model_activity_expense"/>
+        <field name="domain_force">[('state', '!=', 'paid')]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="0"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- ================= RÈGLES POUR LES CATÉGORIES ================= -->
+    <record id="expense_category_rule_user" model="ir.rule">
+        <field name="name">Catégories de dépenses: accès utilisateur</field>
+        <field name="model_id" ref="model_expense_category"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="task_category_rule_user" model="ir.rule">
+        <field name="name">Catégories de tâches: accès utilisateur</field>
+        <field name="model_id" ref="model_task_category"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <!-- ================= RÈGLES POUR LES WIZARDS ================= -->
+    <record id="task_completion_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant completion tâche: accès global</field>
+        <field name="model_id" ref="model_task_completion_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="task_hold_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant mise en attente: accès global</field>
+        <field name="model_id" ref="model_task_hold_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="task_assignment_wizard_rule_global" model="ir.rule">
+        <field name="name">Assistant assignation tâches: accès global</field>
+        <field name="model_id" ref="model_task_assignment_wizard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="activity_organization_dashboard_rule_global" model="ir.rule">
+        <field name="name">Tableau de bord organisation: accès global</field>
+        <field name="model_id" ref="model_activity_organization_dashboard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
 </odoo>

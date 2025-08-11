@@ -175,7 +175,7 @@
                             </group>
                             
                             <!-- Nouvelle section financière -->
-                            <group string="Analyse financière" invisible="not budget_amount and not total_expenses">
+                            <!-- <group name="financial_info" string="Analyse financière" invisible="not budget_amount and not total_expenses">
                                 <group string="Budget et dépenses">
                                     <field name="budget_amount" widget="monetary"/>
                                     <field name="total_expenses" widget="monetary"/>
@@ -187,7 +187,7 @@
                                     <field name="profitability_rate" />
                                     <field name="break_even_participants"/>
                                 </group>
-                            </group>
+                            </group> -->
                             
                             <!-- Graphique de progression des paiements -->
                             <div class="row" invisible="completion_rate == 0">

@@ -72,6 +72,12 @@
         action="action_cotisation_payment"
         sequence="30" />
 
+    <menuitem id="menu_cotisation_payment_proof"
+        name="Justificatifs de paiement"
+        parent="menu_payments_management"
+        action="action_cotisation_payment_proof"
+        sequence="40" />
+
     <!-- ================= TABLEAUX DE BORD ================= -->
 
     <!-- Groupe: Tableaux de bord -->
@@ -178,6 +184,10 @@
         action="action_my_expenses"
         sequence="30" />
 
+    <menuitem id="menu_organization_organizers" name="Organisateurs" parent="menu_group_activities_root" action="action_activity_organizer" sequence="40"/>
+    <menuitem id="menu_organization_tasks" name="Tâches" parent="menu_group_activities_root" action="action_activity_task" sequence="50"/>
+
+
     <menuitem id="menu_financial_dashboard"
         name="Tableau de bord financier"
         parent="menu_dashboards"
@@ -203,10 +213,6 @@
         action="action_installment_cotisation_dashboard"
         sequence="50" />
 
-    <!-- Menu item -->
-    <menuitem id="menu_cotisation_payment_proof_root" name="Justificatifs de paiement"
-        parent="menu_cotisations_main" sequence="20" />
-    <menuitem id="menu_cotisation_payment_proof" name="Tous les justificatifs"
-        parent="menu_cotisation_payment_proof_root" action="action_cotisation_payment_proof"
-        sequence="10" />
+    <menuitem id="menu_organization_task_categories" name="Catégories de Tâches" parent="menu_activity_config" action="action_task_category" sequence="10"/>
+    <menuitem id="menu_organization_expense_categories" name="Catégories de Dépenses" parent="menu_activity_config" action="action_expense_category" sequence="20"/>
 </odoo>
